@@ -13,19 +13,15 @@ export {
 } from "./config/schema.js";
 
 // State
-export { loadState, saveState, addHumanLines, addClaudeLines, updateSkill, resetSession } from "./state/manager.js";
+export { loadState, saveState, addHumanLines, addClaudeLines, resetSession } from "./state/manager.js";
 export {
   StateSchema,
   SessionSchema,
-  SkillSchema,
-  QuizEntrySchema,
   createDefaultState,
   calculateRatio,
   isRatioHealthy,
   type State,
   type Session,
-  type Skill,
-  type QuizEntry,
 } from "./state/schema.js";
 
 // Tasks - Directories

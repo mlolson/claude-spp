@@ -2,8 +2,8 @@
 export { loadConfig, saveConfig, isDojoInitialized, getDojoDir } from "./config/loader.js";
 export { ConfigSchema, PresetSchema, DifficultySchema, PRESET_RATIOS, DEFAULT_CONFIG, getEffectiveRatio, } from "./config/schema.js";
 // State
-export { loadState, saveState, addHumanLines, addClaudeLines, updateSkill, resetSession } from "./state/manager.js";
-export { StateSchema, SessionSchema, SkillSchema, QuizEntrySchema, createDefaultState, calculateRatio, isRatioHealthy, } from "./state/schema.js";
+export { loadState, saveState, addHumanLines, addClaudeLines, resetSession } from "./state/manager.js";
+export { StateSchema, SessionSchema, createDefaultState, calculateRatio, isRatioHealthy, } from "./state/schema.js";
 // Tasks - Directories
 export { TASK_DIRS, getTasksDir, getTaskSubdir, initializeTaskDirs, areTaskDirsInitialized, listTaskFiles, moveTask, getTaskCounts, } from "./tasks/directories.js";
 // Tasks - Parser

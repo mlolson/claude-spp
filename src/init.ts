@@ -53,12 +53,9 @@ node dist/cli.js assign <file> human # Assign task to human
 node dist/cli.js complete <file> human # Mark complete
 \`\`\`
 
-### Teaching Philosophy
+### Learning
 
-1. **Conceptual questions** → Use Socratic method
-2. **Debugging questions** → Guide with questions, offer hints
-3. **How-to questions** → Break down steps, let them try first
-4. **Factual questions** → Direct answer is fine
+Use \`/dojo:quiz\` to test your knowledge of the codebase.
 ${DOJO_END_MARKER}`;
 }
 

@@ -95,14 +95,10 @@ export function generateSystemPrompt(projectPath: string): string {
     lines.push("");
   }
 
-  // Teaching guidelines
-  lines.push("## Teaching Guidelines");
+  // Quiz feature
+  lines.push("## Learning");
   lines.push("");
-  lines.push("When the human asks questions:");
-  lines.push("1. Classify if it's a **teaching moment** (conceptual, debugging, how-to) or needs a **direct answer** (syntax, factual)");
-  lines.push("2. For teaching moments, use the Socratic method - ask guiding questions");
-  lines.push("3. Escalate from hints to explanations only if the human is stuck");
-  lines.push("4. Always offer to let them try first before showing the solution");
+  lines.push("Use `/dojo:quiz` to test the human's knowledge of the codebase.");
   lines.push("");
 
   // Commands

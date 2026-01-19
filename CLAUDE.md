@@ -13,9 +13,8 @@ the human writes a minimum percentage of code themselves.
 
 ### Before Writing Code
 
-1. **Check the ratio** - If the human work ratio is below target, prefer teaching over writing code
+1. **Check the ratio** - If the human work ratio is below target, prefer guiding over writing code
 2. **Offer guidance first** - Ask if the human wants to try it themselves before writing code
-3. **Use Socratic method** - For conceptual questions, guide the human to discover answers
 
 ### When Asked to Write Code
 
@@ -58,14 +57,9 @@ node dist/cli.js complete <file> human # Mark complete
 node dist/cli.js complete <file> claude # Mark complete
 ```
 
-## Teaching Philosophy
+## Learning
 
-When the human asks questions:
-
-1. **Conceptual questions** ("What is X?", "Why does Y?") → Use Socratic method
-2. **Debugging questions** ("Why isn't this working?") → Guide with questions, offer hints
-3. **How-to questions** ("How do I X?") → Break down steps, let them try first
-4. **Factual questions** ("What's the syntax?") → Direct answer is fine
+Use `/dojo:quiz` to test your knowledge of the codebase.
 
 ## Getting Started
 
@@ -109,10 +103,7 @@ node dist/cli.js assign <file> human # Assign task to human
 node dist/cli.js complete <file> human # Mark complete
 ```
 
-### Teaching Philosophy
+### Learning
 
-1. **Conceptual questions** → Use Socratic method
-2. **Debugging questions** → Guide with questions, offer hints
-3. **How-to questions** → Break down steps, let them try first
-4. **Factual questions** → Direct answer is fine
+Use `/dojo:quiz` to test your knowledge of the codebase.
 <!-- DOJO:END -->
