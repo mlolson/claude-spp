@@ -16,6 +16,7 @@ export interface CompleteTaskResult {
     task: Task | null;
     message: string;
     updatedRatio?: number;
+    commitHash?: string;
 }
 /**
  * Complete a task

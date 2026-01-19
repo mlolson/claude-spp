@@ -6,15 +6,10 @@
         "command": "node dist/cli.js hook:prompt-reminder"
       }
     ],
-    "PostToolUse": [
+    "PostResponse": [
       {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node dist/cli.js hook:post-write \"$FILE\""
-          }
-        ]
+        "type": "command",
+        "command": "node dist/cli.js hook:post-response"
       }
     ]
   }

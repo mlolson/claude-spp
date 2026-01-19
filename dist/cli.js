@@ -1,8 +1,10 @@
 #!/usr/bin/env node
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { execSync } from "node:child_process";
 import { runPreResponseHook } from "./hooks/pre-response.js";
 import { runPostResponseHook } from "./hooks/post-response.js";
 import { runPromptReminderHook } from "./hooks/prompt-reminder.js";
-import { runPostWriteHook } from "./hooks/post-write.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
 import { initializeDojo, isFullyInitialized } from "./init.js";
 import { loadConfig } from "./config/loader.js";
@@ -36,12 +38,46 @@ async function main() {
             // Output compact status line
             console.log(generateStatusLine(process.cwd()));
             break;
-        case "hook:post-write": {
-            // Post-write hook - tracks lines written by Claude
-            const filepath = args[1];
-            if (filepath) {
-                runPostWriteHook(filepath);
+        case "hook:install": {
+            // Install git post-commit hook for tracking human lines
+            const cwd = process.cwd();
+            // Check if we're in a git repo
+            try {
+                execSync("git rev-parse --git-dir", { cwd, stdio: "ignore" });
             }
+            catch {
+                console.error("❌ Not a git repository");
+                process.exit(1);
+            }
+            const gitHooksDir = path.join(cwd, ".git", "hooks");
+            const hookPath = path.join(gitHooksDir, "post-commit");
+            const sourceHook = path.join(cwd, "hooks", "git-post-commit.sh");
+            // Check if source hook exists
+            if (!fs.existsSync(sourceHook)) {
+                console.error("❌ Hook source not found:", sourceHook);
+                process.exit(1);
+            }
+            // Check if hook already exists
+            if (fs.existsSync(hookPath)) {
+                const existing = fs.readFileSync(hookPath, "utf-8");
+                if (existing.includes("Dojo post-commit hook")) {
+                    console.log("✅ Dojo git hook already installed");
+                    break;
+                }
+                console.error("❌ A post-commit hook already exists. Please manually integrate or remove it.");
+                console.error("   Path:", hookPath);
+                process.exit(1);
+            }
+            // Ensure hooks directory exists
+            if (!fs.existsSync(gitHooksDir)) {
+                fs.mkdirSync(gitHooksDir, { recursive: true });
+            }
+            // Copy hook and make executable
+            const hookContent = fs.readFileSync(sourceHook, "utf-8");
+            fs.writeFileSync(hookPath, hookContent, { mode: 0o755 });
+            console.log("✅ Installed git post-commit hook");
+            console.log("   Human lines will be tracked automatically from commits");
+            console.log("   (Commits with 'Co-Authored-By: Claude' are skipped)");
             break;
         }
         // User commands
@@ -199,6 +235,7 @@ Commands:
   add-lines <who> <count>    Manually add line count
 
 Hook Commands (used by Claude Code):
+  hook:install               Install git post-commit hook for tracking human lines
   hook:pre-response          Pre-response hook (reads JSON from stdin)
   hook:post-response         Post-response hook (reads JSON from stdin)
   hook:system-prompt         Output system prompt injection

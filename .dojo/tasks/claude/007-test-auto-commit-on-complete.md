@@ -1,4 +1,4 @@
-# Implement quiz system
+# Test auto-commit on complete
 
 ## Metadata
 - **Difficulty**: medium
@@ -8,7 +8,7 @@
 
 ## Description
 
-Build the quiz generation and scoring system for skill assessment
+
 
 ## Hints
 

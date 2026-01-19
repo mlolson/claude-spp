@@ -1,12 +1,66 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { execSync } from "node:child_process";
 import { addHumanLines, addClaudeLines, loadState } from "../state/manager.js";
 import { moveTask, getTaskSubdir, listTaskFiles } from "./directories.js";
 import { parseTaskFile } from "./parser.js";
 /**
+ * Check if we're in a git repository
+ */
+function isGitRepo(projectPath) {
+    try {
+        execSync("git rev-parse --git-dir", { cwd: projectPath, stdio: "ignore" });
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
+/**
+ * Check if there are uncommitted changes
+ */
+function hasUncommittedChanges(projectPath) {
+    try {
+        const status = execSync("git status --porcelain", { cwd: projectPath, encoding: "utf-8" });
+        return status.trim().length > 0;
+    }
+    catch {
+        return false;
+    }
+}
+/**
+ * Stage all changes and commit with message
+ * Returns the commit hash or null if failed
+ */
+function commitChanges(projectPath, taskTitle, completedBy) {
+    try {
+        // Stage all changes
+        execSync("git add -A", { cwd: projectPath, stdio: "ignore" });
+        // Build commit message
+        let message = `Complete: ${taskTitle}`;
+        if (completedBy === "claude") {
+            message += "\n\nCo-Authored-By: Claude <noreply@anthropic.com>";
+        }
+        // Commit
+        execSync(`git commit -m ${JSON.stringify(message)}`, { cwd: projectPath, stdio: "ignore" });
+        // Get commit hash
+        const hash = execSync("git rev-parse HEAD", { cwd: projectPath, encoding: "utf-8" }).trim();
+        return hash;
+    }
+    catch {
+        return null;
+    }
+}
+/**
+ * Get the short commit hash
+ */
+function getShortHash(hash) {
+    return hash.substring(0, 7);
+}
+/**
  * Update task file with completion notes
  */
-function updateTaskWithCompletionNotes(filePath, completedBy, notes) {
+function updateTaskWithCompletionNotes(filePath, completedBy, notes, commitHash) {
     let content = fs.readFileSync(filePath, "utf-8");
     const timestamp = new Date().toISOString();
     // Update completed by
@@ -16,6 +70,17 @@ function updateTaskWithCompletionNotes(filePath, completedBy, notes) {
     // Update notes if provided
     if (notes) {
         content = content.replace(/- \*\*Notes\*\*:.*/, `- **Notes**: ${notes}`);
+    }
+    // Add commit hash if provided
+    if (commitHash) {
+        // Check if Commit field exists
+        if (content.includes("- **Commit**:")) {
+            content = content.replace(/- \*\*Commit\*\*:.*/, `- **Commit**: ${getShortHash(commitHash)}`);
+        }
+        else {
+            // Add after Notes
+            content = content.replace(/(- \*\*Notes\*\*:.*)/, `$1\n- **Commit**: ${getShortHash(commitHash)}`);
+        }
     }
     fs.writeFileSync(filePath, content, "utf-8");
 }
@@ -66,8 +131,18 @@ export function completeTask(projectPath, input) {
     }
     // Get the file path before moving
     const sourceFilePath = path.join(getTaskSubdir(projectPath, sourceDir), filename);
-    // Update completion notes
-    updateTaskWithCompletionNotes(sourceFilePath, completedBy, notes);
+    // Parse task to get title for commit message
+    const taskBeforeComplete = parseTaskFile(projectPath, filename, sourceDir);
+    // Auto-commit if there are uncommitted changes
+    let commitHash;
+    if (isGitRepo(projectPath) && hasUncommittedChanges(projectPath)) {
+        const hash = commitChanges(projectPath, taskBeforeComplete.title, completedBy);
+        if (hash) {
+            commitHash = hash;
+        }
+    }
+    // Update completion notes (including commit hash if we made a commit)
+    updateTaskWithCompletionNotes(sourceFilePath, completedBy, notes, commitHash);
     // Mark criteria as complete
     markCriteriaComplete(sourceFilePath);
     // Move to completed
@@ -90,8 +165,11 @@ export function completeTask(projectPath, input) {
     return {
         success: true,
         task,
-        message: `Task "${task.title}" completed by ${completedBy}.`,
+        message: commitHash
+            ? `Task "${task.title}" completed by ${completedBy}. Committed: ${getShortHash(commitHash)}`
+            : `Task "${task.title}" completed by ${completedBy}.`,
         updatedRatio: ratio,
+        commitHash,
     };
 }
 /**
