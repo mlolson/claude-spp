@@ -33,9 +33,12 @@ If the user is stuck:
 
 ## Check Dojo Status
 
-Before writing significant code, check if Dojo is enabled:
+Before writing significant code, check if Dojo is enabled.
+
+**Note:** The CLI is at `<plugin-dir>/dist/cli.js` where plugin-dir is the directory containing this SKILL.md file.
+
 ```bash
-node dist/cli.js status
+node <plugin-dir>/dist/cli.js status
 ```
 
 If the human work ratio is below target, prefer teaching over writing code directly.

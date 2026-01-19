@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { execSync } from "node:child_process";
 import { runPreResponseHook } from "./hooks/pre-response.js";
 import { runPostResponseHook } from "./hooks/post-response.js";
+import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
 import { runPromptReminderHook } from "./hooks/prompt-reminder.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
 import { initializeDojo, isFullyInitialized } from "./init.js";
@@ -29,6 +30,9 @@ async function main() {
             break;
         case "hook:post-response":
             await runPostResponseHook();
+            break;
+        case "hook:pre-tool-use":
+            await runPreToolUseHook();
             break;
         case "hook:system-prompt":
             // Output system prompt for current directory
@@ -241,6 +245,7 @@ Hook Commands (used by Claude Code):
   hook:install               Install git post-commit hook for tracking human lines
   hook:pre-response          Pre-response hook (reads JSON from stdin)
   hook:post-response         Post-response hook (reads JSON from stdin)
+  hook:pre-tool-use          Pre-tool-use hook (reads JSON from stdin)
   hook:system-prompt         Output system prompt injection
   hook:status                Output compact status line
 `);

@@ -12,3 +12,17 @@ export {
   type PostResponseHookOutput,
   type ToolUse,
 } from "./post-response.js";
+export {
+  preToolUseHook,
+  runPreToolUseHook,
+  type PreToolUseHookInput,
+  type PreToolUseHookOutput,
+  type ToolInput,
+} from "./pre-tool-use.js";
+export {
+  normalizeFilePath,
+  fileMatchesPattern,
+  fileMatchesPatterns,
+  findTasksForFile,
+  isDojoInternalFile,
+} from "./file-matcher.js";

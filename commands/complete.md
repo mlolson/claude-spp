@@ -4,16 +4,18 @@ description: Mark a task as complete
 
 # Complete Dojo Task
 
+**Note:** The CLI is at `<plugin-dir>/dist/cli.js` where plugin-dir is the directory containing this command file.
+
 Mark a task as complete. Arguments should be: `<filename> <human|claude> [lines]`
 
 If arguments are provided:
 ```bash
-node dist/cli.js complete $ARGUMENTS
+node <plugin-dir>/dist/cli.js complete $ARGUMENTS
 ```
 
 If no arguments provided, first list tasks assigned to human and claude:
 ```bash
-node dist/cli.js tasks
+node <plugin-dir>/dist/cli.js tasks
 ```
 
 Then ask the user:

@@ -4,10 +4,10 @@ description: List all Dojo tasks (assigned and unassigned)
 
 # Dojo Tasks
 
-Run `node dist/cli.js tasks` to list all current tasks and their assignments.
+**Note:** The CLI is at `<plugin-dir>/dist/cli.js` where plugin-dir is the directory containing this command file.
 
 ```bash
-node dist/cli.js tasks
+node <plugin-dir>/dist/cli.js tasks
 ```
 
 Display the results organized by assignment status (human, claude, unassigned).
