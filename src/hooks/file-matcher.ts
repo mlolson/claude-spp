@@ -30,13 +30,17 @@ function globToRegex(pattern: string): RegExp {
   let regex = pattern
     // Escape special regex chars except * and ?
     .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    // ** matches anything including path separators
+    // **/ at the start or after / should match zero or more directories
+    .replace(/\*\*\//g, "<<<GLOBSTAR_SLASH>>>")
+    // Remaining ** matches anything
     .replace(/\*\*/g, "<<<GLOBSTAR>>>")
     // * matches anything except path separators
     .replace(/\*/g, "[^/]*")
     // ? matches single character
     .replace(/\?/g, ".")
-    // Restore ** as match-all
+    // **/ should match zero or more directories (including empty)
+    .replace(/<<<GLOBSTAR_SLASH>>>/g, "(?:.*\\/)?")
+    // ** matches anything
     .replace(/<<<GLOBSTAR>>>/g, ".*");
 
   // Anchor to start and end
