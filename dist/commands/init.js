@@ -3,19 +3,21 @@ import { PRESET_RATIOS } from "../config/schema.js";
 import { initializeDojo, isFullyInitialized } from "../init.js";
 /**
  * Initialize Dojo in a project
+ * @param projectPath - Path to the project
+ * @param preset - Optional preset. If not provided, user will be prompted interactively.
  */
-export function init(projectPath, preset = "balanced") {
+export async function init(projectPath, preset) {
     const alreadyInitialized = isDojoInitialized(projectPath);
     if (alreadyInitialized && isFullyInitialized(projectPath)) {
         return {
             success: true,
             alreadyInitialized: true,
-            preset,
-            ratio: PRESET_RATIOS[preset],
+            preset: preset ?? "balanced",
+            ratio: PRESET_RATIOS[preset ?? "balanced"],
             message: "Dojo is already initialized in this project.",
         };
     }
-    const config = initializeDojo(projectPath, preset);
+    const config = await initializeDojo(projectPath, preset);
     return {
         success: true,
         alreadyInitialized: false,

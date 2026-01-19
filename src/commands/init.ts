@@ -12,21 +12,23 @@ export interface InitResult {
 
 /**
  * Initialize Dojo in a project
+ * @param projectPath - Path to the project
+ * @param preset - Optional preset. If not provided, user will be prompted interactively.
  */
-export function init(projectPath: string, preset: Preset = "balanced"): InitResult {
+export async function init(projectPath: string, preset?: Preset): Promise<InitResult> {
   const alreadyInitialized = isDojoInitialized(projectPath);
 
   if (alreadyInitialized && isFullyInitialized(projectPath)) {
     return {
       success: true,
       alreadyInitialized: true,
-      preset,
-      ratio: PRESET_RATIOS[preset],
+      preset: preset ?? "balanced",
+      ratio: PRESET_RATIOS[preset ?? "balanced"],
       message: "Dojo is already initialized in this project.",
     };
   }
 
-  const config = initializeDojo(projectPath, preset);
+  const config = await initializeDojo(projectPath, preset);
 
   return {
     success: true,

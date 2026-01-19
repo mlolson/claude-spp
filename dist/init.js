@@ -1,8 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import * as readline from "node:readline";
 import { execSync } from "node:child_process";
 import { loadConfig, saveConfig, isDojoInitialized, getDojoDir } from "./config/loader.js";
-import { DEFAULT_CONFIG, PRESET_RATIOS } from "./config/schema.js";
+import { DEFAULT_CONFIG, PRESET_RATIOS, PresetSchema } from "./config/schema.js";
 import { saveState } from "./state/manager.js";
 import { createDefaultState } from "./state/schema.js";
 import { initializeTaskDirs, areTaskDirsInitialized } from "./tasks/directories.js";
@@ -129,19 +130,61 @@ function installGitHook(projectPath) {
     return true;
 }
 /**
+ * Prompt user to select a preset interactively
+ */
+async function promptForPreset() {
+    const presets = PresetSchema.options;
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+    return new Promise((resolve) => {
+        console.log("\nAvailable presets:");
+        presets.forEach((preset, index) => {
+            const ratio = Math.round(PRESET_RATIOS[preset] * 100);
+            const defaultMarker = preset === "balanced" ? " (default)" : "";
+            console.log(`  ${index + 1}. ${preset} - ${ratio}% human-written code${defaultMarker}`);
+        });
+        console.log("");
+        rl.question("Select a preset [1-4, or press Enter for balanced]: ", (answer) => {
+            rl.close();
+            const trimmed = answer.trim();
+            if (trimmed === "") {
+                resolve("balanced");
+                return;
+            }
+            const num = parseInt(trimmed, 10);
+            if (num >= 1 && num <= presets.length) {
+                resolve(presets[num - 1]);
+                return;
+            }
+            // Try to match by name
+            const matched = presets.find(p => p.toLowerCase() === trimmed.toLowerCase());
+            if (matched) {
+                resolve(matched);
+                return;
+            }
+            console.log("Invalid selection, using default (balanced)");
+            resolve("balanced");
+        });
+    });
+}
+/**
  * Initialize Dojo in a project
  * Creates .dojo directory with config, state, and task directories
  */
-export function initializeDojo(projectPath, preset) {
+export async function initializeDojo(projectPath, preset) {
     const dojoDir = getDojoDir(projectPath);
     // Create .dojo directory if it doesn't exist
     if (!fs.existsSync(dojoDir)) {
         fs.mkdirSync(dojoDir, { recursive: true });
     }
+    // Prompt for preset if not provided
+    const selectedPreset = preset ?? await promptForPreset();
     // Initialize config
     const config = {
         ...DEFAULT_CONFIG,
-        ...(preset ? { preset } : {}),
+        preset: selectedPreset,
     };
     saveConfig(projectPath, config);
     // Initialize state
@@ -169,9 +212,9 @@ export function isFullyInitialized(projectPath) {
 /**
  * Ensure Dojo is initialized, initializing if needed
  */
-export function ensureInitialized(projectPath) {
+export async function ensureInitialized(projectPath, preset) {
     if (!isFullyInitialized(projectPath)) {
-        return initializeDojo(projectPath);
+        return initializeDojo(projectPath, preset);
     }
     return loadConfig(projectPath);
 }

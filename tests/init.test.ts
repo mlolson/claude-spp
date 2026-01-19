@@ -26,25 +26,25 @@ describe("Initialization", () => {
   });
 
   describe("initializeDojo", () => {
-    it("creates .dojo directory", () => {
-      initializeDojo(TEST_DIR);
+    it("creates .dojo directory", async () => {
+      await initializeDojo(TEST_DIR, "balanced");
       expect(fs.existsSync(getDojoDir(TEST_DIR))).toBe(true);
     });
 
-    it("creates config.json", () => {
-      initializeDojo(TEST_DIR);
+    it("creates config.json", async () => {
+      await initializeDojo(TEST_DIR, "balanced");
       const configPath = path.join(getDojoDir(TEST_DIR), "config.json");
       expect(fs.existsSync(configPath)).toBe(true);
     });
 
-    it("creates state.json", () => {
-      initializeDojo(TEST_DIR);
+    it("creates state.json", async () => {
+      await initializeDojo(TEST_DIR, "balanced");
       const statePath = path.join(getDojoDir(TEST_DIR), "state.json");
       expect(fs.existsSync(statePath)).toBe(true);
     });
 
-    it("creates task directories", () => {
-      initializeDojo(TEST_DIR);
+    it("creates task directories", async () => {
+      await initializeDojo(TEST_DIR, "balanced");
       const tasksDir = path.join(getDojoDir(TEST_DIR), "tasks");
 
       for (const dir of Object.values(TASK_DIRS)) {
@@ -52,8 +52,8 @@ describe("Initialization", () => {
       }
     });
 
-    it("creates .gitignore", () => {
-      initializeDojo(TEST_DIR);
+    it("creates .gitignore", async () => {
+      await initializeDojo(TEST_DIR, "balanced");
       const gitignorePath = path.join(getDojoDir(TEST_DIR), ".gitignore");
       expect(fs.existsSync(gitignorePath)).toBe(true);
 
@@ -61,13 +61,8 @@ describe("Initialization", () => {
       expect(content).toContain("state.json");
     });
 
-    it("uses default preset when none specified", () => {
-      const config = initializeDojo(TEST_DIR);
-      expect(config.preset).toBe("balanced");
-    });
-
-    it("uses specified preset", () => {
-      const config = initializeDojo(TEST_DIR, "intensive");
+    it("uses specified preset", async () => {
+      const config = await initializeDojo(TEST_DIR, "intensive");
       expect(config.preset).toBe("intensive");
     });
   });
@@ -82,24 +77,24 @@ describe("Initialization", () => {
       expect(isFullyInitialized(TEST_DIR)).toBe(false);
     });
 
-    it("returns true after full initialization", () => {
-      initializeDojo(TEST_DIR);
+    it("returns true after full initialization", async () => {
+      await initializeDojo(TEST_DIR, "balanced");
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
   });
 
   describe("ensureInitialized", () => {
-    it("initializes if not already done", () => {
-      const config = ensureInitialized(TEST_DIR);
+    it("initializes if not already done", async () => {
+      const config = await ensureInitialized(TEST_DIR, "balanced");
 
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
       expect(config.enabled).toBe(true);
     });
 
-    it("returns existing config if already initialized", () => {
-      initializeDojo(TEST_DIR, "training");
+    it("returns existing config if already initialized", async () => {
+      await initializeDojo(TEST_DIR, "training");
 
-      const config = ensureInitialized(TEST_DIR);
+      const config = await ensureInitialized(TEST_DIR);
 
       expect(config.preset).toBe("training");
     });
@@ -114,10 +109,10 @@ describe("Initialization", () => {
       expect(isDojoInitialized(TEST_DIR)).toBe(true);
     });
 
-    it("areTaskDirsInitialized checks all task directories", () => {
+    it("areTaskDirsInitialized checks all task directories", async () => {
       expect(areTaskDirsInitialized(TEST_DIR)).toBe(false);
 
-      initializeDojo(TEST_DIR);
+      await initializeDojo(TEST_DIR, "balanced");
 
       expect(areTaskDirsInitialized(TEST_DIR)).toBe(true);
     });

@@ -82,9 +82,12 @@ async function main() {
         }
         // User commands
         case "init": {
-            const preset = args[1];
             try {
-                const config = initializeDojo(process.cwd(), preset);
+                // If preset provided as argument, use it; otherwise prompt interactively
+                const presetArg = args[1];
+                const validPresets = ["light", "balanced", "intensive", "training"];
+                const preset = presetArg && validPresets.includes(presetArg) ? presetArg : undefined;
+                const config = await initializeDojo(process.cwd(), preset);
                 console.log(`✅ Dojo initialized with "${config.preset}" preset`);
                 console.log(`   Target: ${(getEffectiveRatio(config) * 100).toFixed(0)}% human-written code`);
                 console.log(`   Directory: .dojo/`);

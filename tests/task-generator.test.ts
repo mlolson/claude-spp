@@ -14,12 +14,12 @@ import { listTaskFiles } from "../src/tasks/directories.js";
 const TEST_DIR = path.join(process.cwd(), ".test-task-generator");
 
 describe("Task Generator", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     if (fs.existsSync(TEST_DIR)) {
       fs.rmSync(TEST_DIR, { recursive: true });
     }
     fs.mkdirSync(TEST_DIR, { recursive: true });
-    initializeDojo(TEST_DIR);
+    await initializeDojo(TEST_DIR, "balanced");
   });
 
   afterEach(() => {

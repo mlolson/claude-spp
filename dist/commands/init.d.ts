@@ -8,8 +8,10 @@ export interface InitResult {
 }
 /**
  * Initialize Dojo in a project
+ * @param projectPath - Path to the project
+ * @param preset - Optional preset. If not provided, user will be prompted interactively.
  */
-export declare function init(projectPath: string, preset?: Preset): InitResult;
+export declare function init(projectPath: string, preset?: Preset): Promise<InitResult>;
 /**
  * Format init result for display
  */
