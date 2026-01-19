@@ -13,7 +13,16 @@ export {
 } from "./config/schema.js";
 
 // State
-export { loadState, saveState, addHumanLines, addClaudeLines, resetSession } from "./state/manager.js";
+export {
+  loadState,
+  saveState,
+  addHumanLines,
+  addClaudeLines,
+  resetSession,
+  setCurrentTask,
+  getCurrentTask,
+  clearCurrentTask,
+} from "./state/manager.js";
 export {
   StateSchema,
   SessionSchema,
@@ -90,6 +99,13 @@ export {
   type CompleteTaskInput,
   type CompleteTaskResult,
 } from "./tasks/completion.js";
+
+// Tasks - Focus
+export {
+  focusTask,
+  getCurrentFocusedTask,
+  type FocusTaskResult,
+} from "./tasks/focus.js";
 
 // Initialization
 export { initializeDojo, isFullyInitialized, ensureInitialized } from "./init.js";

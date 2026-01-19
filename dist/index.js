@@ -2,7 +2,7 @@
 export { loadConfig, saveConfig, isDojoInitialized, getDojoDir } from "./config/loader.js";
 export { ConfigSchema, PresetSchema, DifficultySchema, PRESET_RATIOS, DEFAULT_CONFIG, getEffectiveRatio, } from "./config/schema.js";
 // State
-export { loadState, saveState, addHumanLines, addClaudeLines, resetSession } from "./state/manager.js";
+export { loadState, saveState, addHumanLines, addClaudeLines, resetSession, setCurrentTask, getCurrentTask, clearCurrentTask, } from "./state/manager.js";
 export { StateSchema, SessionSchema, createDefaultState, calculateRatio, isRatioHealthy, } from "./state/schema.js";
 // Tasks - Directories
 export { TASK_DIRS, getTasksDir, getTaskSubdir, initializeTaskDirs, areTaskDirsInitialized, listTaskFiles, moveTask, getTaskCounts, } from "./tasks/directories.js";
@@ -14,6 +14,8 @@ export { createTask, createTasks, generateTaskContent, generateFilename, getNext
 export { canClaudeTakeWork, suggestAssignee, assignTask, autoAssignTask, getHumanTasks, getClaudeTasks, getUnassignedTasks, pickTaskForHuman, reassignTask, formatAssignmentResult, } from "./tasks/assignment.js";
 // Tasks - Completion
 export { completeTask, reopenTask, getCompletedTasks, getCompletionStats, formatCompletionResult, } from "./tasks/completion.js";
+// Tasks - Focus
+export { focusTask, getCurrentFocusedTask, } from "./tasks/focus.js";
 // Initialization
 export { initializeDojo, isFullyInitialized, ensureInitialized } from "./init.js";
 // Commands

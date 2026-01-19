@@ -4,6 +4,7 @@ import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { getEffectiveRatio } from "../config/schema.js";
 import { parseActiveTasks, parseTasksInDirectory } from "../tasks/parser.js";
 import type { Task } from "../tasks/parser.js";
+import { getCurrentFocusedTask } from "../tasks/focus.js";
 
 /**
  * Generate the Dojo system prompt injection
@@ -26,6 +27,9 @@ export function generateSystemPrompt(projectPath: string): string {
   const claudeTasks = parseTasksInDirectory(projectPath, "claude");
   const unassignedTasks = parseTasksInDirectory(projectPath, "unassigned");
 
+  // Get current focused task
+  const currentTask = getCurrentFocusedTask(projectPath);
+
   const lines: string[] = [
     "<dojo>",
     "# Dojo Mode Active",
@@ -39,7 +43,29 @@ export function generateSystemPrompt(projectPath: string): string {
     `- **Current ratio:** ${(currentRatio * 100).toFixed(0)}% human (${state.session.humanLines} lines) / ${(100 - currentRatio * 100).toFixed(0)}% Claude (${state.session.claudeLines} lines)`,
     `- **Status:** ${isHealthy ? "✅ Healthy" : "⚠️ Below target"}`,
     "",
+    "## Current Task",
+    "",
   ];
+
+  if (currentTask) {
+    lines.push(`**Focused on:** ${currentTask.title} (\`${currentTask.filename}\`)`);
+    lines.push("");
+    lines.push(`When finished: \`node dist/cli.js complete ${currentTask.filename} claude\``);
+  } else {
+    lines.push("**No task currently focused.**");
+    lines.push("");
+    lines.push("Before writing code, focus a task: `node dist/cli.js focus <filename>`");
+  }
+  lines.push("");
+
+  // Workflow section
+  lines.push("## Workflow");
+  lines.push("");
+  lines.push("1. **Think** - Consider what needs to be done");
+  lines.push("2. **Focus** - `node dist/cli.js focus <filename>`");
+  lines.push("3. **Work** - Implement (writes allowed while focused)");
+  lines.push("4. **Complete** - `node dist/cli.js complete <filename> claude`");
+  lines.push("");
 
   // Add rules based on ratio health
   if (!isHealthy) {

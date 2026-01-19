@@ -12,6 +12,9 @@ export const SessionSchema = z.object({
 
   // Lines of code written by Claude
   claudeLines: z.number().int().min(0).default(0),
+
+  // Currently focused task filename (null if none)
+  currentTask: z.string().nullable().default(null),
 });
 
 export type Session = z.infer<typeof SessionSchema>;
@@ -35,6 +38,7 @@ export function createDefaultState(): State {
       startedAt: new Date().toISOString(),
       humanLines: 0,
       claudeLines: 0,
+      currentTask: null,
     },
   };
 }

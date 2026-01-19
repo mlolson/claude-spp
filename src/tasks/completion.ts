@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
-import { addHumanLines, addClaudeLines, loadState } from "../state/manager.js";
+import { addHumanLines, addClaudeLines, loadState, getCurrentTask, clearCurrentTask } from "../state/manager.js";
 import { moveTask, getTaskSubdir, listTaskFiles, type TaskDirectory } from "./directories.js";
 import { parseTaskFile, type Task } from "./parser.js";
 
@@ -219,6 +219,12 @@ export function completeTask(
 
   // Move to completed
   moveTask(projectPath, filename, sourceDir, "completed");
+
+  // Clear current task if it was the focused one
+  const currentTaskFilename = getCurrentTask(projectPath);
+  if (currentTaskFilename === filename) {
+    clearCurrentTask(projectPath);
+  }
 
   // Update stats if lines of code provided
   if (linesOfCode && linesOfCode > 0) {

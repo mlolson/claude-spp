@@ -9,7 +9,8 @@ import { runPromptReminderHook } from "./hooks/prompt-reminder.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
 import { initializeDojo, isFullyInitialized } from "./init.js";
 import { loadConfig } from "./config/loader.js";
-import { loadState, addHumanLines } from "./state/manager.js";
+import { loadState, addHumanLines, clearCurrentTask } from "./state/manager.js";
+import { focusTask, getCurrentFocusedTask } from "./tasks/focus.js";
 import { calculateRatio } from "./state/schema.js";
 import { getEffectiveRatio } from "./config/schema.js";
 import { parseActiveTasks, parseTasksInDirectory } from "./tasks/parser.js";
@@ -226,6 +227,77 @@ async function main() {
       break;
     }
 
+    case "focus": {
+      if (!isFullyInitialized(process.cwd())) {
+        console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
+        process.exit(1);
+      }
+      const filename = args[1];
+      if (!filename) {
+        // Show current focus and available tasks
+        const currentTask = getCurrentFocusedTask(process.cwd());
+        if (currentTask) {
+          console.log(`Currently focused: ${currentTask.title} (${currentTask.filename})`);
+        } else {
+          console.log("No task currently focused.");
+        }
+        console.log("");
+        console.log("Available tasks:");
+        const tasks = listTasks(process.cwd());
+        const claudeTasks = tasks.filter(t => t.directory === "claude");
+        const humanTasks = tasks.filter(t => t.directory === "human");
+        const unassignedTasks = tasks.filter(t => t.directory === "unassigned");
+        if (claudeTasks.length > 0) {
+          console.log("  Claude:");
+          for (const t of claudeTasks) {
+            console.log(`    - ${t.filename}: ${t.title}`);
+          }
+        }
+        if (humanTasks.length > 0) {
+          console.log("  Human:");
+          for (const t of humanTasks) {
+            console.log(`    - ${t.filename}: ${t.title}`);
+          }
+        }
+        if (unassignedTasks.length > 0) {
+          console.log("  Unassigned:");
+          for (const t of unassignedTasks) {
+            console.log(`    - ${t.filename}: ${t.title}`);
+          }
+        }
+        if (claudeTasks.length === 0 && humanTasks.length === 0 && unassignedTasks.length === 0) {
+          console.log("  No tasks found. Create one: node dist/cli.js create \"Task title\"");
+        }
+        break;
+      }
+      const result = focusTask(process.cwd(), filename);
+      if (result.success) {
+        console.log(`✅ ${result.message}`);
+        if (result.autoAssigned) {
+          console.log("   Task was unassigned, now assigned to Claude.");
+        }
+      } else {
+        console.error(`❌ ${result.message}`);
+        process.exit(1);
+      }
+      break;
+    }
+
+    case "unfocus": {
+      if (!isFullyInitialized(process.cwd())) {
+        console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
+        process.exit(1);
+      }
+      const currentTask = getCurrentFocusedTask(process.cwd());
+      if (currentTask) {
+        clearCurrentTask(process.cwd());
+        console.log(`✅ Unfocused from "${currentTask.title}"`);
+      } else {
+        console.log("No task was focused.");
+      }
+      break;
+    }
+
     case "status": {
       if (!isFullyInitialized(process.cwd())) {
         console.log("Dojo: Not initialized");
@@ -243,6 +315,13 @@ async function main() {
       console.log(`Dojo: ${healthy ? "✅" : "⚠️"} ${(ratio * 100).toFixed(0)}% human / ${(target * 100).toFixed(0)}% target`);
       console.log(`  Human: ${state.session.humanLines} lines`);
       console.log(`  Claude: ${state.session.claudeLines} lines`);
+      // Show current task
+      const currentTaskStatus = getCurrentFocusedTask(process.cwd());
+      if (currentTaskStatus) {
+        console.log(`  Current task: ${currentTaskStatus.title} (${currentTaskStatus.filename})`);
+      } else {
+        console.log("  Current task: None");
+      }
       break;
     }
 
@@ -260,6 +339,8 @@ Commands:
   tasks [filter]             List tasks (filters: all, human, claude, unassigned, completed)
   create <title> [desc]      Create a new task
   assign <file> <who>        Assign task to human or claude
+  focus [file]               Focus on a task (required before writing code)
+  unfocus                    Clear task focus
   complete <file> <who> [n]  Mark task complete (optionally with line count)
   add-lines <who> <count>    Manually add line count
 

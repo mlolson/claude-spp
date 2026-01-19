@@ -9,6 +9,8 @@ export const SessionSchema = z.object({
     humanLines: z.number().int().min(0).default(0),
     // Lines of code written by Claude
     claudeLines: z.number().int().min(0).default(0),
+    // Currently focused task filename (null if none)
+    currentTask: z.string().nullable().default(null),
 });
 /**
  * Main state schema for .dojo/state.json
@@ -26,6 +28,7 @@ export function createDefaultState() {
             startedAt: new Date().toISOString(),
             humanLines: 0,
             claudeLines: 0,
+            currentTask: null,
         },
     };
 }

@@ -6,14 +6,17 @@ export declare const SessionSchema: z.ZodObject<{
     startedAt: z.ZodString;
     humanLines: z.ZodDefault<z.ZodNumber>;
     claudeLines: z.ZodDefault<z.ZodNumber>;
+    currentTask: z.ZodDefault<z.ZodNullable<z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
     startedAt: string;
     humanLines: number;
     claudeLines: number;
+    currentTask: string | null;
 }, {
     startedAt: string;
     humanLines?: number | undefined;
     claudeLines?: number | undefined;
+    currentTask?: string | null | undefined;
 }>;
 export type Session = z.infer<typeof SessionSchema>;
 /**
@@ -24,26 +27,31 @@ export declare const StateSchema: z.ZodObject<{
         startedAt: z.ZodString;
         humanLines: z.ZodDefault<z.ZodNumber>;
         claudeLines: z.ZodDefault<z.ZodNumber>;
+        currentTask: z.ZodDefault<z.ZodNullable<z.ZodString>>;
     }, "strip", z.ZodTypeAny, {
         startedAt: string;
         humanLines: number;
         claudeLines: number;
+        currentTask: string | null;
     }, {
         startedAt: string;
         humanLines?: number | undefined;
         claudeLines?: number | undefined;
+        currentTask?: string | null | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
     session: {
         startedAt: string;
         humanLines: number;
         claudeLines: number;
+        currentTask: string | null;
     };
 }, {
     session: {
         startedAt: string;
         humanLines?: number | undefined;
         claudeLines?: number | undefined;
+        currentTask?: string | null | undefined;
     };
 }>;
 export type State = z.infer<typeof StateSchema>;

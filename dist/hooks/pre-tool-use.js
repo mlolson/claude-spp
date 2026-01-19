@@ -1,6 +1,7 @@
 import { isDojoInitialized, loadConfig } from "../config/loader.js";
-import { parseTasksInDirectory } from "../tasks/parser.js";
-import { isDojoInternalFile, findTasksForFile } from "./file-matcher.js";
+import { findTask, parseTasksInDirectory } from "../tasks/parser.js";
+import { isDojoInternalFile } from "./file-matcher.js";
+import { getCurrentTask } from "../state/manager.js";
 /**
  * Tools that write to files
  */
@@ -20,9 +21,43 @@ function extractFilePath(tool) {
     return null;
 }
 /**
+ * Format a list of tasks for display in the block message
+ */
+function formatAvailableTasks(projectPath) {
+    const humanTasks = parseTasksInDirectory(projectPath, "human");
+    const claudeTasks = parseTasksInDirectory(projectPath, "claude");
+    const unassignedTasks = parseTasksInDirectory(projectPath, "unassigned");
+    const lines = [];
+    if (claudeTasks.length > 0) {
+        lines.push("Claude's tasks:");
+        for (const task of claudeTasks) {
+            lines.push(`  - ${task.filename}: ${task.title}`);
+        }
+    }
+    if (humanTasks.length > 0) {
+        lines.push("Human's tasks:");
+        for (const task of humanTasks) {
+            lines.push(`  - ${task.filename}: ${task.title}`);
+        }
+    }
+    if (unassignedTasks.length > 0) {
+        lines.push("Unassigned tasks:");
+        for (const task of unassignedTasks.slice(0, 3)) {
+            lines.push(`  - ${task.filename}: ${task.title}`);
+        }
+        if (unassignedTasks.length > 3) {
+            lines.push(`  ... and ${unassignedTasks.length - 3} more`);
+        }
+    }
+    if (lines.length === 0) {
+        lines.push("No tasks found. Create one: node dist/cli.js create \"Task title\"");
+    }
+    return lines.join("\n");
+}
+/**
  * Pre-tool-use hook
  * Called before Claude uses a tool
- * Checks if the file being written to is part of an active task
+ * Checks if there is a current focused task before allowing writes
  */
 export function preToolUseHook(input) {
     const { tool, cwd } = input;
@@ -44,33 +79,38 @@ export function preToolUseHook(input) {
     if (!filePath) {
         return { decision: "allow" };
     }
-    // Skip .dojo internal files
+    // Always allow .dojo internal files
     if (isDojoInternalFile(filePath, cwd)) {
         return { decision: "allow" };
     }
-    // Load active tasks (only assigned tasks - human and claude directories)
-    const humanTasks = parseTasksInDirectory(cwd, "human");
-    const claudeTasks = parseTasksInDirectory(cwd, "claude");
-    const activeTasks = [...humanTasks, ...claudeTasks];
-    // If no active tasks exist, allow (user hasn't set up task tracking)
-    if (activeTasks.length === 0) {
-        return { decision: "allow" };
+    // Check for current task
+    const currentTaskFilename = getCurrentTask(cwd);
+    if (!currentTaskFilename) {
+        // Block with helpful message listing available tasks
+        const availableTasks = formatAvailableTasks(cwd);
+        return {
+            decision: "block",
+            reason: "no_current_task",
+            message: `No task is currently focused.\n\nTo write code, first focus on a task:\n  node dist/cli.js focus <filename>\n\n${availableTasks}`,
+        };
     }
-    // Check if file matches any active task
-    const matchingTasks = findTasksForFile(filePath, activeTasks, cwd);
-    if (matchingTasks.length > 0) {
-        // File is part of an active task - allow
-        return { decision: "allow" };
+    // Verify current task still exists and is not completed
+    const currentTask = findTask(cwd, currentTaskFilename);
+    if (!currentTask) {
+        return {
+            decision: "block",
+            reason: "task_not_found",
+            message: `Focused task "${currentTaskFilename}" not found. Clear focus and try again:\n  node dist/cli.js unfocus`,
+        };
     }
-    // File not covered by any active task - ask user
-    const relativePath = filePath.startsWith(cwd)
-        ? filePath.slice(cwd.length + 1)
-        : filePath;
-    return {
-        decision: "ask",
-        reason: "file_not_in_task",
-        message: `This file is not part of any active Dojo task:\n  ${relativePath}\n\nWould you like to create a task for this work?`,
-    };
+    if (currentTask.directory === "completed") {
+        return {
+            decision: "block",
+            reason: "task_completed",
+            message: `Focused task "${currentTask.title}" is already completed. Focus on a new task:\n  node dist/cli.js unfocus\n  node dist/cli.js focus <filename>`,
+        };
+    }
+    return { decision: "allow" };
 }
 /**
  * CLI entry point for pre-tool-use hook
