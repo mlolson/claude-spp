@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "command": "node dist/cli.js hook:prompt-reminder"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node dist/cli.js hook:post-write \"$FILE\""
+          }
+        ]
+      }
+    ]
+  }
+}

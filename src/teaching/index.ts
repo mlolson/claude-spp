@@ -1,0 +1,53 @@
+// Question classification
+export {
+  QuestionTypeSchema,
+  type QuestionType,
+  type QuestionClassification,
+  type AskedQuestion,
+  DOMAIN_PATTERNS,
+  detectDomain,
+  getDocSources,
+  classifyQuestion,
+  isTeachingMoment,
+  findSimilarQuestion,
+  recordAskedQuestion,
+} from "./socratic.js";
+
+// Teaching templates
+export {
+  EscalationLevelSchema,
+  type EscalationLevel,
+  type TeachingTemplate,
+  type TemplateContext,
+  getTeachingTemplate,
+  getEscalationLevel,
+  formatTeachingResponse,
+  generateTeachingResponse,
+  shouldEscalate,
+  getEncouragement,
+} from "./templates.js";
+
+// Code review
+export {
+  ReviewStatusSchema,
+  ChangeTypeSchema,
+  type ReviewStatus,
+  type ChangeType,
+  type ComprehensionQuestion,
+  type ReviewCheckpoint,
+  type CodeContext,
+  type ReviewSession,
+  detectLanguage,
+  detectConcepts,
+  generateComprehensionQuestions,
+  createReviewCheckpoint,
+  updateCheckpointStatus,
+  markQuestionAnswered,
+  allQuestionsAnswered,
+  formatCheckpointForReview,
+  requiresReview,
+  createReviewSession,
+  addCheckpointToSession,
+  completeCheckpointInSession,
+  getReviewCompletionRate,
+} from "./review.js";
