@@ -93,8 +93,7 @@ export interface CompleteTaskResult {
 function updateTaskWithCompletionNotes(
   filePath: string,
   completedBy: "human" | "claude",
-  notes?: string,
-  commitHash?: string
+  notes?: string
 ): void {
   let content = fs.readFileSync(filePath, "utf-8");
   const timestamp = new Date().toISOString();
@@ -119,21 +118,27 @@ function updateTaskWithCompletionNotes(
     );
   }
 
-  // Add commit hash if provided
-  if (commitHash) {
-    // Check if Commit field exists
-    if (content.includes("- **Commit**:")) {
-      content = content.replace(
-        /- \*\*Commit\*\*:.*/,
-        `- **Commit**: ${getShortHash(commitHash)}`
-      );
-    } else {
-      // Add after Notes
-      content = content.replace(
-        /(- \*\*Notes\*\*:.*)/,
-        `$1\n- **Commit**: ${getShortHash(commitHash)}`
-      );
-    }
+  fs.writeFileSync(filePath, content, "utf-8");
+}
+
+/**
+ * Update task file with just the commit hash
+ */
+function updateTaskWithCommitHash(filePath: string, commitHash: string): void {
+  let content = fs.readFileSync(filePath, "utf-8");
+
+  // Check if Commit field exists
+  if (content.includes("- **Commit**:")) {
+    content = content.replace(
+      /- \*\*Commit\*\*:.*/,
+      `- **Commit**: ${getShortHash(commitHash)}`
+    );
+  } else {
+    // Add after Notes
+    content = content.replace(
+      /(- \*\*Notes\*\*:.*)/,
+      `$1\n- **Commit**: ${getShortHash(commitHash)}`
+    );
   }
 
   fs.writeFileSync(filePath, content, "utf-8");
@@ -206,17 +211,8 @@ export function completeTask(
   // Parse task to get title for commit message
   const taskBeforeComplete = parseTaskFile(projectPath, filename, sourceDir);
 
-  // Auto-commit if there are uncommitted changes
-  let commitHash: string | undefined;
-  if (isGitRepo(projectPath) && hasUncommittedChanges(projectPath)) {
-    const hash = commitChanges(projectPath, taskBeforeComplete.title, completedBy);
-    if (hash) {
-      commitHash = hash;
-    }
-  }
-
-  // Update completion notes (including commit hash if we made a commit)
-  updateTaskWithCompletionNotes(sourceFilePath, completedBy, notes, commitHash);
+  // Update completion notes (without commit hash yet)
+  updateTaskWithCompletionNotes(sourceFilePath, completedBy, notes);
 
   // Mark criteria as complete
   markCriteriaComplete(sourceFilePath);
@@ -230,6 +226,18 @@ export function completeTask(
       addHumanLines(projectPath, linesOfCode);
     } else {
       addClaudeLines(projectPath, linesOfCode);
+    }
+  }
+
+  // Auto-commit after all changes are done
+  let commitHash: string | undefined;
+  if (isGitRepo(projectPath) && hasUncommittedChanges(projectPath)) {
+    const hash = commitChanges(projectPath, taskBeforeComplete.title, completedBy);
+    if (hash) {
+      commitHash = hash;
+      // Update task file with commit hash (this will be uncommitted, but just 1 line)
+      const completedFilePath = path.join(getTaskSubdir(projectPath, "completed"), filename);
+      updateTaskWithCommitHash(completedFilePath, commitHash);
     }
   }
 
