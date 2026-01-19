@@ -1,4 +1,4 @@
-# Task
+# Claude Task
 
 ## Metadata
 - **Difficulty**: medium
@@ -8,7 +8,7 @@
 
 ## Description
 
-T
+C
 
 ## Hints
 
@@ -19,12 +19,12 @@ Try breaking the problem into smaller pieces.
 
 ## Acceptance Criteria
 
-- [x] Implementation complete
-- [x] Tests pass
+- [ ] Implementation complete
+- [ ] Tests pass
 
 ## Completion Notes
 
 <!-- Filled in when task is completed -->
-- **Completed by**: claude
-- **Completed at**: 2026-01-19T18:15:24.744Z
+- **Completed by**:
+- **Completed at**:
 - **Notes**:
