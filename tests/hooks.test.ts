@@ -360,12 +360,23 @@ A task
 
   describe("ratio enforcement", () => {
     it("should block writes when ratio is below target", () => {
+      // Initialize git repo so getLineCounts works
+      const { execSync } = require("child_process");
+      execSync("git init", { cwd: tempDir, stdio: "ignore" });
+      execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
+      execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
+      fs.writeFileSync(path.join(tempDir, "init.txt"), "init");
+      execSync("git add . && git commit -m 'init'", { cwd: tempDir, stdio: "ignore" });
+
+      // Get the HEAD commit hash
+      const headCommit = execSync("git rev-parse HEAD", { cwd: tempDir, encoding: "utf-8" }).trim();
+
       // Create a git history cache with unhealthy ratio (mode 4 = 50% target)
       // 10 human lines, 100 claude lines = 9% human (below 50%)
       fs.writeFileSync(
         path.join(dojoDir, ".git_history_cache.json"),
         JSON.stringify({
-          lastCommit: "abc123",
+          lastCommit: headCommit,
           humanLines: 10,
           claudeLines: 100,
           humanCommits: 1,
@@ -411,12 +422,21 @@ A task
     });
 
     it("should allow writes when ratio is healthy", () => {
+      // Initialize git repo
+      const { execSync } = require("child_process");
+      execSync("git init", { cwd: tempDir, stdio: "ignore" });
+      execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
+      execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
+      fs.writeFileSync(path.join(tempDir, "init.txt"), "init");
+      execSync("git add . && git commit -m 'init'", { cwd: tempDir, stdio: "ignore" });
+      const headCommit = execSync("git rev-parse HEAD", { cwd: tempDir, encoding: "utf-8" }).trim();
+
       // Create a git history cache with healthy ratio
       // 60 human lines, 40 claude lines = 60% human (above 50%)
       fs.writeFileSync(
         path.join(dojoDir, ".git_history_cache.json"),
         JSON.stringify({
-          lastCommit: "abc123",
+          lastCommit: headCommit,
           humanLines: 60,
           claudeLines: 40,
           humanCommits: 6,
@@ -459,11 +479,20 @@ A task
     });
 
     it("should suggest human tasks when ratio is unhealthy", () => {
+      // Initialize git repo
+      const { execSync } = require("child_process");
+      execSync("git init", { cwd: tempDir, stdio: "ignore" });
+      execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
+      execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
+      fs.writeFileSync(path.join(tempDir, "init.txt"), "init");
+      execSync("git add . && git commit -m 'init'", { cwd: tempDir, stdio: "ignore" });
+      const headCommit = execSync("git rev-parse HEAD", { cwd: tempDir, encoding: "utf-8" }).trim();
+
       // Create unhealthy ratio
       fs.writeFileSync(
         path.join(dojoDir, ".git_history_cache.json"),
         JSON.stringify({
-          lastCommit: "abc123",
+          lastCommit: headCommit,
           humanLines: 0,
           claudeLines: 100,
           humanCommits: 0,
@@ -525,11 +554,20 @@ A task
     });
 
     it("should always allow writes to .dojo even with unhealthy ratio", () => {
+      // Initialize git repo
+      const { execSync } = require("child_process");
+      execSync("git init", { cwd: tempDir, stdio: "ignore" });
+      execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
+      execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
+      fs.writeFileSync(path.join(tempDir, "init.txt"), "init");
+      execSync("git add . && git commit -m 'init'", { cwd: tempDir, stdio: "ignore" });
+      const headCommit = execSync("git rev-parse HEAD", { cwd: tempDir, encoding: "utf-8" }).trim();
+
       // Create unhealthy ratio
       fs.writeFileSync(
         path.join(dojoDir, ".git_history_cache.json"),
         JSON.stringify({
-          lastCommit: "abc123",
+          lastCommit: headCommit,
           humanLines: 0,
           claudeLines: 100,
           humanCommits: 0,
