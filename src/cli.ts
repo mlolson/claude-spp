@@ -133,11 +133,19 @@ async function main() {
         process.exit(1);
       }
 
+      const config = loadConfig(process.cwd());
       const modeArg = args[1];
 
-      // If no argument, list available modes
+      // If no argument, get current mode
       if (!modeArg) {
-        throw new Error(`Missing argument: mode\n${getModesExplanatiion()}`);
+        const currentMode = getModeByNumber(config.mode);
+
+        if (!currentMode) {
+          console.log("Current mode: none");
+        } else {
+          console.log(`Current mode: ${currentMode.number}, ${currentMode.name}, ${currentMode.description}`);
+        }
+        break;
       }
 
       // Try to parse as number first
@@ -153,7 +161,7 @@ async function main() {
       }
 
       // Update config
-      const config = loadConfig(process.cwd());
+
       config.mode = selectedMode.number;
       saveConfig(process.cwd(), config);
 
