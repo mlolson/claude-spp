@@ -1,5 +1,5 @@
 import { loadConfig, isDojoInitialized } from "../config/loader.js";
-import { getEffectiveRatio } from "../config/schema.js";
+import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
 import { loadState } from "../state/manager.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { getTaskCounts } from "../tasks/directories.js";
@@ -16,10 +16,11 @@ export function getStats(projectPath) {
     const lineCounts = getLineCounts(projectPath);
     const targetRatio = getEffectiveRatio(config);
     const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
+    const mode = getCurrentMode(config);
     return {
         initialized: true,
         enabled: config.enabled,
-        preset: config.preset,
+        mode,
         targetRatio,
         currentRatio,
         ratioHealthy: isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio),
@@ -45,10 +46,13 @@ export function formatStats(stats) {
         : stats.lines?.commitsScanned
             ? `(scanned ${stats.lines.commitsScanned} commits)`
             : "";
+    const modeDisplay = stats.mode
+        ? `${stats.mode.number}. ${stats.mode.name} (${stats.mode.description})`
+        : "Unknown";
     const lines = [
         "## Dojo Stats",
         "",
-        `**Preset:** ${stats.preset}`,
+        `**Mode:** ${modeDisplay}`,
         `**Target Ratio:** ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,
         `**Current Ratio:** ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${stats.ratioHealthy ? "(healthy)" : "(below target)"}`,
         "",

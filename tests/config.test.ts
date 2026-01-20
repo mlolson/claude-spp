@@ -9,8 +9,9 @@ import {
 } from "../src/config/loader.js";
 import {
   DEFAULT_CONFIG,
-  PRESET_RATIOS,
+  MODES,
   getEffectiveRatio,
+  getCurrentMode,
   type Config,
 } from "../src/config/schema.js";
 
@@ -41,12 +42,12 @@ describe("Configuration", () => {
       fs.mkdirSync(dojoDir, { recursive: true });
       fs.writeFileSync(
         path.join(dojoDir, "config.json"),
-        JSON.stringify({ enabled: false, preset: "intensive" })
+        JSON.stringify({ enabled: false, mode: 3 })
       );
 
       const config = loadConfig(TEST_DIR);
       expect(config.enabled).toBe(false);
-      expect(config.preset).toBe("intensive");
+      expect(config.mode).toBe(3);
     });
 
     it("throws on invalid JSON", () => {
@@ -65,13 +66,13 @@ describe("Configuration", () => {
     });
 
     it("writes valid JSON", () => {
-      saveConfig(TEST_DIR, { ...DEFAULT_CONFIG, preset: "training" });
+      saveConfig(TEST_DIR, { ...DEFAULT_CONFIG, mode: 5 });
       const content = fs.readFileSync(
         path.join(getDojoDir(TEST_DIR), "config.json"),
         "utf-8"
       );
       const parsed = JSON.parse(content);
-      expect(parsed.preset).toBe("training");
+      expect(parsed.mode).toBe(5);
     });
   });
 
@@ -86,10 +87,10 @@ describe("Configuration", () => {
     });
   });
 
-  describe("Presets", () => {
-    it("returns preset ratio when no custom ratio", () => {
-      const config: Config = { ...DEFAULT_CONFIG, preset: "balanced" };
-      expect(getEffectiveRatio(config)).toBe(PRESET_RATIOS.balanced);
+  describe("Modes", () => {
+    it("returns mode ratio when no custom ratio", () => {
+      const config: Config = { ...DEFAULT_CONFIG, mode: 4 };
+      expect(getEffectiveRatio(config)).toBe(0.5); // 50-50 mode
     });
 
     it("returns custom ratio when set", () => {
@@ -97,11 +98,20 @@ describe("Configuration", () => {
       expect(getEffectiveRatio(config)).toBe(0.4);
     });
 
-    it("has correct preset values", () => {
-      expect(PRESET_RATIOS.light).toBe(0.1);
-      expect(PRESET_RATIOS.balanced).toBe(0.25);
-      expect(PRESET_RATIOS.intensive).toBe(0.5);
-      expect(PRESET_RATIOS.training).toBe(0.75);
+    it("has correct mode values", () => {
+      expect(MODES[0].humanRatio).toBe(0);     // Yolo
+      expect(MODES[1].humanRatio).toBe(0.1);   // Padawan
+      expect(MODES[2].humanRatio).toBe(0.25);  // Clever monkey
+      expect(MODES[3].humanRatio).toBe(0.5);   // 50-50
+      expect(MODES[4].humanRatio).toBe(0.75);  // Finger workout
+      expect(MODES[5].humanRatio).toBe(1);     // Switching to guns
+    });
+
+    it("getCurrentMode returns correct mode", () => {
+      const config: Config = { ...DEFAULT_CONFIG, mode: 3 };
+      const mode = getCurrentMode(config);
+      expect(mode.name).toBe("Clever monkey");
+      expect(mode.humanRatio).toBe(0.25);
     });
   });
 });

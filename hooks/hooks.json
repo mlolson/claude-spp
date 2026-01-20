@@ -1,11 +1,5 @@
 {
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "type": "command",
-        "command": "node dist/cli.js hook:prompt-reminder"
-      }
-    ],
     "PreToolUse": [
       {
         "type": "command",

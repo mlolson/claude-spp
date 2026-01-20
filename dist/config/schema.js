@@ -1,10 +1,33 @@
 import { z } from "zod";
 /**
- * Available presets for work distribution ratio
+ * Available modes for work distribution
+ */
+export const MODES = [
+    { number: 1, name: "Yolo", humanRatio: 0, description: "100% AI coding" },
+    { number: 2, name: "Padawan", humanRatio: 0.1, description: "90% AI / 10% human" },
+    { number: 3, name: "Clever monkey", humanRatio: 0.25, description: "75% AI / 25% human" },
+    { number: 4, name: "50-50", humanRatio: 0.5, description: "50% AI / 50% human" },
+    { number: 5, name: "Finger workout", humanRatio: 0.75, description: "25% AI / 75% human" },
+    { number: 6, name: "Switching to guns", humanRatio: 1, description: "100% human coding" },
+];
+/**
+ * Get mode by number
+ */
+export function getModeByNumber(num) {
+    return MODES.find((m) => m.number === num);
+}
+/**
+ * Get mode by name (case-insensitive)
+ */
+export function getModeByName(name) {
+    return MODES.find((m) => m.name.toLowerCase() === name.toLowerCase());
+}
+/**
+ * Available presets (legacy, kept for backwards compatibility)
  */
 export const PresetSchema = z.enum(["light", "balanced", "intensive", "training"]);
 /**
- * Preset configurations mapping preset names to human work ratios
+ * Preset configurations mapping preset names to human work ratios (legacy)
  */
 export const PRESET_RATIOS = {
     light: 0.1, // 10% human work
@@ -22,10 +45,12 @@ export const DifficultySchema = z.enum(["easy", "medium", "hard"]);
 export const ConfigSchema = z.object({
     // Whether Dojo is enabled for this project
     enabled: z.boolean().default(true),
-    // Preset name (light, balanced, intensive, training)
-    preset: PresetSchema.default("balanced"),
-    // Custom human work ratio (0.0 - 1.0), overrides preset if set
-    humanWorkRatio: z.number().min(0.1).max(0.9).optional(),
+    // Mode number (1-6)
+    mode: z.number().int().min(1).max(6).default(4),
+    // Legacy: Preset name (kept for backwards compatibility)
+    preset: PresetSchema.optional(),
+    // Legacy: Custom human work ratio (kept for backwards compatibility)
+    humanWorkRatio: z.number().min(0).max(1).optional(),
     // Default difficulty for generated tasks
     difficulty: DifficultySchema.default("medium"),
 });
@@ -34,17 +59,25 @@ export const ConfigSchema = z.object({
  */
 export const DEFAULT_CONFIG = {
     enabled: true,
-    preset: "balanced",
+    mode: 4, // 50-50
     difficulty: "medium",
 };
 /**
+ * Get the current mode from config
+ */
+export function getCurrentMode(config) {
+    return getModeByNumber(config.mode) ?? MODES[3]; // Default to 50-50
+}
+/**
  * Get the effective human work ratio from config
- * Uses custom ratio if set, otherwise uses preset ratio
  */
 export function getEffectiveRatio(config) {
+    // Legacy support: custom ratio overrides everything
     if (config.humanWorkRatio !== undefined) {
         return config.humanWorkRatio;
     }
-    return PRESET_RATIOS[config.preset];
+    // Use mode
+    const mode = getCurrentMode(config);
+    return mode.humanRatio;
 }
 //# sourceMappingURL=schema.js.map

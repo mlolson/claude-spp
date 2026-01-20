@@ -21,7 +21,7 @@ describe("Task Parser", () => {
       fs.rmSync(TEST_DIR, { recursive: true });
     }
     fs.mkdirSync(TEST_DIR, { recursive: true });
-    await initializeDojo(TEST_DIR, "balanced");
+    await initializeDojo(TEST_DIR, 4);
   });
 
   afterEach(() => {

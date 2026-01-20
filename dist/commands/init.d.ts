@@ -1,17 +1,16 @@
-import { type Preset } from "../config/schema.js";
+import { type Mode } from "../config/schema.js";
 export interface InitResult {
     success: boolean;
     alreadyInitialized: boolean;
-    preset: Preset;
-    ratio: number;
+    mode: Mode;
     message: string;
 }
 /**
  * Initialize Dojo in a project
  * @param projectPath - Path to the project
- * @param preset - Optional preset. If not provided, user will be prompted interactively.
+ * @param modeNumber - Optional mode number (1-6). Defaults to 4 (50-50).
  */
-export declare function init(projectPath: string, preset?: Preset): Promise<InitResult>;
+export declare function init(projectPath: string, modeNumber?: number): Promise<InitResult>;
 /**
  * Format init result for display
  */

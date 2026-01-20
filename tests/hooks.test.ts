@@ -166,19 +166,32 @@ describe("preToolUseHook", () => {
     dojoDir = path.join(tempDir, ".dojo");
     fs.mkdirSync(dojoDir, { recursive: true });
 
-    // Create config
+    // Create config with mode
     fs.writeFileSync(
       path.join(dojoDir, "config.json"),
       JSON.stringify({
-        preset: "balanced",
+        mode: 4,
         enabled: true,
-        humanRatioTarget: 0.25,
+        difficulty: "medium",
+      })
+    );
+
+    // Create state with no current task
+    fs.writeFileSync(
+      path.join(dojoDir, "state.json"),
+      JSON.stringify({
+        session: {
+          startedAt: new Date().toISOString(),
+          currentTask: null,
+        },
       })
     );
 
     // Create task directories
     fs.mkdirSync(path.join(dojoDir, "tasks", "human"), { recursive: true });
     fs.mkdirSync(path.join(dojoDir, "tasks", "claude"), { recursive: true });
+    fs.mkdirSync(path.join(dojoDir, "tasks", "unassigned"), { recursive: true });
+    fs.mkdirSync(path.join(dojoDir, "tasks", "completed"), { recursive: true });
   });
 
   afterEach(() => {
@@ -217,43 +230,17 @@ describe("preToolUseHook", () => {
     expect(result.decision).toBe("allow");
   });
 
-  it("should allow writes when no active tasks exist", () => {
+  it("should block writes when no task is focused", () => {
     const result = preToolUseHook({
       tool: { name: "Write", input: { file_path: "src/test.ts", content: "test" } },
       cwd: tempDir,
     });
-    expect(result.decision).toBe("allow");
+    expect(result.decision).toBe("block");
+    expect(result.reason).toBe("no_current_task");
   });
 
-  it("should allow writes when file matches active task", () => {
-    // Create a task with files
-    fs.writeFileSync(
-      path.join(dojoDir, "tasks", "human", "001-task.md"),
-      `# Task
-
-## Metadata
-**Difficulty**: easy
-**Category**: feature
-**Skills**: typescript
-**Files**: src/feature/
-
-## Description
-A task
-`
-    );
-
-    const result = preToolUseHook({
-      tool: {
-        name: "Write",
-        input: { file_path: path.join(tempDir, "src", "feature", "test.ts"), content: "test" },
-      },
-      cwd: tempDir,
-    });
-    expect(result.decision).toBe("allow");
-  });
-
-  it("should ask when file does not match any active task", () => {
-    // Create a task with files
+  it("should allow writes when a task is focused", () => {
+    // Create a task file
     fs.writeFileSync(
       path.join(dojoDir, "tasks", "claude", "001-task.md"),
       `# Task
@@ -262,26 +249,36 @@ A task
 **Difficulty**: easy
 **Category**: feature
 **Skills**: typescript
-**Files**: src/feature/
+**Files**: src/
 
 ## Description
 A task
 `
     );
 
+    // Update state with current task
+    fs.writeFileSync(
+      path.join(dojoDir, "state.json"),
+      JSON.stringify({
+        session: {
+          startedAt: new Date().toISOString(),
+          currentTask: "001-task.md",
+        },
+      })
+    );
+
     const result = preToolUseHook({
       tool: {
         name: "Write",
-        input: { file_path: path.join(tempDir, "src", "other", "test.ts"), content: "test" },
+        input: { file_path: path.join(tempDir, "src", "test.ts"), content: "test" },
       },
       cwd: tempDir,
     });
-    expect(result.decision).toBe("ask");
-    expect(result.reason).toBe("file_not_in_task");
-    expect(result.message).toContain("not part of any active Dojo task");
+    expect(result.decision).toBe("allow");
   });
 
   it("should handle Edit tool", () => {
+    // Create a task and focus it
     fs.writeFileSync(
       path.join(dojoDir, "tasks", "human", "001-task.md"),
       `# Task
@@ -295,6 +292,16 @@ A task
 ## Description
 A task
 `
+    );
+
+    fs.writeFileSync(
+      path.join(dojoDir, "state.json"),
+      JSON.stringify({
+        session: {
+          startedAt: new Date().toISOString(),
+          currentTask: "001-task.md",
+        },
+      })
     );
 
     const result = preToolUseHook({
@@ -312,6 +319,7 @@ A task
   });
 
   it("should handle NotebookEdit tool", () => {
+    // Create a task and focus it
     fs.writeFileSync(
       path.join(dojoDir, "tasks", "claude", "001-task.md"),
       `# Task
@@ -325,6 +333,16 @@ A task
 ## Description
 A task
 `
+    );
+
+    fs.writeFileSync(
+      path.join(dojoDir, "state.json"),
+      JSON.stringify({
+        session: {
+          startedAt: new Date().toISOString(),
+          currentTask: "001-task.md",
+        },
+      })
     );
 
     const result = preToolUseHook({

@@ -1,7 +1,8 @@
+import { type Mode } from "../config/schema.js";
 export interface StatsResult {
     initialized: boolean;
     enabled?: boolean;
-    preset?: string;
+    mode?: Mode;
     targetRatio?: number;
     currentRatio?: number;
     ratioHealthy?: boolean;

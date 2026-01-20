@@ -1,6 +1,6 @@
 import { loadConfig } from "../config/loader.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
-import { getEffectiveRatio } from "../config/schema.js";
+import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
 import { parseTasksInDirectory } from "../tasks/parser.js";
 import { getCurrentFocusedTask } from "../tasks/focus.js";
 import { getLineCounts } from "../git/history.js";
@@ -17,6 +17,7 @@ export function generateSystemPrompt(projectPath) {
     const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
     const targetRatio = getEffectiveRatio(config);
     const isHealthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
+    const currentMode = getCurrentMode(config);
     // Get tasks
     const humanTasks = parseTasksInDirectory(projectPath, "human");
     const claudeTasks = parseTasksInDirectory(projectPath, "claude");
@@ -32,6 +33,7 @@ export function generateSystemPrompt(projectPath) {
         "",
         "## Current Status",
         "",
+        `- **Mode:** ${currentMode.number}. ${currentMode.name} (${currentMode.description})`,
         `- **Target ratio:** ${(targetRatio * 100).toFixed(0)}% human-written code`,
         `- **Current ratio:** ${(currentRatio * 100).toFixed(0)}% human (${lineCounts.humanLines} lines) / ${(100 - currentRatio * 100).toFixed(0)}% Claude (${lineCounts.claudeLines} lines)`,
         `- **Status:** ${isHealthy ? "✅ Healthy" : "⚠️ Below target"}`,
@@ -115,11 +117,12 @@ export function generateSystemPrompt(projectPath) {
     lines.push("## Dojo Commands");
     lines.push("");
     lines.push("The human can use these commands:");
-    lines.push("- `/dojo stats` - Show current metrics");
-    lines.push("- `/dojo tasks` - List all tasks");
-    lines.push("- `/dojo assign <filename> <human|claude>` - Assign a task");
-    lines.push("- `/dojo complete <filename>` - Mark task as complete");
-    lines.push("- `/dojo create` - Create a new task");
+    lines.push("- `/dojo:status` - Show current status");
+    lines.push("- `/dojo:stats` - Show detailed metrics");
+    lines.push("- `/dojo:tasks` - List all tasks");
+    lines.push("- `/dojo:assign <filename> <human|claude>` - Assign a task");
+    lines.push("- `/dojo:complete <filename>` - Mark task as complete");
+    lines.push("- `/dojo:create` - Create a new task");
     lines.push("");
     lines.push("</dojo>");
     return lines.join("\n");

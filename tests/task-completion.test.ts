@@ -4,7 +4,6 @@ import * as path from "node:path";
 import { initializeDojo } from "../src/init.js";
 import { createTask } from "../src/tasks/generator.js";
 import { assignTask } from "../src/tasks/assignment.js";
-import { loadState } from "../src/state/manager.js";
 import { listTaskFiles } from "../src/tasks/directories.js";
 import {
   completeTask,
@@ -21,7 +20,7 @@ describe("Task Completion", () => {
       fs.rmSync(TEST_DIR, { recursive: true });
     }
     fs.mkdirSync(TEST_DIR, { recursive: true });
-    await initializeDojo(TEST_DIR, "balanced");
+    await initializeDojo(TEST_DIR, 4);
   });
 
   afterEach(() => {
@@ -66,34 +65,6 @@ describe("Task Completion", () => {
       });
 
       expect(result.task!.completionNotes.completedAt).not.toBeNull();
-    });
-
-    it("updates line count stats", () => {
-      createTask(TEST_DIR, { title: "Task", description: "T" });
-      assignTask(TEST_DIR, "001-task.md", "human");
-
-      completeTask(TEST_DIR, {
-        filename: "001-task.md",
-        completedBy: "human",
-        linesOfCode: 75,
-      });
-
-      const state = loadState(TEST_DIR);
-      expect(state.session.humanLines).toBe(75);
-    });
-
-    it("updates claude line count", () => {
-      createTask(TEST_DIR, { title: "Task", description: "T" });
-      assignTask(TEST_DIR, "001-task.md", "claude");
-
-      completeTask(TEST_DIR, {
-        filename: "001-task.md",
-        completedBy: "claude",
-        linesOfCode: 100,
-      });
-
-      const state = loadState(TEST_DIR);
-      expect(state.session.claudeLines).toBe(100);
     });
 
     it("returns success result", () => {

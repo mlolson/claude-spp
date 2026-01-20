@@ -3,7 +3,7 @@ import * as path from "node:path";
 import * as readline from "node:readline";
 import { execSync } from "node:child_process";
 import { loadConfig, saveConfig, isDojoInitialized, getDojoDir } from "./config/loader.js";
-import { DEFAULT_CONFIG, PRESET_RATIOS, PresetSchema } from "./config/schema.js";
+import { DEFAULT_CONFIG, MODES } from "./config/schema.js";
 import { saveState } from "./state/manager.js";
 import { createDefaultState } from "./state/schema.js";
 import { initializeTaskDirs, areTaskDirsInitialized } from "./tasks/directories.js";
@@ -12,15 +12,16 @@ const DOJO_END_MARKER = "<!-- DOJO:END -->";
 /**
  * Generate dojo instructions content for CLAUDE.md
  */
-function generateDojoInstructions(preset) {
-    const targetPercent = Math.round(PRESET_RATIOS[preset] * 100);
+function generateDojoInstructions(modeNumber) {
+    const mode = MODES.find((m) => m.number === modeNumber) ?? MODES[3]; // Default to 50-50
+    const targetPercent = Math.round(mode.humanRatio * 100);
     return `${DOJO_START_MARKER}
 ## Dojo Mode
 
 This project has **Dojo mode** enabled. Dojo helps maintain programming skills by ensuring
 the human writes a minimum percentage of code themselves.
 
-**Current Configuration:** ${preset} preset (${targetPercent}% human-written code target)
+**Current Mode:** ${mode.number}. ${mode.name} (${mode.description})
 
 ### Rules for Claude
 
@@ -36,15 +37,17 @@ the human writes a minimum percentage of code themselves.
 
 ### Line Tracking
 
-Lines are tracked via git post-commit hook
+Lines are tracked via git commit history.
 
-Commits with \`Co-Authored-By: Claude\` are skipped to avoid double-counting.
+Commits with \`Co-Authored-By: Claude\` are attributed to Claude.
 
 ### Commands
 
 \`\`\`bash
 node dist/cli.js status              # Show current ratio
+node dist/cli.js mode [n]            # Show or change mode
 node dist/cli.js tasks               # List all tasks
+node dist/cli.js focus <file>        # Focus on a task
 node dist/cli.js create "title"      # Create a new task
 node dist/cli.js assign <file> human # Assign task to human
 node dist/cli.js complete <file> human # Mark complete
@@ -59,9 +62,9 @@ ${DOJO_END_MARKER}`;
  * Update CLAUDE.md with dojo instructions
  * Inserts or updates content between DOJO markers
  */
-function updateClaudeMd(projectPath, preset) {
+function updateClaudeMd(projectPath, modeNumber) {
     const claudeMdPath = path.join(projectPath, "CLAUDE.md");
-    const dojoContent = generateDojoInstructions(preset);
+    const dojoContent = generateDojoInstructions(modeNumber);
     if (!fs.existsSync(claudeMdPath)) {
         // No CLAUDE.md exists - create one with just dojo content
         fs.writeFileSync(claudeMdPath, dojoContent + "\n", "utf-8");
@@ -127,42 +130,40 @@ function installGitHook(projectPath) {
     return true;
 }
 /**
- * Prompt user to select a preset interactively
+ * Prompt user to select a mode interactively
  */
-async function promptForPreset() {
-    const presets = PresetSchema.options;
+async function promptForMode() {
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
     });
     return new Promise((resolve) => {
-        console.log("\nAvailable presets:");
-        presets.forEach((preset, index) => {
-            const ratio = Math.round(PRESET_RATIOS[preset] * 100);
-            const defaultMarker = preset === "balanced" ? " (default)" : "";
-            console.log(`  ${index + 1}. ${preset} - ${ratio}% human-written code${defaultMarker}`);
-        });
+        console.log("\nAvailable modes:");
+        for (const mode of MODES) {
+            const defaultMarker = mode.number === 4 ? " (default)" : "";
+            console.log(`  ${mode.number}. ${mode.name} - ${mode.description}${defaultMarker}`);
+        }
         console.log("");
-        rl.question("Select a preset [1-4, or press Enter for balanced]: ", (answer) => {
+        rl.question("Select a mode [1-6, or press Enter for 50-50]: ", (answer) => {
             rl.close();
             const trimmed = answer.trim();
             if (trimmed === "") {
-                resolve("balanced");
+                resolve(4); // 50-50 default
                 return;
             }
             const num = parseInt(trimmed, 10);
-            if (num >= 1 && num <= presets.length) {
-                resolve(presets[num - 1]);
+            if (num >= 1 && num <= 6) {
+                resolve(num);
                 return;
             }
             // Try to match by name
-            const matched = presets.find(p => p.toLowerCase() === trimmed.toLowerCase());
+            const matched = MODES.find(m => m.name.toLowerCase() === trimmed.toLowerCase());
             if (matched) {
-                resolve(matched);
+                resolve(matched.number);
                 return;
             }
-            console.log("Invalid selection, using default (balanced)");
-            resolve("balanced");
+            console.log("Invalid selection, using default (50-50)");
+            resolve(4);
         });
     });
 }
@@ -170,18 +171,18 @@ async function promptForPreset() {
  * Initialize Dojo in a project
  * Creates .dojo directory with config, state, and task directories
  */
-export async function initializeDojo(projectPath, preset) {
+export async function initializeDojo(projectPath, modeNumber) {
     const dojoDir = getDojoDir(projectPath);
     // Create .dojo directory if it doesn't exist
     if (!fs.existsSync(dojoDir)) {
         fs.mkdirSync(dojoDir, { recursive: true });
     }
-    // Prompt for preset if not provided
-    const selectedPreset = preset ?? await promptForPreset();
+    // Prompt for mode if not provided
+    const selectedMode = modeNumber ?? await promptForMode();
     // Initialize config
     const config = {
         ...DEFAULT_CONFIG,
-        preset: selectedPreset,
+        mode: selectedMode,
     };
     saveConfig(projectPath, config);
     // Initialize state
@@ -194,10 +195,8 @@ export async function initializeDojo(projectPath, preset) {
     if (!fs.existsSync(gitignorePath)) {
         fs.writeFileSync(gitignorePath, "state.json\n", "utf-8");
     }
-    // Install git hook for tracking human lines
-    installGitHook(projectPath);
     // Update CLAUDE.md with dojo instructions
-    updateClaudeMd(projectPath, config.preset);
+    updateClaudeMd(projectPath, config.mode);
     return config;
 }
 /**
@@ -209,9 +208,9 @@ export function isFullyInitialized(projectPath) {
 /**
  * Ensure Dojo is initialized, initializing if needed
  */
-export async function ensureInitialized(projectPath, preset) {
+export async function ensureInitialized(projectPath, modeNumber) {
     if (!isFullyInitialized(projectPath)) {
-        return initializeDojo(projectPath, preset);
+        return initializeDojo(projectPath, modeNumber);
     }
     return loadConfig(projectPath);
 }

@@ -3,12 +3,8 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { initializeDojo } from "../src/init.js";
 import { createTask } from "../src/tasks/generator.js";
-import { addHumanLines, addClaudeLines } from "../src/state/manager.js";
 import {
-  canClaudeTakeWork,
-  suggestAssignee,
   assignTask,
-  autoAssignTask,
   getHumanTasks,
   getClaudeTasks,
   getUnassignedTasks,
@@ -24,61 +20,13 @@ describe("Task Assignment", () => {
       fs.rmSync(TEST_DIR, { recursive: true });
     }
     fs.mkdirSync(TEST_DIR, { recursive: true });
-    await initializeDojo(TEST_DIR, "balanced");
+    await initializeDojo(TEST_DIR, 4);
   });
 
   afterEach(() => {
     if (fs.existsSync(TEST_DIR)) {
       fs.rmSync(TEST_DIR, { recursive: true });
     }
-  });
-
-  describe("Work Ratio Check", () => {
-    it("allows claude when no work has been done", () => {
-      const result = canClaudeTakeWork(TEST_DIR);
-      expect(result.allowed).toBe(true);
-      expect(result.currentRatio).toBe(1.0);
-    });
-
-    it("allows claude when ratio is healthy", () => {
-      addHumanLines(TEST_DIR, 30);
-      addClaudeLines(TEST_DIR, 70);
-
-      const result = canClaudeTakeWork(TEST_DIR);
-      expect(result.allowed).toBe(true);
-    });
-
-    it("blocks claude when ratio is unhealthy", () => {
-      addClaudeLines(TEST_DIR, 100);
-
-      const result = canClaudeTakeWork(TEST_DIR);
-      expect(result.allowed).toBe(false);
-      expect(result.currentRatio).toBe(0);
-    });
-
-    it("returns correct message", () => {
-      addClaudeLines(TEST_DIR, 100);
-
-      const result = canClaudeTakeWork(TEST_DIR);
-      expect(result.message).toContain("below target");
-    });
-  });
-
-  describe("Assignee Suggestion", () => {
-    it("suggests claude when ratio is healthy", () => {
-      expect(suggestAssignee(TEST_DIR)).toBe("claude");
-    });
-
-    it("suggests human when ratio is unhealthy", () => {
-      addClaudeLines(TEST_DIR, 100);
-      expect(suggestAssignee(TEST_DIR)).toBe("human");
-    });
-
-    it("suggests claude after human does enough work", () => {
-      addClaudeLines(TEST_DIR, 75);
-      addHumanLines(TEST_DIR, 25);
-      expect(suggestAssignee(TEST_DIR)).toBe("claude");
-    });
   });
 
   describe("Manual Assignment", () => {
@@ -115,35 +63,6 @@ describe("Task Assignment", () => {
       expect(task!.directory).toBe("claude");
       expect(getHumanTasks(TEST_DIR)).toHaveLength(0);
       expect(getClaudeTasks(TEST_DIR)).toHaveLength(1);
-    });
-  });
-
-  describe("Auto Assignment", () => {
-    it("auto-assigns to claude when ratio is healthy", () => {
-      createTask(TEST_DIR, { title: "Test", description: "T" });
-
-      const result = autoAssignTask(TEST_DIR, "001-test.md");
-
-      expect(result.assignedTo).toBe("claude");
-      expect(result.task!.directory).toBe("claude");
-    });
-
-    it("auto-assigns to human when ratio is unhealthy", () => {
-      addClaudeLines(TEST_DIR, 100);
-      createTask(TEST_DIR, { title: "Test", description: "T" });
-
-      const result = autoAssignTask(TEST_DIR, "001-test.md");
-
-      expect(result.assignedTo).toBe("human");
-      expect(result.task!.directory).toBe("human");
-    });
-
-    it("includes reason in result", () => {
-      createTask(TEST_DIR, { title: "Test", description: "T" });
-
-      const result = autoAssignTask(TEST_DIR, "001-test.md");
-
-      expect(result.reason).toBeTruthy();
     });
   });
 

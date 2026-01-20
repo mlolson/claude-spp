@@ -4,12 +4,12 @@ import { runPostResponseHook } from "./hooks/post-response.js";
 import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
 import { initializeDojo, isFullyInitialized } from "./init.js";
-import { loadConfig } from "./config/loader.js";
+import { loadConfig, saveConfig } from "./config/loader.js";
 import { clearCurrentTask } from "./state/manager.js";
 import { focusTask, getCurrentFocusedTask } from "./tasks/focus.js";
 import { calculateRatio } from "./state/schema.js";
 import { getLineCounts } from "./git/history.js";
-import { getEffectiveRatio } from "./config/schema.js";
+import { getEffectiveRatio, getCurrentMode, getModeByNumber, getModeByName, MODES } from "./config/schema.js";
 import { createTask } from "./tasks/generator.js";
 import { assignTask } from "./tasks/assignment.js";
 import { completeTask } from "./tasks/completion.js";
@@ -40,19 +40,59 @@ async function main() {
         // User commands
         case "init": {
             try {
-                // If preset provided as argument, use it; otherwise prompt interactively
-                const presetArg = args[1];
-                const validPresets = ["light", "balanced", "intensive", "training"];
-                const preset = presetArg && validPresets.includes(presetArg) ? presetArg : undefined;
-                const config = await initializeDojo(process.cwd(), preset);
-                console.log(`✅ Dojo initialized with "${config.preset}" preset`);
-                console.log(`   Target: ${(getEffectiveRatio(config) * 100).toFixed(0)}% human-written code`);
+                // If mode number provided as argument, use it
+                const modeArg = args[1] ? parseInt(args[1], 10) : undefined;
+                const mode = modeArg && modeArg >= 1 && modeArg <= 6 ? modeArg : 4; // Default to 50-50
+                const config = await initializeDojo(process.cwd(), undefined);
+                // Update with selected mode
+                config.mode = mode;
+                saveConfig(process.cwd(), config);
+                const currentMode = getCurrentMode(config);
+                console.log(`✅ Dojo initialized with mode ${currentMode.number}: ${currentMode.name}`);
+                console.log(`   ${currentMode.description}`);
                 console.log(`   Directory: .dojo/`);
             }
             catch (error) {
                 console.error("❌ Failed to initialize:", error);
                 process.exit(1);
             }
+            break;
+        }
+        case "mode": {
+            if (!isFullyInitialized(process.cwd())) {
+                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
+                process.exit(1);
+            }
+            const modeArg = args[1];
+            // If no argument, list available modes
+            if (!modeArg) {
+                const config = loadConfig(process.cwd());
+                const currentMode = getCurrentMode(config);
+                console.log("## Dojo Modes\n");
+                for (const mode of MODES) {
+                    const marker = mode.number === currentMode.number ? " <-- current" : "";
+                    console.log(`  ${mode.number}. ${mode.name} - ${mode.description}${marker}`);
+                }
+                console.log("\nTo change mode: node dist/cli.js mode <number>");
+                break;
+            }
+            // Try to parse as number first
+            let selectedMode = getModeByNumber(parseInt(modeArg, 10));
+            // If not a number, try by name
+            if (!selectedMode) {
+                selectedMode = getModeByName(modeArg);
+            }
+            if (!selectedMode) {
+                console.error(`❌ Unknown mode: ${modeArg}`);
+                console.error("   Use a number 1-6 or a mode name");
+                process.exit(1);
+            }
+            // Update config
+            const config = loadConfig(process.cwd());
+            config.mode = selectedMode.number;
+            saveConfig(process.cwd(), config);
+            console.log(`✅ Mode changed to ${selectedMode.number}: ${selectedMode.name}`);
+            console.log(`   ${selectedMode.description}`);
             break;
         }
         case "stats": {
@@ -216,11 +256,13 @@ async function main() {
                 console.log("Dojo: Disabled");
                 break;
             }
+            const currentMode = getCurrentMode(config);
             const lineCounts = getLineCounts(process.cwd());
             const ratio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
             const target = getEffectiveRatio(config);
             const healthy = ratio >= target;
             console.log(`Dojo: ${healthy ? "✅" : "⚠️"} ${(ratio * 100).toFixed(0)}% human / ${(target * 100).toFixed(0)}% target`);
+            console.log(`  Mode: ${currentMode.number}. ${currentMode.name} (${currentMode.description})`);
             console.log(`  Human: ${lineCounts.humanLines} lines, ${lineCounts.humanCommits} commits`);
             console.log(`  Claude: ${lineCounts.claudeLines} lines, ${lineCounts.claudeCommits} commits`);
             // Show current task
@@ -241,15 +283,24 @@ Dojo CLI - Maintain your programming skills
 Usage: node dist/cli.js <command> [options]
 
 Commands:
-  init [preset]              Initialize Dojo (presets: light, balanced, intensive, training)
+  init [mode]                Initialize Dojo (mode: 1-6, default: 4)
+  mode [number|name]         Show or change the current mode
   stats                      Show detailed statistics
   status                     Show quick status
-  tasks [filter]             List tasks (filters: all, human, claude, unassigned, completed)
+  tasks                      List all tasks
   create <title> [desc]      Create a new task
   assign <file> <who>        Assign task to human or claude
   focus [file]               Focus on a task (required before writing code)
   unfocus                    Clear task focus
   complete <file> <who>      Mark task complete
+
+Modes:
+  1. Yolo              100% AI coding
+  2. Padawan           90% AI / 10% human
+  3. Clever monkey     75% AI / 25% human
+  4. 50-50             50% AI / 50% human
+  5. Finger workout    25% AI / 75% human
+  6. Switching to guns 100% human coding
 
 Hook Commands (used by Claude Code):
   hook:pre-tool-use          Pre-tool-use hook (reads JSON from stdin)
