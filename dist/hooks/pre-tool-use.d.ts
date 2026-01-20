@@ -24,7 +24,7 @@ export interface PreToolUseHookOutput {
 /**
  * Pre-tool-use hook
  * Called before Claude uses a tool
- * Checks if there is a current focused task before allowing writes
+ * Checks the work ratio before allowing writes
  */
 export declare function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput;
 /**

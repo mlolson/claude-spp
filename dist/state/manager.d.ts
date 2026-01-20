@@ -20,16 +20,4 @@ export declare function updateSession(projectPath: string, updates: Partial<Sess
  * Reset session (start a new session)
  */
 export declare function resetSession(projectPath: string): State;
-/**
- * Set the current focused task
- */
-export declare function setCurrentTask(projectPath: string, taskFilename: string | null): State;
-/**
- * Get the current focused task filename
- */
-export declare function getCurrentTask(projectPath: string): string | null;
-/**
- * Clear the current focused task
- */
-export declare function clearCurrentTask(projectPath: string): State;
 //# sourceMappingURL=manager.d.ts.map

@@ -2,7 +2,6 @@ import { loadConfig, isDojoInitialized } from "../config/loader.js";
 import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
 import { loadState } from "../state/manager.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
-import { getTaskCounts } from "../tasks/directories.js";
 import { getLineCounts } from "../git/history.js";
 /**
  * Get current Dojo statistics
@@ -28,7 +27,6 @@ export function getStats(projectPath) {
         session: {
             startedAt: state.session.startedAt,
         },
-        tasks: getTaskCounts(projectPath),
     };
 }
 /**
@@ -61,11 +59,6 @@ export function formatStats(stats) {
         `- Claude: ${stats.lines?.claudeLines ?? 0} lines, ${stats.lines?.claudeCommits ?? 0} commits`,
         `- ${cacheStatus}`,
         "",
-        "### Tasks",
-        `- Unassigned: ${stats.tasks?.unassigned ?? 0}`,
-        `- Assigned to you: ${stats.tasks?.human ?? 0}`,
-        `- Assigned to Claude: ${stats.tasks?.claude ?? 0}`,
-        `- Completed: ${stats.tasks?.completed ?? 0}`,
     ];
     return lines.join("\n");
 }

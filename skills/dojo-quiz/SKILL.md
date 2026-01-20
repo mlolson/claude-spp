@@ -48,9 +48,9 @@ After all questions are answered:
 
 Good quiz questions:
 - "What function is responsible for calculating the work ratio in this project?"
-- "Where are tasks stored and how are they organized?"
 - "What happens when a user runs `node dist/cli.js status`?"
 - "How does the system track lines of code written by Claude vs the human?"
+- "What are the available modes and what do they control?"
 
 Avoid:
 - Generic programming questions ("What is a closure?")

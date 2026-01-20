@@ -1,0 +1,3 @@
+# <STP>
+node dist/cli.js stats
+# </STP>

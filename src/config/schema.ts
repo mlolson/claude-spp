@@ -18,7 +18,7 @@ export const MODES: Mode[] = [
   { number: 2, name: "Padawan", humanRatio: 0.1, description: "90% AI / 10% human" },
   { number: 3, name: "Clever monkey", humanRatio: 0.25, description: "75% AI / 25% human" },
   { number: 4, name: "50-50", humanRatio: 0.5, description: "50% AI / 50% human" },
-  { number: 5, name: "Finger workout", humanRatio: 0.75, description: "25% AI / 75% human" },
+  { number: 5, name: "Fast fingers", humanRatio: 0.75, description: "25% AI / 75% human" },
   { number: 6, name: "Switching to guns", humanRatio: 1, description: "100% human coding" },
 ];
 

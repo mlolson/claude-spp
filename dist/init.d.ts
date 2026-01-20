@@ -1,7 +1,12 @@
 import { type Config } from "./config/schema.js";
 /**
+ * Install git post-commit hook for tracking human lines
+ * @throws Error if not in a git repository
+ */
+export declare function installGitHook(projectPath: string): void;
+/**
  * Initialize Dojo in a project
- * Creates .dojo directory with config, state, and task directories
+ * Creates .dojo directory with config and state
  */
 export declare function initializeDojo(projectPath: string, modeNumber?: number): Promise<Config>;
 /**

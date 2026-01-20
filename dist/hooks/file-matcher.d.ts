@@ -1,4 +1,3 @@
-import type { Task } from "../tasks/parser.js";
 /**
  * Normalize a file path to be relative to the project root
  * Handles both absolute and relative paths
@@ -16,10 +15,6 @@ export declare function fileMatchesPattern(filePath: string, pattern: string, pr
  * Check if a file matches any of the given patterns
  */
 export declare function fileMatchesPatterns(filePath: string, patterns: string[], projectPath: string): boolean;
-/**
- * Find all tasks that include a file in their metadata.files
- */
-export declare function findTasksForFile(filePath: string, tasks: Task[], projectPath: string): Task[];
 /**
  * Check if a file path is within the .dojo directory
  */

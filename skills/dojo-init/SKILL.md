@@ -1,11 +1,11 @@
 ---
 name: init
-description: Initialize Dojo in the current project with a chosen preset
+description: Initialize Dojo in the current project with a chosen mode
 ---
 
 # Dojo Init Skill
 
-Initialize Dojo mode in the current project. This creates the `.dojo/` directory with configuration, state tracking, and task directories.
+Initialize Dojo mode in the current project. This creates the `.dojo/` directory with configuration and state tracking.
 
 ## Steps
 
@@ -16,31 +16,34 @@ Initialize Dojo mode in the current project. This creates the `.dojo/` directory
 
 2. If already initialized, inform the user and ask if they want to reinitialize.
 
-3. If not initialized (or user wants to reinitialize), ask which preset they'd like using AskUserQuestion:
+3. If not initialized (or user wants to reinitialize), ask which mode they'd like using AskUserQuestion:
 
-   **Presets:**
-   - **light** - 10% human-written code target (AI does most work)
-   - **balanced** - 25% human-written code target (recommended default)
-   - **intensive** - 50% human-written code target (equal partnership)
-   - **training** - 75% human-written code target (human does most work)
+   **Modes:**
+   - **1. Yolo** - 100% AI coding
+   - **2. Padawan** - 90% AI / 10% human
+   - **3. Clever monkey** - 75% AI / 25% human
+   - **4. 50-50** - 50% AI / 50% human (recommended default)
+   - **5. Fast fingers** - 25% AI / 75% human
+   - **6. Switching to guns** - 100% human coding
 
-4. Run the init command with their chosen preset:
+4. Run the init command with their chosen mode:
    ```bash
-   node dist/cli.js init <preset>
+   node dist/cli.js init <mode_number>
    ```
 
 5. Confirm initialization was successful and explain what was created:
    - `.dojo/config.json` - Configuration file
    - `.dojo/state.json` - Session state (gitignored)
-   - `.dojo/tasks/` - Task directories for tracking work
 
 ## Example Question
 
 Ask the user:
 ```
-Which Dojo preset would you like?
-- balanced (Recommended) - 25% human code target
-- light - 10% human code target
-- intensive - 50% human code target
-- training - 75% human code target
+Which Dojo mode would you like?
+- 4. 50-50 (Recommended) - Equal partnership
+- 1. Yolo - Let AI do everything
+- 2. Padawan - Mostly AI, some human
+- 3. Clever monkey - Mostly AI, quarter human
+- 5. Fast fingers - Mostly human, some AI
+- 6. Switching to guns - All human
 ```

@@ -1,16 +1,13 @@
 import { z } from "zod";
 /**
- * Session state (non-line-count data)
+ * Session state
  */
 export declare const SessionSchema: z.ZodObject<{
     startedAt: z.ZodString;
-    currentTask: z.ZodDefault<z.ZodNullable<z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
     startedAt: string;
-    currentTask: string | null;
 }, {
     startedAt: string;
-    currentTask?: string | null | undefined;
 }>;
 export type Session = z.infer<typeof SessionSchema>;
 /**
@@ -19,23 +16,18 @@ export type Session = z.infer<typeof SessionSchema>;
 export declare const StateSchema: z.ZodObject<{
     session: z.ZodObject<{
         startedAt: z.ZodString;
-        currentTask: z.ZodDefault<z.ZodNullable<z.ZodString>>;
     }, "strip", z.ZodTypeAny, {
         startedAt: string;
-        currentTask: string | null;
     }, {
         startedAt: string;
-        currentTask?: string | null | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
     session: {
         startedAt: string;
-        currentTask: string | null;
     };
 }, {
     session: {
         startedAt: string;
-        currentTask?: string | null | undefined;
     };
 }>;
 export type State = z.infer<typeof StateSchema>;

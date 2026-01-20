@@ -17,12 +17,6 @@ export interface StatsResult {
     session?: {
         startedAt: string;
     };
-    tasks?: {
-        unassigned: number;
-        human: number;
-        claude: number;
-        completed: number;
-    };
 }
 /**
  * Get current Dojo statistics

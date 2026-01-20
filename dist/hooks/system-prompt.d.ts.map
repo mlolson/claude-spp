@@ -1,1 +1,1 @@
-{"version":3,"file":"system-prompt.d.ts","sourceRoot":"","sources":["../../src/hooks/system-prompt.ts"],"names":[],"mappings":"AAQA;;GAEG;AACH,wBAAgB,oBAAoB,CAAC,WAAW,EAAE,MAAM,GAAG,MAAM,CAuIhE;AAED;;GAEG;AACH,wBAAgB,kBAAkB,CAAC,WAAW,EAAE,MAAM,GAAG,MAAM,CAc9D"}
+{"version":3,"file":"system-prompt.d.ts","sourceRoot":"","sources":["../../src/hooks/system-prompt.ts"],"names":[],"mappings":"AAKA;;GAEG;AACH,wBAAgB,oBAAoB,CAAC,WAAW,EAAE,MAAM,GAAG,MAAM,CA2DhE;AAED;;GAEG;AACH,wBAAgB,kBAAkB,CAAC,WAAW,EAAE,MAAM,GAAG,MAAM,CAc9D"}

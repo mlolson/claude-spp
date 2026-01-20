@@ -53,7 +53,6 @@ export function formatInitResult(result: InitResult): string {
     lines.push("Created:");
     lines.push("- `.dojo/config.json` - Project configuration");
     lines.push("- `.dojo/state.json` - Session state (git-ignored)");
-    lines.push("- `.dojo/tasks/` - Task directories");
     lines.push("");
     lines.push("Run `node dist/cli.js stats` to see your current status.");
   }

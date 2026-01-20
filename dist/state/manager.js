@@ -62,31 +62,8 @@ export function resetSession(projectPath) {
     const state = loadState(projectPath);
     state.session = {
         startedAt: new Date().toISOString(),
-        currentTask: null,
     };
     saveState(projectPath, state);
     return state;
-}
-/**
- * Set the current focused task
- */
-export function setCurrentTask(projectPath, taskFilename) {
-    const state = loadState(projectPath);
-    state.session.currentTask = taskFilename;
-    saveState(projectPath, state);
-    return state;
-}
-/**
- * Get the current focused task filename
- */
-export function getCurrentTask(projectPath) {
-    const state = loadState(projectPath);
-    return state.session.currentTask;
-}
-/**
- * Clear the current focused task
- */
-export function clearCurrentTask(projectPath) {
-    return setCurrentTask(projectPath, null);
 }
 //# sourceMappingURL=manager.js.map

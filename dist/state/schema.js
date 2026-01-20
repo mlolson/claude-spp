@@ -1,12 +1,10 @@
 import { z } from "zod";
 /**
- * Session state (non-line-count data)
+ * Session state
  */
 export const SessionSchema = z.object({
     // When the session started
     startedAt: z.string().datetime(),
-    // Currently focused task filename (null if none)
-    currentTask: z.string().nullable().default(null),
 });
 /**
  * Main state schema for .dojo/state.json
@@ -22,7 +20,6 @@ export function createDefaultState() {
     return {
         session: {
             startedAt: new Date().toISOString(),
-            currentTask: null,
         },
     };
 }

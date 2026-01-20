@@ -7,7 +7,6 @@ import {
   ensureInitialized,
 } from "../src/init.js";
 import { getDojoDir, isDojoInitialized } from "../src/config/loader.js";
-import { areTaskDirsInitialized, TASK_DIRS } from "../src/tasks/directories.js";
 
 const TEST_DIR = path.join(process.cwd(), ".test-init");
 
@@ -43,15 +42,6 @@ describe("Initialization", () => {
       expect(fs.existsSync(statePath)).toBe(true);
     });
 
-    it("creates task directories", async () => {
-      await initializeDojo(TEST_DIR, 4);
-      const tasksDir = path.join(getDojoDir(TEST_DIR), "tasks");
-
-      for (const dir of Object.values(TASK_DIRS)) {
-        expect(fs.existsSync(path.join(tasksDir, dir))).toBe(true);
-      }
-    });
-
     it("creates .gitignore", async () => {
       await initializeDojo(TEST_DIR, 4);
       const gitignorePath = path.join(getDojoDir(TEST_DIR), ".gitignore");
@@ -72,9 +62,10 @@ describe("Initialization", () => {
       expect(isFullyInitialized(TEST_DIR)).toBe(false);
     });
 
-    it("returns false when only .dojo exists", () => {
+    it("returns true when .dojo directory exists", () => {
       fs.mkdirSync(getDojoDir(TEST_DIR), { recursive: true });
-      expect(isFullyInitialized(TEST_DIR)).toBe(false);
+      // isFullyInitialized just checks for .dojo directory existence
+      expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
 
     it("returns true after full initialization", async () => {
@@ -107,14 +98,6 @@ describe("Initialization", () => {
       fs.mkdirSync(getDojoDir(TEST_DIR), { recursive: true });
 
       expect(isDojoInitialized(TEST_DIR)).toBe(true);
-    });
-
-    it("areTaskDirsInitialized checks all task directories", async () => {
-      expect(areTaskDirsInitialized(TEST_DIR)).toBe(false);
-
-      await initializeDojo(TEST_DIR, 4);
-
-      expect(areTaskDirsInitialized(TEST_DIR)).toBe(true);
     });
   });
 });

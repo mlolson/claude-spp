@@ -33,16 +33,16 @@ describe("State Management", () => {
     it("returns default state for new project", () => {
       const state = loadState(TEST_DIR);
       expect(state.session.startedAt).toBeDefined();
-      expect(state.session.currentTask).toBeNull();
     });
 
     it("saves and loads state correctly", () => {
       const state = loadState(TEST_DIR);
-      state.session.currentTask = "test-task.md";
+      const newStartedAt = new Date().toISOString();
+      state.session.startedAt = newStartedAt;
       saveState(TEST_DIR, state);
 
       const loaded = loadState(TEST_DIR);
-      expect(loaded.session.currentTask).toBe("test-task.md");
+      expect(loaded.session.startedAt).toBe(newStartedAt);
     });
   });
 

@@ -1,8 +1,6 @@
 import { isDojoInitialized, loadConfig } from "../config/loader.js";
 import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
-import { findTask, parseTasksInDirectory } from "../tasks/parser.js";
 import { isDojoInternalFile } from "./file-matcher.js";
-import { getCurrentTask } from "../state/manager.js";
 import { getLineCounts } from "../git/history.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 /**
@@ -24,43 +22,9 @@ function extractFilePath(tool) {
     return null;
 }
 /**
- * Format a list of tasks for display in the block message
- */
-function formatAvailableTasks(projectPath) {
-    const humanTasks = parseTasksInDirectory(projectPath, "human");
-    const claudeTasks = parseTasksInDirectory(projectPath, "claude");
-    const unassignedTasks = parseTasksInDirectory(projectPath, "unassigned");
-    const lines = [];
-    if (claudeTasks.length > 0) {
-        lines.push("Claude's tasks:");
-        for (const task of claudeTasks) {
-            lines.push(`  - ${task.filename}: ${task.title}`);
-        }
-    }
-    if (humanTasks.length > 0) {
-        lines.push("Human's tasks:");
-        for (const task of humanTasks) {
-            lines.push(`  - ${task.filename}: ${task.title}`);
-        }
-    }
-    if (unassignedTasks.length > 0) {
-        lines.push("Unassigned tasks:");
-        for (const task of unassignedTasks.slice(0, 3)) {
-            lines.push(`  - ${task.filename}: ${task.title}`);
-        }
-        if (unassignedTasks.length > 3) {
-            lines.push(`  ... and ${unassignedTasks.length - 3} more`);
-        }
-    }
-    if (lines.length === 0) {
-        lines.push("No tasks found. Create one: node dist/cli.js create \"Task title\"");
-    }
-    return lines.join("\n");
-}
-/**
  * Pre-tool-use hook
  * Called before Claude uses a tool
- * Checks if there is a current focused task before allowing writes
+ * Checks the work ratio before allowing writes
  */
 export function preToolUseHook(input) {
     const { tool, cwd } = input;
@@ -93,68 +57,18 @@ export function preToolUseHook(input) {
     const currentMode = getCurrentMode(config);
     if (!isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio)) {
         // Ratio is below target - block Claude from writing
-        const humanTasks = parseTasksInDirectory(cwd, "human");
-        const unassignedTasks = parseTasksInDirectory(cwd, "unassigned");
         const lines = [
             `Human work ratio is below target: ${(currentRatio * 100).toFixed(0)}% actual vs ${(targetRatio * 100).toFixed(0)}% required`,
             `Mode: ${currentMode.number}. ${currentMode.name} (${currentMode.description})`,
             "",
             "The human needs to write more code before Claude can continue.",
             "",
+            "Guide the human through the implementation instead of writing it yourself.",
         ];
-        if (humanTasks.length > 0) {
-            lines.push("Tasks assigned to human:");
-            for (const task of humanTasks) {
-                lines.push(`  - ${task.filename}: ${task.title}`);
-            }
-            lines.push("");
-            lines.push("Complete a task: node dist/cli.js complete <filename> human");
-        }
-        else if (unassignedTasks.length > 0) {
-            lines.push("Unassigned tasks available:");
-            for (const task of unassignedTasks.slice(0, 3)) {
-                lines.push(`  - ${task.filename}: ${task.title}`);
-            }
-            lines.push("");
-            lines.push("Assign to human: node dist/cli.js assign <filename> human");
-            lines.push("Then complete it: node dist/cli.js complete <filename> human");
-        }
-        else {
-            lines.push("No tasks exist. Create one for the human:");
-            lines.push("  node dist/cli.js create \"Task title\"");
-            lines.push("  node dist/cli.js assign <filename> human");
-        }
         return {
             decision: "block",
             reason: "ratio_below_target",
             message: lines.join("\n"),
-        };
-    }
-    // Check for current task
-    const currentTaskFilename = getCurrentTask(cwd);
-    if (!currentTaskFilename) {
-        // Block with helpful message listing available tasks
-        const availableTasks = formatAvailableTasks(cwd);
-        return {
-            decision: "block",
-            reason: "no_current_task",
-            message: `No task is currently focused.\n\nTo write code, first focus on a task:\n  node dist/cli.js focus <filename>\n\n${availableTasks}`,
-        };
-    }
-    // Verify current task still exists and is not completed
-    const currentTask = findTask(cwd, currentTaskFilename);
-    if (!currentTask) {
-        return {
-            decision: "block",
-            reason: "task_not_found",
-            message: `Focused task "${currentTaskFilename}" not found. Clear focus and try again:\n  node dist/cli.js unfocus`,
-        };
-    }
-    if (currentTask.directory === "completed") {
-        return {
-            decision: "block",
-            reason: "task_completed",
-            message: `Focused task "${currentTask.title}" is already completed. Focus on a new task:\n  node dist/cli.js unfocus\n  node dist/cli.js focus <filename>`,
         };
     }
     return { decision: "allow" };

@@ -87,34 +87,8 @@ export function resetSession(projectPath: string): State {
 
   state.session = {
     startedAt: new Date().toISOString(),
-    currentTask: null,
   };
 
   saveState(projectPath, state);
   return state;
-}
-
-/**
- * Set the current focused task
- */
-export function setCurrentTask(projectPath: string, taskFilename: string | null): State {
-  const state = loadState(projectPath);
-  state.session.currentTask = taskFilename;
-  saveState(projectPath, state);
-  return state;
-}
-
-/**
- * Get the current focused task filename
- */
-export function getCurrentTask(projectPath: string): string | null {
-  const state = loadState(projectPath);
-  return state.session.currentTask;
-}
-
-/**
- * Clear the current focused task
- */
-export function clearCurrentTask(projectPath: string): State {
-  return setCurrentTask(projectPath, null);
 }

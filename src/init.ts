@@ -6,7 +6,6 @@ import { loadConfig, saveConfig, isDojoInitialized, getDojoDir } from "./config/
 import { DEFAULT_CONFIG, type Config, MODES, getCurrentMode } from "./config/schema.js";
 import { loadState, saveState } from "./state/manager.js";
 import { createDefaultState } from "./state/schema.js";
-import { initializeTaskDirs, areTaskDirsInitialized } from "./tasks/directories.js";
 
 const DOJO_START_MARKER = "<!-- DOJO:START -->";
 const DOJO_END_MARKER = "<!-- DOJO:END -->";
@@ -32,7 +31,6 @@ the human writes a minimum percentage of code themselves.
 1. Check the ratio with \`node dist/cli.js status\`
 2. If ratio is below ${targetPercent}%, prefer teaching over writing code
 3. Offer guidance first - ask if the human wants to try it themselves
-4. Create a task and ask whether it should be assigned to user or claude: \`node dist/cli.js create "title"\`
 
 **When asked to write code:**
 - If ratio is healthy (≥${targetPercent}% human): write code freely
@@ -48,17 +46,9 @@ Commits with \`Co-Authored-By: Claude\` are attributed to Claude.
 
 \`\`\`bash
 node dist/cli.js status              # Show current ratio
+node dist/cli.js stats               # Show detailed statistics
 node dist/cli.js mode [n]            # Show or change mode
-node dist/cli.js tasks               # List all tasks
-node dist/cli.js focus <file>        # Focus on a task
-node dist/cli.js create "title"      # Create a new task
-node dist/cli.js assign <file> human # Assign task to human
-node dist/cli.js complete <file> human # Mark complete
 \`\`\`
-
-### Learning
-
-Use \`/dojo:quiz\` to test your knowledge of the codebase.
 ${DOJO_END_MARKER}`;
 }
 
@@ -109,28 +99,21 @@ function isGitRepo(projectPath: string): boolean {
 
 /**
  * Install git post-commit hook for tracking human lines
+ * @throws Error if not in a git repository
  */
-function installGitHook(projectPath: string): boolean {
+export function installGitHook(projectPath: string): void {
+  // Verify this is a git repo
   if (!isGitRepo(projectPath)) {
-    return false;
+    throw new Error("Not a git repository. Initialize git first with: git init");
   }
 
   const gitHooksDir = path.join(projectPath, ".git", "hooks");
   const hookPath = path.join(gitHooksDir, "post-commit");
-  const sourceHook = path.join(projectPath, "hooks", "git-post-commit.sh");
+  const sourceHook = path.join(projectPath, "src", "git", "hooks", "post-commit");
 
   // Check if source hook exists
   if (!fs.existsSync(sourceHook)) {
-    return false;
-  }
-
-  // Check if hook already exists
-  if (fs.existsSync(hookPath)) {
-    const existing = fs.readFileSync(hookPath, "utf-8");
-    if (existing.includes("Dojo post-commit hook")) {
-      return true; // Already installed
-    }
-    return false; // Different hook exists, don't overwrite
+    throw new Error(`Source hook not found at: ${sourceHook}`);
   }
 
   // Ensure hooks directory exists
@@ -138,11 +121,31 @@ function installGitHook(projectPath: string): boolean {
     fs.mkdirSync(gitHooksDir, { recursive: true });
   }
 
-  // Copy hook and make executable
-  const hookContent = fs.readFileSync(sourceHook, "utf-8");
-  fs.writeFileSync(hookPath, hookContent, { mode: 0o755 });
+  // Read source hook content
+  const sourceContent = fs.readFileSync(sourceHook, "utf-8");
+  const sourceContentWithShebang = "#!/bin/bash\n" + sourceContent;
 
-  return true;
+  // Check if hook already contains our content
+  if (fs.existsSync(hookPath)) {
+    const existingContent = fs.readFileSync(hookPath, "utf-8");
+    if (existingContent.includes("# <STP>")) {
+      fs.writeFileSync(hookPath, existingContent.replace(/# <STP>[\s\S]*?# <\/STP>/g, sourceContent));
+    } else {
+      if (existingContent.trim() === "") {
+        // Hook exists but is empty - write full contents
+        fs.writeFileSync(hookPath, sourceContentWithShebang);
+      } else {
+        // Hook exists and is not empty - append without shebang
+        const newContent = existingContent.trimEnd() + "\n\n" + sourceContent;
+        fs.writeFileSync(hookPath, newContent);
+      }
+    }
+  } else {
+    fs.writeFileSync(hookPath, sourceContentWithShebang);
+  }
+
+  // Ensure the file is executable
+  fs.chmodSync(hookPath, 0o755);
 }
 
 /**
@@ -192,7 +195,7 @@ async function promptForMode(): Promise<number> {
 
 /**
  * Initialize Dojo in a project
- * Creates .dojo directory with config, state, and task directories
+ * Creates .dojo directory with config and state
  */
 export async function initializeDojo(projectPath: string, modeNumber?: number): Promise<Config> {
   const dojoDir = getDojoDir(projectPath);
@@ -216,9 +219,6 @@ export async function initializeDojo(projectPath: string, modeNumber?: number): 
   const state = createDefaultState();
   saveState(projectPath, state);
 
-  // Initialize task directories
-  initializeTaskDirs(projectPath);
-
   // Create .gitignore for state.json
   const gitignorePath = path.join(dojoDir, ".gitignore");
   if (!fs.existsSync(gitignorePath)) {
@@ -235,7 +235,7 @@ export async function initializeDojo(projectPath: string, modeNumber?: number): 
  * Check if Dojo is fully initialized
  */
 export function isFullyInitialized(projectPath: string): boolean {
-  return isDojoInitialized(projectPath) && areTaskDirsInitialized(projectPath);
+  return isDojoInitialized(projectPath);
 }
 
 /**

@@ -1,5 +1,4 @@
 import * as path from "node:path";
-import type { Task } from "../tasks/parser.js";
 
 /**
  * Normalize a file path to be relative to the project root
@@ -99,19 +98,6 @@ export function fileMatchesPatterns(
 ): boolean {
   return patterns.some((pattern) =>
     fileMatchesPattern(filePath, pattern, projectPath)
-  );
-}
-
-/**
- * Find all tasks that include a file in their metadata.files
- */
-export function findTasksForFile(
-  filePath: string,
-  tasks: Task[],
-  projectPath: string
-): Task[] {
-  return tasks.filter((task) =>
-    fileMatchesPatterns(filePath, task.metadata.files, projectPath)
   );
 }
 

@@ -77,12 +77,6 @@ export function fileMatchesPatterns(filePath, patterns, projectPath) {
     return patterns.some((pattern) => fileMatchesPattern(filePath, pattern, projectPath));
 }
 /**
- * Find all tasks that include a file in their metadata.files
- */
-export function findTasksForFile(filePath, tasks, projectPath) {
-    return tasks.filter((task) => fileMatchesPatterns(filePath, task.metadata.files, projectPath));
-}
-/**
  * Check if a file path is within the .dojo directory
  */
 export function isDojoInternalFile(filePath, projectPath) {

@@ -3,20 +3,45 @@ import { runPreResponseHook } from "./hooks/pre-response.js";
 import { runPostResponseHook } from "./hooks/post-response.js";
 import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
-import { initializeDojo, isFullyInitialized } from "./init.js";
+import { initializeDojo, isFullyInitialized, installGitHook } from "./init.js";
 import { loadConfig, saveConfig } from "./config/loader.js";
-import { clearCurrentTask } from "./state/manager.js";
-import { focusTask, getCurrentFocusedTask } from "./tasks/focus.js";
 import { calculateRatio } from "./state/schema.js";
 import { getLineCounts } from "./git/history.js";
 import { getEffectiveRatio, getCurrentMode, getModeByNumber, getModeByName, MODES } from "./config/schema.js";
-import { createTask } from "./tasks/generator.js";
-import { assignTask } from "./tasks/assignment.js";
-import { completeTask } from "./tasks/completion.js";
 import { getStats, formatStats } from "./commands/stats.js";
-import { listTasks, formatTaskList } from "./commands/task.js";
 const args = process.argv.slice(2);
 const command = args[0];
+function getModesExplanation() {
+    const config = loadConfig(process.cwd());
+    const currentMode = getCurrentMode(config);
+    const lines = ["Coding modes:"];
+    for (const mode of MODES) {
+        const marker = mode.number === currentMode.number ? " <-- current" : "";
+        lines.push(`  ${mode.number}. ${mode.name} - ${mode.description}${marker}`);
+    }
+    lines.push("\nTo change mode: node dist/cli.js mode <number>");
+    return lines.join("\n");
+}
+function getHelpMessage() {
+    return `
+Dojo CLI - Maintain your programming skills
+
+Usage: node dist/cli.js <command> [options]
+
+Commands:
+  init [mode]                Initialize Dojo (mode: 1-6, default: 4)
+  mode [number|name]         Show or change the current mode
+  stats                      Show detailed statistics
+  status                     Show quick status
+
+${getModesExplanation()}
+
+Hook Commands (used by Claude Code):
+  hook:pre-tool-use          Pre-tool-use hook (reads JSON from stdin)
+  hook:system-prompt         Output system prompt injection
+  hook:status                Output compact status line
+`;
+}
 async function main() {
     switch (command) {
         // Hook commands (called by Claude Code)
@@ -47,10 +72,13 @@ async function main() {
                 // Update with selected mode
                 config.mode = mode;
                 saveConfig(process.cwd(), config);
+                // Install git post-commit hook
+                installGitHook(process.cwd());
                 const currentMode = getCurrentMode(config);
                 console.log(`✅ Dojo initialized with mode ${currentMode.number}: ${currentMode.name}`);
                 console.log(`   ${currentMode.description}`);
                 console.log(`   Directory: .dojo/`);
+                console.log(`   Git hook: .git/hooks/post-commit`);
             }
             catch (error) {
                 console.error("❌ Failed to initialize:", error);
@@ -58,22 +86,30 @@ async function main() {
             }
             break;
         }
+        case "modes": {
+            if (!isFullyInitialized(process.cwd())) {
+                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
+                process.exit(1);
+            }
+            console.log(getModesExplanation());
+            break;
+        }
         case "mode": {
             if (!isFullyInitialized(process.cwd())) {
                 console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
                 process.exit(1);
             }
+            const config = loadConfig(process.cwd());
             const modeArg = args[1];
-            // If no argument, list available modes
+            // If no argument, get current mode
             if (!modeArg) {
-                const config = loadConfig(process.cwd());
-                const currentMode = getCurrentMode(config);
-                console.log("## Dojo Modes\n");
-                for (const mode of MODES) {
-                    const marker = mode.number === currentMode.number ? " <-- current" : "";
-                    console.log(`  ${mode.number}. ${mode.name} - ${mode.description}${marker}`);
+                const currentMode = getModeByNumber(config.mode);
+                if (!currentMode) {
+                    console.log("Current mode: none");
                 }
-                console.log("\nTo change mode: node dist/cli.js mode <number>");
+                else {
+                    console.log(`Current mode: ${currentMode.number}, ${currentMode.name}, ${currentMode.description}`);
+                }
                 break;
             }
             // Try to parse as number first
@@ -83,12 +119,9 @@ async function main() {
                 selectedMode = getModeByName(modeArg);
             }
             if (!selectedMode) {
-                console.error(`❌ Unknown mode: ${modeArg}`);
-                console.error("   Use a number 1-6 or a mode name");
-                process.exit(1);
+                throw Error(`❌ Unknown mode: ${modeArg}  Use a number 1-6 or a mode name`);
             }
             // Update config
-            const config = loadConfig(process.cwd());
             config.mode = selectedMode.number;
             saveConfig(process.cwd(), config);
             console.log(`✅ Mode changed to ${selectedMode.number}: ${selectedMode.name}`);
@@ -102,148 +135,6 @@ async function main() {
             }
             const stats = getStats(process.cwd());
             console.log(formatStats(stats));
-            break;
-        }
-        case "tasks": {
-            if (!isFullyInitialized(process.cwd())) {
-                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
-                process.exit(1);
-            }
-            const tasks = listTasks(process.cwd());
-            console.log(formatTaskList(tasks));
-            break;
-        }
-        case "create": {
-            if (!isFullyInitialized(process.cwd())) {
-                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
-                process.exit(1);
-            }
-            const title = args[1];
-            const description = args[2] || "";
-            if (!title) {
-                console.error("Usage: node dist/cli.js create <title> [description]");
-                process.exit(1);
-            }
-            const result = createTask(process.cwd(), { title, description });
-            console.log(`✅ Created task: ${result.filename}`);
-            console.log(`   Path: ${result.filepath}`);
-            break;
-        }
-        case "assign": {
-            if (!isFullyInitialized(process.cwd())) {
-                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
-                process.exit(1);
-            }
-            const filename = args[1];
-            const assignee = args[2];
-            if (!filename || !assignee || !["human", "claude"].includes(assignee)) {
-                console.error("Usage: node dist/cli.js assign <filename> <human|claude>");
-                process.exit(1);
-            }
-            const task = assignTask(process.cwd(), filename, assignee);
-            if (task) {
-                console.log(`✅ Assigned "${task.title}" to ${assignee}`);
-            }
-            else {
-                console.error(`❌ Task not found: ${filename}`);
-                process.exit(1);
-            }
-            break;
-        }
-        case "complete": {
-            if (!isFullyInitialized(process.cwd())) {
-                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
-                process.exit(1);
-            }
-            const filename = args[1];
-            const completedBy = args[2];
-            if (!filename || !completedBy || !["human", "claude"].includes(completedBy)) {
-                console.error("Usage: node dist/cli.js complete <filename> <human|claude>");
-                process.exit(1);
-            }
-            const result = completeTask(process.cwd(), {
-                filename,
-                completedBy,
-            });
-            if (result.success) {
-                console.log(`✅ ${result.message}`);
-            }
-            else {
-                console.error(`❌ ${result.message}`);
-                process.exit(1);
-            }
-            break;
-        }
-        case "focus": {
-            if (!isFullyInitialized(process.cwd())) {
-                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
-                process.exit(1);
-            }
-            const filename = args[1];
-            if (!filename) {
-                // Show current focus and available tasks
-                const currentTask = getCurrentFocusedTask(process.cwd());
-                if (currentTask) {
-                    console.log(`Currently focused: ${currentTask.title} (${currentTask.filename})`);
-                }
-                else {
-                    console.log("No task currently focused.");
-                }
-                console.log("");
-                console.log("Available tasks:");
-                const tasks = listTasks(process.cwd());
-                const claudeTasks = tasks.filter(t => t.directory === "claude");
-                const humanTasks = tasks.filter(t => t.directory === "human");
-                const unassignedTasks = tasks.filter(t => t.directory === "unassigned");
-                if (claudeTasks.length > 0) {
-                    console.log("  Claude:");
-                    for (const t of claudeTasks) {
-                        console.log(`    - ${t.filename}: ${t.title}`);
-                    }
-                }
-                if (humanTasks.length > 0) {
-                    console.log("  Human:");
-                    for (const t of humanTasks) {
-                        console.log(`    - ${t.filename}: ${t.title}`);
-                    }
-                }
-                if (unassignedTasks.length > 0) {
-                    console.log("  Unassigned:");
-                    for (const t of unassignedTasks) {
-                        console.log(`    - ${t.filename}: ${t.title}`);
-                    }
-                }
-                if (claudeTasks.length === 0 && humanTasks.length === 0 && unassignedTasks.length === 0) {
-                    console.log("  No tasks found. Create one: node dist/cli.js create \"Task title\"");
-                }
-                break;
-            }
-            const result = focusTask(process.cwd(), filename);
-            if (result.success) {
-                console.log(`✅ ${result.message}`);
-                if (result.autoAssigned) {
-                    console.log("   Task was unassigned, now assigned to Claude.");
-                }
-            }
-            else {
-                console.error(`❌ ${result.message}`);
-                process.exit(1);
-            }
-            break;
-        }
-        case "unfocus": {
-            if (!isFullyInitialized(process.cwd())) {
-                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
-                process.exit(1);
-            }
-            const currentTask = getCurrentFocusedTask(process.cwd());
-            if (currentTask) {
-                clearCurrentTask(process.cwd());
-                console.log(`✅ Unfocused from "${currentTask.title}"`);
-            }
-            else {
-                console.log("No task was focused.");
-            }
             break;
         }
         case "status": {
@@ -265,49 +156,13 @@ async function main() {
             console.log(`  Mode: ${currentMode.number}. ${currentMode.name} (${currentMode.description})`);
             console.log(`  Human: ${lineCounts.humanLines} lines, ${lineCounts.humanCommits} commits`);
             console.log(`  Claude: ${lineCounts.claudeLines} lines, ${lineCounts.claudeCommits} commits`);
-            // Show current task
-            const currentTaskStatus = getCurrentFocusedTask(process.cwd());
-            if (currentTaskStatus) {
-                console.log(`  Current task: ${currentTaskStatus.title} (${currentTaskStatus.filename})`);
-            }
-            else {
-                console.log("  Current task: None");
-            }
             break;
         }
         case "help":
-        default:
-            console.log(`
-Dojo CLI - Maintain your programming skills
-
-Usage: node dist/cli.js <command> [options]
-
-Commands:
-  init [mode]                Initialize Dojo (mode: 1-6, default: 4)
-  mode [number|name]         Show or change the current mode
-  stats                      Show detailed statistics
-  status                     Show quick status
-  tasks                      List all tasks
-  create <title> [desc]      Create a new task
-  assign <file> <who>        Assign task to human or claude
-  focus [file]               Focus on a task (required before writing code)
-  unfocus                    Clear task focus
-  complete <file> <who>      Mark task complete
-
-Modes:
-  1. Yolo              100% AI coding
-  2. Padawan           90% AI / 10% human
-  3. Clever monkey     75% AI / 25% human
-  4. 50-50             50% AI / 50% human
-  5. Finger workout    25% AI / 75% human
-  6. Switching to guns 100% human coding
-
-Hook Commands (used by Claude Code):
-  hook:pre-tool-use          Pre-tool-use hook (reads JSON from stdin)
-  hook:system-prompt         Output system prompt injection
-  hook:status                Output compact status line
-`);
+            console.log(getHelpMessage());
             break;
+        default:
+            throw new Error(getHelpMessage());
     }
 }
 main().catch((error) => {
