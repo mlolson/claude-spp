@@ -36,21 +36,6 @@ describe("Initialization", () => {
       expect(fs.existsSync(configPath)).toBe(true);
     });
 
-    it("creates state.json", async () => {
-      await initializeDojo(TEST_DIR, 4);
-      const statePath = path.join(getDojoDir(TEST_DIR), "state.json");
-      expect(fs.existsSync(statePath)).toBe(true);
-    });
-
-    it("creates .gitignore", async () => {
-      await initializeDojo(TEST_DIR, 4);
-      const gitignorePath = path.join(getDojoDir(TEST_DIR), ".gitignore");
-      expect(fs.existsSync(gitignorePath)).toBe(true);
-
-      const content = fs.readFileSync(gitignorePath, "utf-8");
-      expect(content).toContain("state.json");
-    });
-
     it("uses specified mode", async () => {
       const config = await initializeDojo(TEST_DIR, 3);
       expect(config.mode).toBe(3);

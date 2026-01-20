@@ -12,20 +12,9 @@ export {
   type Difficulty,
 } from "./config/schema.js";
 
-// State
 export {
-  loadState,
-  saveState,
-  resetSession,
-} from "./state/manager.js";
-export {
-  StateSchema,
-  SessionSchema,
-  createDefaultState,
   calculateRatio,
   isRatioHealthy,
-  type State,
-  type Session,
 } from "./state/schema.js";
 
 // Git History

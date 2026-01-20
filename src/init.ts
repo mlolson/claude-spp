@@ -4,8 +4,6 @@ import * as readline from "node:readline";
 import { execSync } from "node:child_process";
 import { loadConfig, saveConfig, isDojoInitialized, getDojoDir } from "./config/loader.js";
 import { DEFAULT_CONFIG, type Config, MODES, getCurrentMode } from "./config/schema.js";
-import { loadState, saveState } from "./state/manager.js";
-import { createDefaultState } from "./state/schema.js";
 
 const DOJO_START_MARKER = "<!-- DOJO:START -->";
 const DOJO_END_MARKER = "<!-- DOJO:END -->";
@@ -195,7 +193,7 @@ async function promptForMode(): Promise<number> {
 
 /**
  * Initialize Dojo in a project
- * Creates .dojo directory with config and state
+ * Creates .dojo directory with config
  */
 export async function initializeDojo(projectPath: string, modeNumber?: number): Promise<Config> {
   const dojoDir = getDojoDir(projectPath);
@@ -214,16 +212,6 @@ export async function initializeDojo(projectPath: string, modeNumber?: number): 
     mode: selectedMode,
   };
   saveConfig(projectPath, config);
-
-  // Initialize state
-  const state = createDefaultState();
-  saveState(projectPath, state);
-
-  // Create .gitignore for state.json
-  const gitignorePath = path.join(dojoDir, ".gitignore");
-  if (!fs.existsSync(gitignorePath)) {
-    fs.writeFileSync(gitignorePath, "state.json\n", "utf-8");
-  }
 
   // Update CLAUDE.md with dojo instructions
   updateClaudeMd(projectPath, config.mode);

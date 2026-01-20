@@ -1,35 +1,5 @@
 import { z } from "zod";
 
-/**
- * Session state
- */
-export const SessionSchema = z.object({
-  // When the session started
-  startedAt: z.string().datetime(),
-});
-
-export type Session = z.infer<typeof SessionSchema>;
-
-/**
- * Main state schema for .dojo/state.json
- */
-export const StateSchema = z.object({
-  // Current session state
-  session: SessionSchema,
-});
-
-export type State = z.infer<typeof StateSchema>;
-
-/**
- * Create a new default state
- */
-export function createDefaultState(): State {
-  return {
-    session: {
-      startedAt: new Date().toISOString(),
-    },
-  };
-}
 
 /**
  * Calculate the current human work ratio from line counts

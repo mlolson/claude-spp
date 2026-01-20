@@ -1,6 +1,5 @@
 import { loadConfig, isDojoInitialized } from "../config/loader.js";
 import { getEffectiveRatio, getCurrentMode, type Mode } from "../config/schema.js";
-import { loadState } from "../state/manager.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { getLineCounts } from "../git/history.js";
 
@@ -33,7 +32,6 @@ export function getStats(projectPath: string): StatsResult {
   }
 
   const config = loadConfig(projectPath);
-  const state = loadState(projectPath);
   const lineCounts = getLineCounts(projectPath);
   const targetRatio = getEffectiveRatio(config);
   const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
@@ -47,9 +45,6 @@ export function getStats(projectPath: string): StatsResult {
     currentRatio,
     ratioHealthy: isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio),
     lines: lineCounts,
-    session: {
-      startedAt: state.session.startedAt,
-    },
   };
 }
 

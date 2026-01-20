@@ -1,16 +1,20 @@
-# /dojo:quiz
+---
+description: Tune up your knowledge of the codebase
+---
 
-Test your knowledge of the codebase with interactive questions.
+# /dojo:tune-up
+
+Tune up your knowledge of the codebase with interactive questions.
 
 ## Usage
 
 ```
-/dojo:quiz
+/dojo:tune-up
 ```
 
 ## Description
 
-The quiz command generates 3-5 questions about the current codebase and presents them one at a time. After you answer each question, Claude provides feedback explaining whether your answer was correct and referencing the relevant code.
+The tune-up command generates 3-5 questions about the current codebase and presents them one at a time. After you answer each question, Claude provides feedback explaining whether your answer was correct and referencing the relevant code.
 
 ## What to Expect
 
@@ -27,7 +31,7 @@ The quiz command generates 3-5 questions about the current codebase and presents
 ## Example Session
 
 ```
-> /dojo:quiz
+> /dojo:tune-up
 
 I'll analyze the codebase and create some questions for you.
 
