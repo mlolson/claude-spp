@@ -1,7 +1,10 @@
 import { isDojoInitialized, loadConfig } from "../config/loader.js";
+import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
 import { findTask, parseTasksInDirectory } from "../tasks/parser.js";
 import { isDojoInternalFile } from "./file-matcher.js";
 import { getCurrentTask } from "../state/manager.js";
+import { getLineCounts } from "../git/history.js";
+import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 
 /**
  * Tool information from Claude Code
@@ -125,6 +128,53 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
   // Always allow .dojo internal files
   if (isDojoInternalFile(filePath, cwd)) {
     return { decision: "allow" };
+  }
+
+  // Check the work ratio - block if below target
+  const lineCounts = getLineCounts(cwd);
+  const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
+  const targetRatio = getEffectiveRatio(config);
+  const currentMode = getCurrentMode(config);
+
+  if (!isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio)) {
+    // Ratio is below target - block Claude from writing
+    const humanTasks = parseTasksInDirectory(cwd, "human");
+    const unassignedTasks = parseTasksInDirectory(cwd, "unassigned");
+
+    const lines: string[] = [
+      `Human work ratio is below target: ${(currentRatio * 100).toFixed(0)}% actual vs ${(targetRatio * 100).toFixed(0)}% required`,
+      `Mode: ${currentMode.number}. ${currentMode.name} (${currentMode.description})`,
+      "",
+      "The human needs to write more code before Claude can continue.",
+      "",
+    ];
+
+    if (humanTasks.length > 0) {
+      lines.push("Tasks assigned to human:");
+      for (const task of humanTasks) {
+        lines.push(`  - ${task.filename}: ${task.title}`);
+      }
+      lines.push("");
+      lines.push("Complete a task: node dist/cli.js complete <filename> human");
+    } else if (unassignedTasks.length > 0) {
+      lines.push("Unassigned tasks available:");
+      for (const task of unassignedTasks.slice(0, 3)) {
+        lines.push(`  - ${task.filename}: ${task.title}`);
+      }
+      lines.push("");
+      lines.push("Assign to human: node dist/cli.js assign <filename> human");
+      lines.push("Then complete it: node dist/cli.js complete <filename> human");
+    } else {
+      lines.push("No tasks exist. Create one for the human:");
+      lines.push("  node dist/cli.js create \"Task title\"");
+      lines.push("  node dist/cli.js assign <filename> human");
+    }
+
+    return {
+      decision: "block",
+      reason: "ratio_below_target",
+      message: lines.join("\n"),
+    };
   }
 
   // Check for current task

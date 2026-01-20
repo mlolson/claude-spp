@@ -357,4 +357,195 @@ A task
     });
     expect(result.decision).toBe("allow");
   });
+
+  describe("ratio enforcement", () => {
+    it("should block writes when ratio is below target", () => {
+      // Create a git history cache with unhealthy ratio (mode 4 = 50% target)
+      // 10 human lines, 100 claude lines = 9% human (below 50%)
+      fs.writeFileSync(
+        path.join(dojoDir, ".git_history_cache.json"),
+        JSON.stringify({
+          lastCommit: "abc123",
+          humanLines: 10,
+          claudeLines: 100,
+          humanCommits: 1,
+          claudeCommits: 10,
+        })
+      );
+
+      // Create a task and focus it
+      fs.writeFileSync(
+        path.join(dojoDir, "tasks", "claude", "001-task.md"),
+        `# Task
+
+## Metadata
+**Difficulty**: easy
+**Category**: feature
+**Skills**: typescript
+**Files**: src/
+
+## Description
+A task
+`
+      );
+
+      fs.writeFileSync(
+        path.join(dojoDir, "state.json"),
+        JSON.stringify({
+          session: {
+            startedAt: new Date().toISOString(),
+            currentTask: "001-task.md",
+          },
+        })
+      );
+
+      const result = preToolUseHook({
+        tool: { name: "Write", input: { file_path: "src/test.ts", content: "test" } },
+        cwd: tempDir,
+      });
+
+      expect(result.decision).toBe("block");
+      expect(result.reason).toBe("ratio_below_target");
+      expect(result.message).toContain("below target");
+      expect(result.message).toContain("50%");
+    });
+
+    it("should allow writes when ratio is healthy", () => {
+      // Create a git history cache with healthy ratio
+      // 60 human lines, 40 claude lines = 60% human (above 50%)
+      fs.writeFileSync(
+        path.join(dojoDir, ".git_history_cache.json"),
+        JSON.stringify({
+          lastCommit: "abc123",
+          humanLines: 60,
+          claudeLines: 40,
+          humanCommits: 6,
+          claudeCommits: 4,
+        })
+      );
+
+      // Create a task and focus it
+      fs.writeFileSync(
+        path.join(dojoDir, "tasks", "claude", "001-task.md"),
+        `# Task
+
+## Metadata
+**Difficulty**: easy
+**Category**: feature
+**Skills**: typescript
+**Files**: src/
+
+## Description
+A task
+`
+      );
+
+      fs.writeFileSync(
+        path.join(dojoDir, "state.json"),
+        JSON.stringify({
+          session: {
+            startedAt: new Date().toISOString(),
+            currentTask: "001-task.md",
+          },
+        })
+      );
+
+      const result = preToolUseHook({
+        tool: { name: "Write", input: { file_path: "src/test.ts", content: "test" } },
+        cwd: tempDir,
+      });
+
+      expect(result.decision).toBe("allow");
+    });
+
+    it("should suggest human tasks when ratio is unhealthy", () => {
+      // Create unhealthy ratio
+      fs.writeFileSync(
+        path.join(dojoDir, ".git_history_cache.json"),
+        JSON.stringify({
+          lastCommit: "abc123",
+          humanLines: 0,
+          claudeLines: 100,
+          humanCommits: 0,
+          claudeCommits: 10,
+        })
+      );
+
+      // Create a human task
+      fs.writeFileSync(
+        path.join(dojoDir, "tasks", "human", "001-human-task.md"),
+        `# Human Task
+
+## Metadata
+**Difficulty**: easy
+**Category**: feature
+**Skills**: typescript
+**Files**: src/
+
+## Description
+A task for the human
+`
+      );
+
+      // Focus a Claude task
+      fs.writeFileSync(
+        path.join(dojoDir, "tasks", "claude", "002-claude-task.md"),
+        `# Claude Task
+
+## Metadata
+**Difficulty**: easy
+**Category**: feature
+**Skills**: typescript
+**Files**: src/
+
+## Description
+A task
+`
+      );
+
+      fs.writeFileSync(
+        path.join(dojoDir, "state.json"),
+        JSON.stringify({
+          session: {
+            startedAt: new Date().toISOString(),
+            currentTask: "002-claude-task.md",
+          },
+        })
+      );
+
+      const result = preToolUseHook({
+        tool: { name: "Write", input: { file_path: "src/test.ts", content: "test" } },
+        cwd: tempDir,
+      });
+
+      expect(result.decision).toBe("block");
+      expect(result.reason).toBe("ratio_below_target");
+      expect(result.message).toContain("Tasks assigned to human");
+      expect(result.message).toContain("001-human-task.md");
+    });
+
+    it("should always allow writes to .dojo even with unhealthy ratio", () => {
+      // Create unhealthy ratio
+      fs.writeFileSync(
+        path.join(dojoDir, ".git_history_cache.json"),
+        JSON.stringify({
+          lastCommit: "abc123",
+          humanLines: 0,
+          claudeLines: 100,
+          humanCommits: 0,
+          claudeCommits: 10,
+        })
+      );
+
+      const result = preToolUseHook({
+        tool: {
+          name: "Write",
+          input: { file_path: path.join(tempDir, ".dojo", "state.json"), content: "{}" },
+        },
+        cwd: tempDir,
+      });
+
+      expect(result.decision).toBe("allow");
+    });
+  });
 });
