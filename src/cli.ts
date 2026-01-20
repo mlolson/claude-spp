@@ -23,6 +23,51 @@ import { listTasks, formatTaskList } from "./commands/task.js";
 const args = process.argv.slice(2);
 const command = args[0];
 
+function getModesExplanatiion(): string {
+  const config = loadConfig(process.cwd());
+  const currentMode = getCurrentMode(config);
+  const lines = ["## Coding modes"];
+  for (const mode of MODES) {
+    const marker = mode.number === currentMode.number ? " <-- current" : "";
+    lines.push(`  ${mode.number}. ${mode.name} - ${mode.description}${marker}`);
+  }
+  lines.push("\nTo change mode: node dist/cli.js mode <number>");
+  return lines.join("\n");
+}
+
+function getHelpMessage(): string {
+  return `
+Dojo CLI - Maintain your programming skills
+
+Usage: node dist/cli.js <command> [options]
+
+Commands:
+  init [mode]                Initialize Dojo (mode: 1-6, default: 4)
+  mode [number|name]         Show or change the current mode
+  stats                      Show detailed statistics
+  status                     Show quick status
+  tasks                      List all tasks
+  create <title> [desc]      Create a new task
+  assign <file> <who>        Assign task to human or claude
+  focus [file]               Focus on a task (required before writing code)
+  unfocus                    Clear task focus
+  complete <file> <who>      Mark task complete
+
+Modes:
+  1. Yolo              100% AI coding
+  2. Padawan           90% AI / 10% human
+  3. Clever monkey     75% AI / 25% human
+  4. 50-50             50% AI / 50% human
+  5. Finger workout    25% AI / 75% human
+  6. Switching to guns 100% human coding
+
+Hook Commands (used by Claude Code):
+  hook:pre-tool-use          Pre-tool-use hook (reads JSON from stdin)
+  hook:system-prompt         Output system prompt injection
+  hook:status                Output compact status line
+`;
+}
+
 async function main() {
   switch (command) {
     // Hook commands (called by Claude Code)
@@ -72,6 +117,16 @@ async function main() {
       break;
     }
 
+    case "modes": {
+      if (!isFullyInitialized(process.cwd())) {
+        console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
+        process.exit(1);
+      }
+
+      console.log(getModesExplanatiion());
+      break;
+    }
+
     case "mode": {
       if (!isFullyInitialized(process.cwd())) {
         console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
@@ -82,15 +137,7 @@ async function main() {
 
       // If no argument, list available modes
       if (!modeArg) {
-        const config = loadConfig(process.cwd());
-        const currentMode = getCurrentMode(config);
-        console.log("## Dojo Modes\n");
-        for (const mode of MODES) {
-          const marker = mode.number === currentMode.number ? " <-- current" : "";
-          console.log(`  ${mode.number}. ${mode.name} - ${mode.description}${marker}`);
-        }
-        console.log("\nTo change mode: node dist/cli.js mode <number>");
-        break;
+        throw new Error(`Missing argument: mode\n${getModesExplanatiion()}`);
       }
 
       // Try to parse as number first
@@ -102,9 +149,7 @@ async function main() {
       }
 
       if (!selectedMode) {
-        console.error(`❌ Unknown mode: ${modeArg}`);
-        console.error("   Use a number 1-6 or a mode name");
-        process.exit(1);
+        throw Error(`❌ Unknown mode: ${modeArg}  Use a number 1-6 or a mode name`);
       }
 
       // Update config
@@ -300,38 +345,10 @@ async function main() {
     }
 
     case "help":
-    default:
-      console.log(`
-Dojo CLI - Maintain your programming skills
-
-Usage: node dist/cli.js <command> [options]
-
-Commands:
-  init [mode]                Initialize Dojo (mode: 1-6, default: 4)
-  mode [number|name]         Show or change the current mode
-  stats                      Show detailed statistics
-  status                     Show quick status
-  tasks                      List all tasks
-  create <title> [desc]      Create a new task
-  assign <file> <who>        Assign task to human or claude
-  focus [file]               Focus on a task (required before writing code)
-  unfocus                    Clear task focus
-  complete <file> <who>      Mark task complete
-
-Modes:
-  1. Yolo              100% AI coding
-  2. Padawan           90% AI / 10% human
-  3. Clever monkey     75% AI / 25% human
-  4. 50-50             50% AI / 50% human
-  5. Finger workout    25% AI / 75% human
-  6. Switching to guns 100% human coding
-
-Hook Commands (used by Claude Code):
-  hook:pre-tool-use          Pre-tool-use hook (reads JSON from stdin)
-  hook:system-prompt         Output system prompt injection
-  hook:status                Output compact status line
-`);
+      console.log(getHelpMessage());
       break;
+    default:
+      throw new Error(getHelpMessage());
   }
 }
 
