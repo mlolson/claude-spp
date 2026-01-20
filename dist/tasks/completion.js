@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
-import { addHumanLines, addClaudeLines, loadState, getCurrentTask, clearCurrentTask } from "../state/manager.js";
+import { getCurrentTask, clearCurrentTask } from "../state/manager.js";
 import { moveTask, getTaskSubdir, listTaskFiles } from "./directories.js";
 import { parseTaskFile } from "./parser.js";
 /**
@@ -114,7 +114,7 @@ function findTaskDirectory(projectPath, filename) {
  * Complete a task
  */
 export function completeTask(projectPath, input) {
-    const { filename, completedBy, linesOfCode, notes } = input;
+    const { filename, completedBy, notes } = input;
     // Find the task
     const sourceDir = findTaskDirectory(projectPath, filename);
     if (!sourceDir) {
@@ -148,15 +148,6 @@ export function completeTask(projectPath, input) {
     if (currentTaskFilename === filename) {
         clearCurrentTask(projectPath);
     }
-    // Update stats if lines of code provided
-    if (linesOfCode && linesOfCode > 0) {
-        if (completedBy === "human") {
-            addHumanLines(projectPath, linesOfCode);
-        }
-        else {
-            addClaudeLines(projectPath, linesOfCode);
-        }
-    }
     // Auto-commit after all changes are done
     let commitHash;
     if (isGitRepo(projectPath) && hasUncommittedChanges(projectPath)) {
@@ -170,17 +161,12 @@ export function completeTask(projectPath, input) {
     }
     // Get the completed task
     const task = parseTaskFile(projectPath, filename, "completed");
-    // Get updated state for ratio
-    const state = loadState(projectPath);
-    const total = state.session.humanLines + state.session.claudeLines;
-    const ratio = total > 0 ? state.session.humanLines / total : 1;
     return {
         success: true,
         task,
         message: commitHash
             ? `Task "${task.title}" completed by ${completedBy}. Committed: ${getShortHash(commitHash)}`
             : `Task "${task.title}" completed by ${completedBy}.`,
-        updatedRatio: ratio,
         commitHash,
     };
 }
@@ -248,10 +234,6 @@ export function formatCompletionResult(result) {
     if (result.task) {
         lines.push(`**Task:** ${result.task.title}`);
         lines.push(`**Completed by:** ${result.task.completionNotes.completedBy}`);
-    }
-    if (result.updatedRatio !== undefined) {
-        lines.push("");
-        lines.push(`**Current ratio:** ${(result.updatedRatio * 100).toFixed(0)}% human work`);
     }
     return lines.join("\n");
 }

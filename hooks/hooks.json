@@ -11,12 +11,6 @@
         "type": "command",
         "command": "node dist/cli.js hook:pre-tool-use"
       }
-    ],
-    "PostResponse": [
-      {
-        "type": "command",
-        "command": "node dist/cli.js hook:post-response"
-      }
     ]
   }
 }

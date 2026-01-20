@@ -1,22 +1,22 @@
 import { loadConfig } from "../config/loader.js";
-import { loadState } from "../state/manager.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { getEffectiveRatio } from "../config/schema.js";
 import { parseTasksInDirectory } from "../tasks/parser.js";
 import { getCurrentFocusedTask } from "../tasks/focus.js";
+import { getLineCounts } from "../git/history.js";
 /**
  * Generate the Dojo system prompt injection
  */
 export function generateSystemPrompt(projectPath) {
     const config = loadConfig(projectPath);
-    const state = loadState(projectPath);
     // If Dojo is disabled, return empty
     if (!config.enabled) {
         return "";
     }
-    const currentRatio = calculateRatio(state.session);
+    const lineCounts = getLineCounts(projectPath);
+    const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
     const targetRatio = getEffectiveRatio(config);
-    const isHealthy = isRatioHealthy(state.session, targetRatio);
+    const isHealthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
     // Get tasks
     const humanTasks = parseTasksInDirectory(projectPath, "human");
     const claudeTasks = parseTasksInDirectory(projectPath, "claude");
@@ -33,7 +33,7 @@ export function generateSystemPrompt(projectPath) {
         "## Current Status",
         "",
         `- **Target ratio:** ${(targetRatio * 100).toFixed(0)}% human-written code`,
-        `- **Current ratio:** ${(currentRatio * 100).toFixed(0)}% human (${state.session.humanLines} lines) / ${(100 - currentRatio * 100).toFixed(0)}% Claude (${state.session.claudeLines} lines)`,
+        `- **Current ratio:** ${(currentRatio * 100).toFixed(0)}% human (${lineCounts.humanLines} lines) / ${(100 - currentRatio * 100).toFixed(0)}% Claude (${lineCounts.claudeLines} lines)`,
         `- **Status:** ${isHealthy ? "✅ Healthy" : "⚠️ Below target"}`,
         "",
         "## Current Task",
@@ -129,13 +129,13 @@ export function generateSystemPrompt(projectPath) {
  */
 export function generateStatusLine(projectPath) {
     const config = loadConfig(projectPath);
-    const state = loadState(projectPath);
     if (!config.enabled) {
         return "";
     }
-    const currentRatio = calculateRatio(state.session);
+    const lineCounts = getLineCounts(projectPath);
+    const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
     const targetRatio = getEffectiveRatio(config);
-    const isHealthy = isRatioHealthy(state.session, targetRatio);
+    const isHealthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
     const status = isHealthy ? "✅" : "⚠️";
     return `[Dojo ${status} ${(currentRatio * 100).toFixed(0)}%/${(targetRatio * 100).toFixed(0)}% human]`;
 }

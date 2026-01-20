@@ -1,6 +1,3 @@
-import { isDojoInitialized, loadConfig } from "../config/loader.js";
-import { addClaudeLines, loadState } from "../state/manager.js";
-
 /**
  * Tool use record from Claude's response
  */
@@ -29,84 +26,18 @@ export interface PostResponseHookInput {
 export interface PostResponseHookOutput {
   // Whether the hook succeeded
   success: boolean;
-  // Lines attributed to Claude
-  claudeLines?: number;
   // Any message to log
   message?: string;
 }
 
 /**
- * Count lines in a string
- */
-function countLines(text: string): number {
-  if (!text) return 0;
-  return text.split("\n").length;
-}
-
-/**
- * Extract lines written from tool uses
- */
-function countLinesFromToolUses(toolUses: ToolUse[]): number {
-  let totalLines = 0;
-
-  for (const tool of toolUses) {
-    // Write tool - count all content lines
-    if (tool.name === "Write" && typeof tool.input.content === "string") {
-      totalLines += countLines(tool.input.content);
-    }
-
-    // Edit tool - count new_string lines (approximation)
-    if (tool.name === "Edit" && typeof tool.input.new_string === "string") {
-      const newLines = countLines(tool.input.new_string);
-      const oldLines = typeof tool.input.old_string === "string"
-        ? countLines(tool.input.old_string)
-        : 0;
-      // Only count net new lines
-      totalLines += Math.max(0, newLines - oldLines);
-    }
-
-    // NotebookEdit - count new source lines
-    if (tool.name === "NotebookEdit" && typeof tool.input.new_source === "string") {
-      totalLines += countLines(tool.input.new_source);
-    }
-  }
-
-  return totalLines;
-}
-
-/**
  * Post-response hook
  * Called after Claude generates a response
- * Tracks lines of code written by Claude
+ * Line tracking is now done via git history, so this hook is minimal
  */
 export function postResponseHook(input: PostResponseHookInput): PostResponseHookOutput {
-  const { cwd, toolUses } = input;
-
-  // Check if Dojo is initialized
-  if (!isDojoInitialized(cwd)) {
-    return { success: true };
-  }
-
-  // Load config
-  const config = loadConfig(cwd);
-  if (!config.enabled) {
-    return { success: true };
-  }
-
-  // Count lines from tool uses
-  const claudeLines = countLinesFromToolUses(toolUses);
-
-  // Update state if lines were written
-  if (claudeLines > 0) {
-    addClaudeLines(cwd, claudeLines);
-
-    return {
-      success: true,
-      claudeLines,
-      message: `Dojo: Tracked ${claudeLines} lines written by Claude`,
-    };
-  }
-
+  // Line tracking is now derived from git history
+  // This hook is kept for potential future use
   return { success: true };
 }
 

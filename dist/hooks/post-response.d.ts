@@ -19,13 +19,12 @@ export interface PostResponseHookInput {
  */
 export interface PostResponseHookOutput {
     success: boolean;
-    claudeLines?: number;
     message?: string;
 }
 /**
  * Post-response hook
  * Called after Claude generates a response
- * Tracks lines of code written by Claude
+ * Line tracking is now done via git history, so this hook is minimal
  */
 export declare function postResponseHook(input: PostResponseHookInput): PostResponseHookOutput;
 /**

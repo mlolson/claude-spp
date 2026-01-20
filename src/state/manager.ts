@@ -80,35 +80,13 @@ export function updateSession(
 }
 
 /**
- * Add lines to human count
- */
-export function addHumanLines(projectPath: string, lines: number): State {
-  const state = loadState(projectPath);
-  state.session.humanLines += lines;
-  saveState(projectPath, state);
-  return state;
-}
-
-/**
- * Add lines to Claude count
- */
-export function addClaudeLines(projectPath: string, lines: number): State {
-  const state = loadState(projectPath);
-  state.session.claudeLines += lines;
-  saveState(projectPath, state);
-  return state;
-}
-
-/**
- * Reset session statistics (start a new session)
+ * Reset session (start a new session)
  */
 export function resetSession(projectPath: string): State {
   const state = loadState(projectPath);
 
   state.session = {
     startedAt: new Date().toISOString(),
-    humanLines: 0,
-    claudeLines: 0,
     currentTask: null,
   };
 

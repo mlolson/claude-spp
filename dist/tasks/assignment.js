@@ -1,18 +1,18 @@
 import { loadConfig } from "../config/loader.js";
 import { getEffectiveRatio } from "../config/schema.js";
-import { loadState } from "../state/manager.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { moveTask, listTaskFiles } from "./directories.js";
 import { parseTaskFile, parseTasksInDirectory } from "./parser.js";
+import { getLineCounts } from "../git/history.js";
 /**
  * Check if Claude is allowed to take work based on current ratio
  */
 export function canClaudeTakeWork(projectPath) {
     const config = loadConfig(projectPath);
-    const state = loadState(projectPath);
+    const lineCounts = getLineCounts(projectPath);
     const targetRatio = getEffectiveRatio(config);
-    const currentRatio = calculateRatio(state.session);
-    const healthy = isRatioHealthy(state.session, targetRatio);
+    const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
+    const healthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
     if (!config.enabled) {
         return {
             allowed: true,

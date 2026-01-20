@@ -16,8 +16,6 @@ export {
 export {
   loadState,
   saveState,
-  addHumanLines,
-  addClaudeLines,
   resetSession,
   setCurrentTask,
   getCurrentTask,
@@ -107,6 +105,14 @@ export {
   type FocusTaskResult,
 } from "./tasks/focus.js";
 
+// Git History
+export {
+  getLineCounts,
+  recalculateLineCounts,
+  clearCache,
+  type LineCounts,
+} from "./git/history.js";
+
 // Initialization
 export { initializeDojo, isFullyInitialized, ensureInitialized } from "./init.js";
 
@@ -130,5 +136,4 @@ export {
   postResponseHook,
   type PostResponseHookInput,
   type PostResponseHookOutput,
-  type ToolUse,
 } from "./hooks/post-response.js";

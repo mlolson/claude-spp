@@ -5,7 +5,6 @@ import { type Task } from "./parser.js";
 export interface CompleteTaskInput {
     filename: string;
     completedBy: "human" | "claude";
-    linesOfCode?: number;
     notes?: string;
 }
 /**
@@ -15,7 +14,6 @@ export interface CompleteTaskResult {
     success: boolean;
     task: Task | null;
     message: string;
-    updatedRatio?: number;
     commitHash?: string;
 }
 /**

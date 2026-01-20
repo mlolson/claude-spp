@@ -1,9 +1,8 @@
-import * as fs from "node:fs";
 import { isDojoInitialized, loadConfig } from "../config/loader.js";
-import { loadState } from "../state/manager.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { getEffectiveRatio } from "../config/schema.js";
 import { generateSystemPrompt } from "./system-prompt.js";
+import { getLineCounts } from "../git/history.js";
 
 /**
  * Hook input from Claude Code
@@ -52,14 +51,14 @@ export function preResponseHook(input: PreResponseHookInput): PreResponseHookOut
   const systemPromptAddition = generateSystemPrompt(cwd);
 
   // Check ratio status for any warnings
-  const state = loadState(cwd);
-  const currentRatio = calculateRatio(state.session);
+  const lineCounts = getLineCounts(cwd);
+  const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
   const targetRatio = getEffectiveRatio(config);
-  const isHealthy = isRatioHealthy(state.session, targetRatio);
+  const isHealthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
 
   // If ratio is unhealthy, we might want to show a warning
   let userMessage: string | undefined;
-  if (!isHealthy && state.session.claudeLines > 0) {
+  if (!isHealthy && lineCounts.claudeLines > 0) {
     userMessage = `⚠️ Dojo: Human work ratio (${(currentRatio * 100).toFixed(0)}%) is below target (${(targetRatio * 100).toFixed(0)}%). Consider having the human write more code.`;
   }
 

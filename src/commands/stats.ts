@@ -3,6 +3,7 @@ import { getEffectiveRatio } from "../config/schema.js";
 import { loadState } from "../state/manager.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { getTaskCounts } from "../tasks/directories.js";
+import { getLineCounts } from "../git/history.js";
 
 export interface StatsResult {
   initialized: boolean;
@@ -11,10 +12,16 @@ export interface StatsResult {
   targetRatio?: number;
   currentRatio?: number;
   ratioHealthy?: boolean;
-  session?: {
-    startedAt: string;
+  lines?: {
     humanLines: number;
     claudeLines: number;
+    humanCommits: number;
+    claudeCommits: number;
+    fromCache: boolean;
+    commitsScanned: number;
+  };
+  session?: {
+    startedAt: string;
   };
   tasks?: {
     unassigned: number;
@@ -34,8 +41,9 @@ export function getStats(projectPath: string): StatsResult {
 
   const config = loadConfig(projectPath);
   const state = loadState(projectPath);
+  const lineCounts = getLineCounts(projectPath);
   const targetRatio = getEffectiveRatio(config);
-  const currentRatio = calculateRatio(state.session);
+  const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
 
   return {
     initialized: true,
@@ -43,11 +51,10 @@ export function getStats(projectPath: string): StatsResult {
     preset: config.preset,
     targetRatio,
     currentRatio,
-    ratioHealthy: isRatioHealthy(state.session, targetRatio),
+    ratioHealthy: isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio),
+    lines: lineCounts,
     session: {
       startedAt: state.session.startedAt,
-      humanLines: state.session.humanLines,
-      claudeLines: state.session.claudeLines,
     },
     tasks: getTaskCounts(projectPath),
   };
@@ -65,6 +72,12 @@ export function formatStats(stats: StatsResult): string {
     return "Dojo is disabled in this project.";
   }
 
+  const cacheStatus = stats.lines?.fromCache
+    ? "(cached)"
+    : stats.lines?.commitsScanned
+      ? `(scanned ${stats.lines.commitsScanned} commits)`
+      : "";
+
   const lines: string[] = [
     "## Dojo Stats",
     "",
@@ -72,10 +85,10 @@ export function formatStats(stats: StatsResult): string {
     `**Target Ratio:** ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,
     `**Current Ratio:** ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${stats.ratioHealthy ? "(healthy)" : "(below target)"}`,
     "",
-    "### Session",
-    `- Human lines: ${stats.session?.humanLines ?? 0}`,
-    `- Claude lines: ${stats.session?.claudeLines ?? 0}`,
-    `- Started: ${stats.session?.startedAt ?? "N/A"}`,
+    "### Git History",
+    `- Human: ${stats.lines?.humanLines ?? 0} lines, ${stats.lines?.humanCommits ?? 0} commits`,
+    `- Claude: ${stats.lines?.claudeLines ?? 0} lines, ${stats.lines?.claudeCommits ?? 0} commits`,
+    `- ${cacheStatus}`,
     "",
     "### Tasks",
     `- Unassigned: ${stats.tasks?.unassigned ?? 0}`,

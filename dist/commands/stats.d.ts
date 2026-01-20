@@ -5,10 +5,16 @@ export interface StatsResult {
     targetRatio?: number;
     currentRatio?: number;
     ratioHealthy?: boolean;
-    session?: {
-        startedAt: string;
+    lines?: {
         humanLines: number;
         claudeLines: number;
+        humanCommits: number;
+        claudeCommits: number;
+        fromCache: boolean;
+        commitsScanned: number;
+    };
+    session?: {
+        startedAt: string;
     };
     tasks?: {
         unassigned: number;

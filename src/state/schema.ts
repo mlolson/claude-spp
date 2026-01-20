@@ -1,17 +1,11 @@
 import { z } from "zod";
 
 /**
- * Session statistics tracking work distribution
+ * Session state (non-line-count data)
  */
 export const SessionSchema = z.object({
   // When the session started
   startedAt: z.string().datetime(),
-
-  // Lines of code written by human
-  humanLines: z.number().int().min(0).default(0),
-
-  // Lines of code written by Claude
-  claudeLines: z.number().int().min(0).default(0),
 
   // Currently focused task filename (null if none)
   currentTask: z.string().nullable().default(null),
@@ -23,7 +17,7 @@ export type Session = z.infer<typeof SessionSchema>;
  * Main state schema for .dojo/state.json
  */
 export const StateSchema = z.object({
-  // Current session statistics
+  // Current session state
   session: SessionSchema,
 });
 
@@ -36,28 +30,26 @@ export function createDefaultState(): State {
   return {
     session: {
       startedAt: new Date().toISOString(),
-      humanLines: 0,
-      claudeLines: 0,
       currentTask: null,
     },
   };
 }
 
 /**
- * Calculate the current human work ratio from session stats
+ * Calculate the current human work ratio from line counts
  * Returns 1.0 if no work has been done yet (human is at 100% until Claude does something)
  */
-export function calculateRatio(session: Session): number {
-  const total = session.humanLines + session.claudeLines;
+export function calculateRatio(humanLines: number, claudeLines: number): number {
+  const total = humanLines + claudeLines;
   if (total === 0) {
     return 1.0; // No work yet, human is at 100%
   }
-  return session.humanLines / total;
+  return humanLines / total;
 }
 
 /**
  * Check if the human work ratio meets the target
  */
-export function isRatioHealthy(session: Session, targetRatio: number): boolean {
-  return calculateRatio(session) >= targetRatio;
+export function isRatioHealthy(humanLines: number, claudeLines: number, targetRatio: number): boolean {
+  return calculateRatio(humanLines, claudeLines) >= targetRatio;
 }

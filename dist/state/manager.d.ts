@@ -17,15 +17,7 @@ export declare function saveState(projectPath: string, state: State): void;
  */
 export declare function updateSession(projectPath: string, updates: Partial<Session>): State;
 /**
- * Add lines to human count
- */
-export declare function addHumanLines(projectPath: string, lines: number): State;
-/**
- * Add lines to Claude count
- */
-export declare function addClaudeLines(projectPath: string, lines: number): State;
-/**
- * Reset session statistics (start a new session)
+ * Reset session (start a new session)
  */
 export declare function resetSession(projectPath: string): State;
 /**

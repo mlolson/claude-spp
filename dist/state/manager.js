@@ -56,32 +56,12 @@ export function updateSession(projectPath, updates) {
     return state;
 }
 /**
- * Add lines to human count
- */
-export function addHumanLines(projectPath, lines) {
-    const state = loadState(projectPath);
-    state.session.humanLines += lines;
-    saveState(projectPath, state);
-    return state;
-}
-/**
- * Add lines to Claude count
- */
-export function addClaudeLines(projectPath, lines) {
-    const state = loadState(projectPath);
-    state.session.claudeLines += lines;
-    saveState(projectPath, state);
-    return state;
-}
-/**
- * Reset session statistics (start a new session)
+ * Reset session (start a new session)
  */
 export function resetSession(projectPath) {
     const state = loadState(projectPath);
     state.session = {
         startedAt: new Date().toISOString(),
-        humanLines: 0,
-        claudeLines: 0,
         currentTask: null,
     };
     saveState(projectPath, state);

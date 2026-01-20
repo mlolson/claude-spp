@@ -1,11 +1,9 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
 import { loadConfig } from "../config/loader.js";
 import { getEffectiveRatio } from "../config/schema.js";
-import { loadState } from "../state/manager.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
-import { moveTask, getTaskSubdir, listTaskFiles, type TaskDirectory } from "./directories.js";
+import { moveTask, listTaskFiles, type TaskDirectory } from "./directories.js";
 import { parseTaskFile, parseTasksInDirectory, type Task } from "./parser.js";
+import { getLineCounts } from "../git/history.js";
 
 /**
  * Result of checking if Claude can take work
@@ -22,10 +20,10 @@ export interface CanClaudeTakeWorkResult {
  */
 export function canClaudeTakeWork(projectPath: string): CanClaudeTakeWorkResult {
   const config = loadConfig(projectPath);
-  const state = loadState(projectPath);
+  const lineCounts = getLineCounts(projectPath);
   const targetRatio = getEffectiveRatio(config);
-  const currentRatio = calculateRatio(state.session);
-  const healthy = isRatioHealthy(state.session, targetRatio);
+  const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
+  const healthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
 
   if (!config.enabled) {
     return {

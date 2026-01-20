@@ -1,17 +1,14 @@
 #!/usr/bin/env node
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { execSync } from "node:child_process";
 import { runPreResponseHook } from "./hooks/pre-response.js";
 import { runPostResponseHook } from "./hooks/post-response.js";
 import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
-import { runPromptReminderHook } from "./hooks/prompt-reminder.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
 import { initializeDojo, isFullyInitialized } from "./init.js";
 import { loadConfig } from "./config/loader.js";
-import { loadState, addHumanLines, clearCurrentTask } from "./state/manager.js";
+import { clearCurrentTask } from "./state/manager.js";
 import { focusTask, getCurrentFocusedTask } from "./tasks/focus.js";
 import { calculateRatio } from "./state/schema.js";
+import { getLineCounts } from "./git/history.js";
 import { getEffectiveRatio } from "./config/schema.js";
 import { createTask } from "./tasks/generator.js";
 import { assignTask } from "./tasks/assignment.js";
@@ -23,9 +20,6 @@ const command = args[0];
 async function main() {
     switch (command) {
         // Hook commands (called by Claude Code)
-        case "hook:prompt-reminder":
-            await runPromptReminderHook();
-            break;
         case "hook:pre-response":
             await runPreResponseHook();
             break;
@@ -43,48 +37,6 @@ async function main() {
             // Output compact status line
             console.log(generateStatusLine(process.cwd()));
             break;
-        case "hook:install": {
-            // Install git post-commit hook for tracking human lines
-            const cwd = process.cwd();
-            // Check if we're in a git repo
-            try {
-                execSync("git rev-parse --git-dir", { cwd, stdio: "ignore" });
-            }
-            catch {
-                console.error("❌ Not a git repository");
-                process.exit(1);
-            }
-            const gitHooksDir = path.join(cwd, ".git", "hooks");
-            const hookPath = path.join(gitHooksDir, "post-commit");
-            const sourceHook = path.join(cwd, "hooks", "git-post-commit.sh");
-            // Check if source hook exists
-            if (!fs.existsSync(sourceHook)) {
-                console.error("❌ Hook source not found:", sourceHook);
-                process.exit(1);
-            }
-            // Check if hook already exists
-            if (fs.existsSync(hookPath)) {
-                const existing = fs.readFileSync(hookPath, "utf-8");
-                if (existing.includes("Dojo post-commit hook")) {
-                    console.log("✅ Dojo git hook already installed");
-                    break;
-                }
-                console.error("❌ A post-commit hook already exists. Please manually integrate or remove it.");
-                console.error("   Path:", hookPath);
-                process.exit(1);
-            }
-            // Ensure hooks directory exists
-            if (!fs.existsSync(gitHooksDir)) {
-                fs.mkdirSync(gitHooksDir, { recursive: true });
-            }
-            // Copy hook and make executable
-            const hookContent = fs.readFileSync(sourceHook, "utf-8");
-            fs.writeFileSync(hookPath, hookContent, { mode: 0o755 });
-            console.log("✅ Installed git post-commit hook");
-            console.log("   Human lines will be tracked automatically from commits");
-            console.log("   (Commits with 'Co-Authored-By: Claude' are skipped)");
-            break;
-        }
         // User commands
         case "init": {
             try {
@@ -165,15 +117,13 @@ async function main() {
             }
             const filename = args[1];
             const completedBy = args[2];
-            const lines = args[3] ? parseInt(args[3], 10) : undefined;
             if (!filename || !completedBy || !["human", "claude"].includes(completedBy)) {
-                console.error("Usage: node dist/cli.js complete <filename> <human|claude> [lines]");
+                console.error("Usage: node dist/cli.js complete <filename> <human|claude>");
                 process.exit(1);
             }
             const result = completeTask(process.cwd(), {
                 filename,
                 completedBy,
-                linesOfCode: lines,
             });
             if (result.success) {
                 console.log(`✅ ${result.message}`);
@@ -181,28 +131,6 @@ async function main() {
             else {
                 console.error(`❌ ${result.message}`);
                 process.exit(1);
-            }
-            break;
-        }
-        case "add-lines": {
-            if (!isFullyInitialized(process.cwd())) {
-                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
-                process.exit(1);
-            }
-            const who = args[1];
-            const count = parseInt(args[2], 10);
-            if (!who || !["human", "claude"].includes(who) || isNaN(count)) {
-                console.error("Usage: node dist/cli.js add-lines <human|claude> <count>");
-                process.exit(1);
-            }
-            if (who === "human") {
-                addHumanLines(process.cwd(), count);
-                console.log(`✅ Added ${count} lines to human count`);
-            }
-            else {
-                const { addClaudeLines } = await import("./state/manager.js");
-                addClaudeLines(process.cwd(), count);
-                console.log(`✅ Added ${count} lines to Claude count`);
             }
             break;
         }
@@ -288,13 +216,13 @@ async function main() {
                 console.log("Dojo: Disabled");
                 break;
             }
-            const state = loadState(process.cwd());
-            const ratio = calculateRatio(state.session);
+            const lineCounts = getLineCounts(process.cwd());
+            const ratio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
             const target = getEffectiveRatio(config);
             const healthy = ratio >= target;
             console.log(`Dojo: ${healthy ? "✅" : "⚠️"} ${(ratio * 100).toFixed(0)}% human / ${(target * 100).toFixed(0)}% target`);
-            console.log(`  Human: ${state.session.humanLines} lines`);
-            console.log(`  Claude: ${state.session.claudeLines} lines`);
+            console.log(`  Human: ${lineCounts.humanLines} lines, ${lineCounts.humanCommits} commits`);
+            console.log(`  Claude: ${lineCounts.claudeLines} lines, ${lineCounts.claudeCommits} commits`);
             // Show current task
             const currentTaskStatus = getCurrentFocusedTask(process.cwd());
             if (currentTaskStatus) {
@@ -321,13 +249,9 @@ Commands:
   assign <file> <who>        Assign task to human or claude
   focus [file]               Focus on a task (required before writing code)
   unfocus                    Clear task focus
-  complete <file> <who> [n]  Mark task complete (optionally with line count)
-  add-lines <who> <count>    Manually add line count
+  complete <file> <who>      Mark task complete
 
 Hook Commands (used by Claude Code):
-  hook:install               Install git post-commit hook for tracking human lines
-  hook:pre-response          Pre-response hook (reads JSON from stdin)
-  hook:post-response         Post-response hook (reads JSON from stdin)
   hook:pre-tool-use          Pre-tool-use hook (reads JSON from stdin)
   hook:system-prompt         Output system prompt injection
   hook:status                Output compact status line
