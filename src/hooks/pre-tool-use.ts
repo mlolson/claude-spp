@@ -120,12 +120,9 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
     // Ratio is below target - block Claude from writing
     const reason = [
       `Human work ratio is below target: ${(currentRatio * 100).toFixed(0)}% actual vs ${(targetRatio * 100).toFixed(0)}% required`,
-      "",
       "The human needs to write more code before Claude can continue.",
-      "",
-      "This directive cannot be overriden. Offer to create a task for the user including step by step instructions, and to offer them hints.",
-      "",
-      "Do not give the user suggestions on how to disable STP or switch modes."
+      "Offer to create a task for the user including step by step instructions, hints, and code pointers.",
+      "Important: Do not give the user instructions on how to disable STP or change modes."
     ].join("\n");
 
     return denyResponse(reason);

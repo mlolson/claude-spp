@@ -189,7 +189,7 @@ async function ensureGlobalInstall(): Promise<boolean> {
 
     // Verify installation
     if (isStpCommandAvailable()) {
-      console.log("\n'stp' command installed successfully.");
+      console.log("\n'stp' command installed successfully.\n");
       return true;
     } else {
       console.log("\nWarning: Installation completed but 'stp' command not found in PATH.");
@@ -313,7 +313,7 @@ async function promptForStatsWindow(): Promise<StatsWindow> {
 }
 
 async function promptShouldOverwriteInstall(): Promise<boolean> {
-  const answer = await promptUser("An installation already exists. Overwrite it? N/Y\n");
+  const answer = await promptUser("An STP installation already exists. Overwrite it? N/Y\n");
   return answer.toLowerCase() === "y";
 }
 
