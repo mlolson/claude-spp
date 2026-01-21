@@ -156,14 +156,16 @@ async function promptForMode(): Promise<number> {
   });
 
   return new Promise((resolve) => {
-    console.log("\nAvailable modes:");
+    console.log("\nAvailable modes:\n");
+    const maxNameLen = Math.max(...MODES.map(m => m.name.length));
     for (const mode of MODES) {
+      const paddedName = mode.name.padEnd(maxNameLen);
       const defaultMarker = mode.number === 4 ? " (default)" : "";
-      console.log(`  ${mode.number}. ${mode.name} - ${mode.description}${defaultMarker}`);
+      console.log(`  ${mode.number}. ${paddedName}   ${mode.description}${defaultMarker}`);
     }
     console.log("");
 
-    rl.question("Select a mode [1-6, or press Enter for 50-50]: ", (answer) => {
+    rl.question(`Select a mode [1-${MODES.length}, or press Enter for 50-50]: `, (answer) => {
       rl.close();
 
       const trimmed = answer.trim();
@@ -173,7 +175,7 @@ async function promptForMode(): Promise<number> {
       }
 
       const num = parseInt(trimmed, 10);
-      if (num >= 1 && num <= 6) {
+      if (num >= 1 && num <= MODES.length) {
         resolve(num);
         return;
       }
@@ -205,6 +207,9 @@ export async function initializeStp(projectPath: string, modeNumber?: number): P
 
   // Prompt for mode if not provided
   const selectedMode = modeNumber ?? await promptForMode();
+  if (selectedMode < 1 || selectedMode > MODES.length) {
+    throw new Error("Invalid mode: ${selectedMode}.");
+  }
 
   // Initialize config
   const config: Config = {
