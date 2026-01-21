@@ -26,19 +26,24 @@ describe("Initialization", () => {
 
   describe("initializeStp", () => {
     it("creates .stp directory", async () => {
-      await initializeStp(TEST_DIR, 4);
+      await initializeStp(TEST_DIR, 4, "oneWeek");
       expect(fs.existsSync(getStpDir(TEST_DIR))).toBe(true);
     });
 
     it("creates config.json", async () => {
-      await initializeStp(TEST_DIR, 4);
+      await initializeStp(TEST_DIR, 4, "oneWeek");
       const configPath = path.join(getStpDir(TEST_DIR), "config.json");
       expect(fs.existsSync(configPath)).toBe(true);
     });
 
     it("uses specified mode", async () => {
-      const config = await initializeStp(TEST_DIR, 3);
+      const config = await initializeStp(TEST_DIR, 3, "oneWeek");
       expect(config.mode).toBe(3);
+    });
+
+    it("uses specified statsWindow", async () => {
+      const config = await initializeStp(TEST_DIR, 4, "oneDay");
+      expect(config.statsWindow).toBe("oneDay");
     });
   });
 
@@ -54,25 +59,26 @@ describe("Initialization", () => {
     });
 
     it("returns true after full initialization", async () => {
-      await initializeStp(TEST_DIR, 4);
+      await initializeStp(TEST_DIR, 4, "oneWeek");
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
   });
 
   describe("ensureInitialized", () => {
     it("initializes if not already done", async () => {
-      const config = await ensureInitialized(TEST_DIR, 4);
+      const config = await ensureInitialized(TEST_DIR, 4, "oneWeek");
 
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
       expect(config.enabled).toBe(true);
     });
 
     it("returns existing config if already initialized", async () => {
-      await initializeStp(TEST_DIR, 5);
+      await initializeStp(TEST_DIR, 5, "allTime");
 
       const config = await ensureInitialized(TEST_DIR);
 
       expect(config.mode).toBe(5);
+      expect(config.statsWindow).toBe("allTime");
     });
   });
 

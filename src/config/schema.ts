@@ -59,6 +59,37 @@ export const DifficultySchema = z.enum(["easy", "medium", "hard"]);
 export type Difficulty = z.infer<typeof DifficultySchema>;
 
 /**
+ * Stats window options for filtering commit history
+ */
+export const StatsWindowSchema = z.enum(["oneDay", "oneWeek", "allTime"]);
+export type StatsWindow = z.infer<typeof StatsWindowSchema>;
+
+/**
+ * Human-readable labels for stats windows
+ */
+export const STATS_WINDOW_LABELS: Record<StatsWindow, string> = {
+  oneDay: "Last 24 hours",
+  oneWeek: "Last 7 days",
+  allTime: "All time",
+};
+
+/**
+ * Get cutoff date for a stats window
+ * @returns Date for filtering or null for allTime (no filter)
+ */
+export function getStatsWindowCutoff(window: StatsWindow): Date | null {
+  const now = new Date();
+  switch (window) {
+    case "oneDay":
+      return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    case "oneWeek":
+      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    case "allTime":
+      return null;
+  }
+}
+
+/**
  * Main configuration schema for .dojo/config.json
  */
 export const ConfigSchema = z.object({
@@ -76,6 +107,9 @@ export const ConfigSchema = z.object({
 
   // Default difficulty for generated tasks
   difficulty: DifficultySchema.default("medium"),
+
+  // Stats window for filtering commit history
+  statsWindow: StatsWindowSchema.default("oneWeek"),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -87,6 +121,7 @@ export const DEFAULT_CONFIG: Config = {
   enabled: true,
   mode: 4, // 50-50
   difficulty: "medium",
+  statsWindow: "oneWeek",
 };
 
 /**

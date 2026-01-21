@@ -1,7 +1,14 @@
 import { loadConfig, isStpInitialized } from "./config/loader.js";
-import { getEffectiveRatio, getCurrentMode, type Mode } from "./config/schema.js";
+import {
+  getEffectiveRatio,
+  getCurrentMode,
+  getStatsWindowCutoff,
+  STATS_WINDOW_LABELS,
+  type Mode,
+  type StatsWindow,
+} from "./config/schema.js";
 import { calculateRatio, isRatioHealthy } from "./state/schema.js";
-import { getLineCounts } from "./git/history.js";
+import { getLineCountsWithWindow } from "./git/history.js";
 
 export interface StatsResult {
   initialized: boolean;
@@ -10,6 +17,7 @@ export interface StatsResult {
   targetRatio?: number;
   currentRatio?: number;
   ratioHealthy?: boolean;
+  statsWindow?: StatsWindow;
   lines?: {
     humanLines: number;
     claudeLines: number;
@@ -32,7 +40,9 @@ export function getStats(projectPath: string): StatsResult {
   }
 
   const config = loadConfig(projectPath);
-  const lineCounts = getLineCounts(projectPath);
+  const statsWindow = config.statsWindow ?? "oneWeek";
+  const cutoff = getStatsWindowCutoff(statsWindow);
+  const lineCounts = getLineCountsWithWindow(projectPath, { since: cutoff });
   const targetRatio = getEffectiveRatio(config);
   const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
   const mode = getCurrentMode(config);
@@ -44,6 +54,7 @@ export function getStats(projectPath: string): StatsResult {
     targetRatio,
     currentRatio,
     ratioHealthy: isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio),
+    statsWindow,
     lines: lineCounts,
   };
 }
@@ -60,9 +71,9 @@ export function formatStats(stats: StatsResult): string {
     return "STP is disabled in this project.";
   }
 
-  const modeDisplay = stats.mode
-    ? `${stats.mode.name} (${stats.mode.description})`
-    : "Unknown";
+  const windowLabel = stats.statsWindow
+    ? STATS_WINDOW_LABELS[stats.statsWindow]
+    : "All time";
 
   const humanLines = String(stats.lines?.humanLines ?? 0);
   const claudeLines = String(stats.lines?.claudeLines ?? 0);
@@ -73,7 +84,7 @@ export function formatStats(stats: StatsResult): string {
 
   const lines: string[] = [
     "",
-    "Current repo stats:",
+    `Current repo stats (${windowLabel}):`,
     "",
     `Target Ratio:  ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,
     `Current Ratio: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${stats.ratioHealthy ? "(on target) 💪🐵" : "(below target) 🙊"}`,

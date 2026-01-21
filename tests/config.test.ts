@@ -13,6 +13,7 @@ import {
   getEffectiveRatio,
   getCurrentMode,
   type Config,
+  type StatsWindow,
 } from "../src/config/schema.js";
 
 const TEST_DIR = path.join(process.cwd(), ".test-config");
@@ -112,6 +113,34 @@ describe("Configuration", () => {
       const mode = getCurrentMode(config);
       expect(mode.name).toBe("Clever monkey");
       expect(mode.humanRatio).toBe(0.25);
+    });
+  });
+
+  describe("statsWindow", () => {
+    it("defaults to oneWeek", () => {
+      expect(DEFAULT_CONFIG.statsWindow).toBe("oneWeek");
+    });
+
+    it("persists different statsWindow values", () => {
+      const stpDir = getStpDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
+
+      const config: Config = { ...DEFAULT_CONFIG, statsWindow: "oneDay" };
+      saveConfig(TEST_DIR, config);
+
+      const loaded = loadConfig(TEST_DIR);
+      expect(loaded.statsWindow).toBe("oneDay");
+    });
+
+    it("persists allTime statsWindow", () => {
+      const stpDir = getStpDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
+
+      const config: Config = { ...DEFAULT_CONFIG, statsWindow: "allTime" };
+      saveConfig(TEST_DIR, config);
+
+      const loaded = loadConfig(TEST_DIR);
+      expect(loaded.statsWindow).toBe("allTime");
     });
   });
 });

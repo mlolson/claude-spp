@@ -3,7 +3,15 @@ import * as path from "node:path";
 import * as readline from "node:readline";
 import { execSync } from "node:child_process";
 import { loadConfig, saveConfig, isStpInitialized, getStpDir } from "./config/loader.js";
-import { DEFAULT_CONFIG, type Config, MODES, getCurrentMode } from "./config/schema.js";
+import {
+  DEFAULT_CONFIG,
+  type Config,
+  MODES,
+  getCurrentMode,
+  STATS_WINDOW_LABELS,
+  StatsWindowSchema,
+  type StatsWindow,
+} from "./config/schema.js";
 
 const STP_START_MARKER = "<!-- STP:START -->";
 const STP_END_MARKER = "<!-- STP:END -->";
@@ -204,6 +212,35 @@ async function promptForMode(): Promise<number> {
   return modeNumber;
 }
 
+/**
+ * Prompt user to select a stats window interactively
+ */
+async function promptForStatsWindow(): Promise<StatsWindow> {
+  const options = StatsWindowSchema.options;
+  console.log("\nStats window (time period for tracking commits):\n");
+
+  options.forEach((option, index) => {
+    const label = STATS_WINDOW_LABELS[option];
+    const defaultMarker = option === "oneWeek" ? " (default)" : "";
+    console.log(`  ${index + 1}. ${label}${defaultMarker}`);
+  });
+  console.log("");
+
+  while (true) {
+    const userResponse = await promptUser(`Select a stats window [1-${options.length}, or press Enter for Last 7 days]: `);
+    if (userResponse === "") {
+      return "oneWeek";
+    }
+
+    const choice = parseInt(userResponse, 10);
+    if (choice >= 1 && choice <= options.length) {
+      return options[choice - 1];
+    }
+
+    console.log(`Invalid choice: ${userResponse}. Must be in range [1, ${options.length}]`);
+  }
+}
+
 async function promptShouldOverwriteInstall(): Promise<boolean> {
   const answer = await promptUser("An installation already exists. Overwrite it? N/Y\n");
   return answer.toLowerCase() === "y";
@@ -226,8 +263,15 @@ async function promptUser(prompt: string): Promise<string> {
 /**
  * Initialize STP in a project
  * Creates .stp directory with config
+ * @param projectPath Path to the project
+ * @param modeNumber Optional mode number to skip the mode prompt
+ * @param statsWindow Optional stats window to skip the stats window prompt
  */
-export async function initializeStp(projectPath: string, modeNumber?: number): Promise<Config> {
+export async function initializeStp(
+  projectPath: string,
+  modeNumber?: number,
+  statsWindow?: StatsWindow
+): Promise<Config> {
   const stpDir = getStpDir(projectPath);
 
   // Create .stp directory if it doesn't exist
@@ -248,10 +292,14 @@ export async function initializeStp(projectPath: string, modeNumber?: number): P
     throw new Error(`Invalid mode: ${selectedMode}. Must be in range [1, ${MODES.length}]`);
   }
 
+  // Prompt for stats window if not provided
+  const selectedStatsWindow = statsWindow ?? await promptForStatsWindow();
+
   // Initialize config
   const config: Config = {
     ...DEFAULT_CONFIG,
     mode: selectedMode,
+    statsWindow: selectedStatsWindow,
   };
   saveConfig(projectPath, config);
 
@@ -278,9 +326,13 @@ export function isFullyInitialized(projectPath: string): boolean {
 /**
  * Ensure STP is initialized, initializing if needed
  */
-export async function ensureInitialized(projectPath: string, modeNumber?: number): Promise<Config> {
+export async function ensureInitialized(
+  projectPath: string,
+  modeNumber?: number,
+  statsWindow?: StatsWindow
+): Promise<Config> {
   if (!isFullyInitialized(projectPath)) {
-    return initializeStp(projectPath, modeNumber);
+    return initializeStp(projectPath, modeNumber, statsWindow);
   }
   return loadConfig(projectPath);
 }

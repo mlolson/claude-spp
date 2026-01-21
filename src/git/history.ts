@@ -183,17 +183,23 @@ function parseCommit(
 /**
  * Get commit hashes from startCommit (exclusive) to endCommit (inclusive)
  * Returns array of { hash, parent } objects, oldest first
+ * @param since Optional date to filter commits (git --since flag)
  */
 function getCommitRange(
   projectPath: string,
   startCommit: string | null,
-  endCommit: string
+  endCommit: string,
+  since?: Date
 ): Array<{ hash: string; parent: string | null }> {
   try {
     const range = startCommit ? `${startCommit}..${endCommit}` : endCommit;
 
+    // Build git log command with optional --since flag
+    const sinceArg = since ? `--since="${since.toISOString()}"` : "";
+    const cmd = `git log --reverse --format="%H %P" ${sinceArg} ${range}`.trim();
+
     // Get commits with their parents
-    const output = execSync(`git log --reverse --format="%H %P" ${range}`, {
+    const output = execSync(cmd, {
       cwd: projectPath,
       encoding: "utf-8",
     });
@@ -299,4 +305,57 @@ export function getLineCounts(projectPath: string): LineCounts {
 export function recalculateLineCounts(projectPath: string): LineCounts {
   clearCache(projectPath);
   return getLineCounts(projectPath);
+}
+
+/**
+ * Get line counts with optional time window filter
+ * @param since If null, uses cached getLineCounts(). If Date, bypasses cache and filters commits.
+ */
+export function getLineCountsWithWindow(
+  projectPath: string,
+  options: { since: Date | null }
+): LineCounts {
+  // If no time filter, use the cached version
+  if (options.since === null) {
+    return getLineCounts(projectPath);
+  }
+
+  // Time-filtered query bypasses cache (window is relative to "now")
+  if (!isGitRepo(projectPath)) {
+    throw new Error("Must be a git repo");
+  }
+
+  const head = getHeadCommit(projectPath);
+  if (!head) {
+    throw new Error("Head commit not found");
+  }
+
+  // Get commits within the time window
+  const commits = getCommitRange(projectPath, null, head, options.since);
+
+  let humanLines = 0;
+  let claudeLines = 0;
+  let humanCommits = 0;
+  let claudeCommits = 0;
+
+  // Process each commit
+  for (const { hash, parent } of commits) {
+    const result = parseCommit(projectPath, hash, parent);
+    humanLines += result.humanLines;
+    claudeLines += result.claudeLines;
+    if (result.isClaudeCommit) {
+      claudeCommits++;
+    } else {
+      humanCommits++;
+    }
+  }
+
+  return {
+    humanLines,
+    claudeLines,
+    humanCommits,
+    claudeCommits,
+    fromCache: false,
+    commitsScanned: commits.length,
+  };
 }
