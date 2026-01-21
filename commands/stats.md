@@ -1,8 +1,8 @@
 ---
-description: Show detailed Dojo statistics
+description: Show detailed STP statistics
 ---
 
-# Dojo Stats
+# STP Stats
 
 **Note:** The CLI is at `<plugin-dir>/dist/cli.js` where plugin-dir is the directory containing this command file.
 
