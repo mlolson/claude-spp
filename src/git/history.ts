@@ -9,6 +9,7 @@ const CACHE_FILE = ".stp/.git_history_cache.json";
  * Cache schema for git history line counts
  */
 const GitHistoryCacheSchema = z.object({
+  userEmail: z.string(),
   lastCommit: z.string(),
   humanLines: z.number().int().min(0),
   claudeLines: z.number().int().min(0),
@@ -180,6 +181,17 @@ function parseCommit(
   };
 }
 
+function getCurrentGitUser(projectPath: string): string {
+  const gitUser = execSync("git config user.email", {
+    cwd: projectPath,
+    encoding: "utf-8",
+  }).trim();
+  if (!gitUser) {
+    throw new Error("git user.email is not set.");
+  }
+  return gitUser;
+}
+
 /**
  * Get commit hashes from startCommit (exclusive) to endCommit (inclusive)
  * Returns array of { hash, parent } objects, oldest first
@@ -196,7 +208,9 @@ function getCommitRange(
 
     // Build git log command with optional --since flag
     const sinceArg = since ? `--since="${since.toISOString()}"` : "";
-    const cmd = `git log --reverse --format="%H %P" ${sinceArg} ${range}`.trim();
+    const userEmail = getCurrentGitUser(projectPath);
+    const authorArg = userEmail ? `--author="${userEmail}"` : "";
+    const cmd = `git log --reverse --format="%H %P" ${authorArg} ${sinceArg} ${range}`.trim();
 
     // Get commits with their parents
     const output = execSync(cmd, {
@@ -234,11 +248,13 @@ export function getLineCounts(projectPath: string): LineCounts {
     throw new Error("Head commit not found");
   }
 
+  const currentGitUser = getCurrentGitUser(projectPath);
+
   // Try to load cache
   const cache = loadCache(projectPath);
 
   // Check if cache is valid and up to date
-  if (cache && cache.lastCommit === head) {
+  if (cache && cache.lastCommit === head && cache.userEmail === currentGitUser) {
     return {
       humanLines: cache.humanLines,
       claudeLines: cache.claudeLines,
@@ -256,7 +272,7 @@ export function getLineCounts(projectPath: string): LineCounts {
   let humanCommits = 0;
   let claudeCommits = 0;
 
-  if (cache && isAncestor(projectPath, cache.lastCommit)) {
+  if (cache && cache.userEmail === currentGitUser && isAncestor(projectPath, cache.lastCommit)) {
     // Cache is valid, start from there
     startCommit = cache.lastCommit;
     humanLines = cache.humanLines;
@@ -282,6 +298,7 @@ export function getLineCounts(projectPath: string): LineCounts {
 
   // Save updated cache
   saveCache(projectPath, {
+    userEmail: currentGitUser,
     lastCommit: head,
     humanLines,
     claudeLines,
@@ -297,14 +314,6 @@ export function getLineCounts(projectPath: string): LineCounts {
     fromCache: false,
     commitsScanned: commits.length,
   };
-}
-
-/**
- * Force recalculation by clearing cache first
- */
-export function recalculateLineCounts(projectPath: string): LineCounts {
-  clearCache(projectPath);
-  return getLineCounts(projectPath);
 }
 
 /**

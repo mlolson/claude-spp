@@ -20,7 +20,6 @@ export {
 // Git History
 export {
   getLineCounts,
-  recalculateLineCounts,
   clearCache,
   type LineCounts,
 } from "./git/history.js";
