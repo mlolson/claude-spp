@@ -1,5 +1,4 @@
 ---
-name: mode
 description: Show or change the current STP mode
 ---
 

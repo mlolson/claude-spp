@@ -1,3 +1,5 @@
 {
-  "editor.tabSize": 2
+  "editor.tabSize": 2,
+  "typescript.suggest.enabled": false,
+  "javascript.suggest.enabled": false
 }

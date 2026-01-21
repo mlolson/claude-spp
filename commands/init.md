@@ -1,5 +1,4 @@
 ---
-name: init
 description: Initialize STP in the current project
 ---
 
@@ -14,25 +13,25 @@ Initialize STP mode in the current project. This creates the `.stp/` directory w
    node dist/cli.js status
    ```
 
-2. If already initialized, inform the user and ask if they want to reinitialize.
+2. If already initialized, inform the user and ask if they want to reinitialize. Use a select dialog with options "yes" and "no".
 
-4. Run the init command with their chosen mode:
+3. Run the init command with their chosen mode:
    ```bash
    node dist/cli.js init
    ```
 
-3. Show user mode options using:
+4. Show the user mode options using:
   ```bash
    node dist/cli.js modes
    ```
 
-4. Ask user which mode they would like using AskUserQuestion
+5. Ask user which mode they would like. Ask the question as follows: "Which mode would you like to use?" Use a free form text input
 
-5. Set the mode using:
+6. Set the mode using:
   ```bash
    node dist/cli.js mode $users_selected_mode
    ```
 
-6. Confirm initialization was successful and explain what was created:
+7. Confirm initialization was successful and explain what was created:
    - `.stp/config.json` - Configuration file
 

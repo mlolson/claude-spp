@@ -90,7 +90,6 @@ the human writes a minimum percentage of code themselves.
 1. Check the ratio with `node dist/cli.js status`
 2. If ratio is below 50%, prefer teaching over writing code
 3. Offer guidance first - ask if the human wants to try it themselves
-4. Create a task and ask whether it should be assigned to user or claude: `node dist/cli.js create "title"`
 
 **When asked to write code:**
 - If ratio is healthy (≥50% human): write code freely
@@ -106,15 +105,7 @@ Commits with `Co-Authored-By: Claude` are attributed to Claude.
 
 ```bash
 node dist/cli.js status              # Show current ratio
+node dist/cli.js stats               # Show detailed statistics
 node dist/cli.js mode [n]            # Show or change mode
-node dist/cli.js tasks               # List all tasks
-node dist/cli.js focus <file>        # Focus on a task
-node dist/cli.js create "title"      # Create a new task
-node dist/cli.js assign <file> human # Assign task to human
-node dist/cli.js complete <file> human # Mark complete
 ```
-
-### Learning
-
-Use `/stp:quiz` to test your knowledge of the codebase.
 <!-- STP:END -->
