@@ -1,3 +1,4 @@
 dist/
-
+.stp/
+node_modules/
 */**.js.map
