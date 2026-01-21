@@ -150,45 +150,47 @@ export function installGitHook(projectPath: string): void {
  * Prompt user to select a mode interactively
  */
 async function promptForMode(): Promise<number> {
+  console.log("\nAvailable modes:\n");
+  const maxNameLen = Math.max(...MODES.map(m => m.name.length));
+  for (const mode of MODES) {
+    const paddedName = mode.name.padEnd(maxNameLen);
+    const defaultMarker = mode.number === 4 ? " (default)" : "";
+    console.log(`  ${mode.number}. ${paddedName}   ${mode.description}${defaultMarker}`);
+  }
+  console.log("");
+
+  let modeNumber = undefined;
+
+  while (modeNumber === undefined) {
+    const userResponse = await promptUser(`Select a mode [1-${MODES.length}, or press Enter for 50-50]: `);
+    if (userResponse === "") {
+      modeNumber = DEFAULT_CONFIG.mode;
+    } else {
+      modeNumber = parseInt(userResponse, 10);
+      if (modeNumber < 1 || modeNumber > MODES.length) {
+        console.log(`Invalid mode: ${modeNumber}. Must be in range [1, ${MODES.length}]`);
+        modeNumber = undefined;
+      }
+    }
+  }
+  return modeNumber;
+}
+
+async function promptShouldOverwriteInstall(): Promise<boolean> {
+  const answer = await promptUser("An installation already exists. Overwrite it? N/Y\n");
+  return answer.toLowerCase() === "y";
+}
+
+async function promptUser(prompt: string): Promise<string> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
   return new Promise((resolve) => {
-    console.log("\nAvailable modes:\n");
-    const maxNameLen = Math.max(...MODES.map(m => m.name.length));
-    for (const mode of MODES) {
-      const paddedName = mode.name.padEnd(maxNameLen);
-      const defaultMarker = mode.number === 4 ? " (default)" : "";
-      console.log(`  ${mode.number}. ${paddedName}   ${mode.description}${defaultMarker}`);
-    }
-    console.log("");
-
-    rl.question(`Select a mode [1-${MODES.length}, or press Enter for 50-50]: `, (answer) => {
+    rl.question(prompt, (answer) => {
       rl.close();
-
-      const trimmed = answer.trim();
-      if (trimmed === "") {
-        resolve(4); // 50-50 default
-        return;
-      }
-
-      const num = parseInt(trimmed, 10);
-      if (num >= 1 && num <= MODES.length) {
-        resolve(num);
-        return;
-      }
-
-      // Try to match by name
-      const matched = MODES.find(m => m.name.toLowerCase() === trimmed.toLowerCase());
-      if (matched) {
-        resolve(matched.number);
-        return;
-      }
-
-      console.log("Invalid selection, using default (50-50)");
-      resolve(4);
+      resolve(answer.trim());
     });
   });
 }
@@ -201,14 +203,21 @@ export async function initializeStp(projectPath: string, modeNumber?: number): P
   const stpDir = getStpDir(projectPath);
 
   // Create .stp directory if it doesn't exist
-  if (!fs.existsSync(stpDir)) {
-    fs.mkdirSync(stpDir, { recursive: true });
+  if (fs.existsSync(stpDir)) {
+    if (await promptShouldOverwriteInstall()) {
+      console.log("Removing existing install...");
+      fs.rmSync(stpDir, { recursive: true, force: true });
+    } else {
+      console.log("Aborting install...");
+      return await loadConfig(projectPath);
+    }
   }
+  fs.mkdirSync(stpDir, { recursive: true });
 
   // Prompt for mode if not provided
   const selectedMode = modeNumber ?? await promptForMode();
   if (selectedMode < 1 || selectedMode > MODES.length) {
-    throw new Error("Invalid mode: ${selectedMode}.");
+    throw new Error(`Invalid mode: ${selectedMode}. Must be in range [1, ${MODES.length}]`);
   }
 
   // Initialize config

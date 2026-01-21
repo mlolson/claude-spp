@@ -21,7 +21,6 @@ function getModesExplanation(): string {
     const marker = mode.number === currentMode.number ? " <-- current" : "";
     lines.push(`  ${mode.number}. ${mode.name} - ${mode.description}${marker}`);
   }
-  lines.push("\nTo change mode: node dist/cli.js mode <number>");
   return lines.join("\n");
 }
 
@@ -76,21 +75,18 @@ async function main() {
     case "init": {
       try {
         // If mode number provided as argument, use it
-        const modeArg = args[1] ? parseInt(args[1], 10) : undefined;
-        const mode = modeArg && modeArg >= 1 && modeArg <= 6 ? modeArg : 4; // Default to 50-50
-
-        const config = await initializeStp(process.cwd(), undefined);
-        // Update with selected mode
-        config.mode = mode;
+        const mode = args[1] ? parseInt(args[1], 10) : undefined;
+        const config = await initializeStp(process.cwd(), mode);
         saveConfig(process.cwd(), config);
 
         // Install git post-commit hook
         installGitHook(process.cwd());
 
         const currentMode = getCurrentMode(config);
+        console.log("");
         console.log(`✅ STP initialized with mode ${currentMode.number}: ${currentMode.name}`);
         console.log(`   ${currentMode.description}`);
-        console.log(`   Directory: .stp/`);
+        console.log(`   Install directory: .stp/`);
         console.log(`   Git hook: .git/hooks/post-commit`);
       } catch (error) {
         console.error("❌ Failed to initialize:", error);
@@ -106,6 +102,7 @@ async function main() {
       }
 
       console.log(getModesExplanation());
+      console.log("To change mode: node dist/cli.js mode <number>");
       break;
     }
 
