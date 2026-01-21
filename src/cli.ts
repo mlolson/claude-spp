@@ -8,7 +8,7 @@ import { loadConfig, saveConfig } from "./config/loader.js";
 import { calculateRatio } from "./state/schema.js";
 import { getLineCounts } from "./git/history.js";
 import { getEffectiveRatio, getCurrentMode, getModeByNumber, getModeByName, MODES } from "./config/schema.js";
-import { getStats, formatStats } from "./commands/stats.js";
+import { getStats, formatStats } from "./stats.js";
 
 const args = process.argv.slice(2);
 const command = args[0];

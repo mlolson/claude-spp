@@ -29,8 +29,7 @@ export {
 export { initializeStp, isFullyInitialized, ensureInitialized } from "./init.js";
 
 // Commands
-export { getStats, formatStats, type StatsResult } from "./commands/stats.js";
-export { init, formatInitResult, type InitResult } from "./commands/init.js";
+export { getStats, formatStats, type StatsResult } from "./stats.js";
 
 // Hooks
 export { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";

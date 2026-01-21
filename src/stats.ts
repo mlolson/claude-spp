@@ -1,7 +1,7 @@
-import { loadConfig, isStpInitialized } from "../config/loader.js";
-import { getEffectiveRatio, getCurrentMode, type Mode } from "../config/schema.js";
-import { calculateRatio, isRatioHealthy } from "../state/schema.js";
-import { getLineCounts } from "../git/history.js";
+import { loadConfig, isStpInitialized } from "./config/loader.js";
+import { getEffectiveRatio, getCurrentMode, type Mode } from "./config/schema.js";
+import { calculateRatio, isRatioHealthy } from "./state/schema.js";
+import { getLineCounts } from "./git/history.js";
 
 export interface StatsResult {
   initialized: boolean;
