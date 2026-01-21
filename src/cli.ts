@@ -73,26 +73,21 @@ async function main() {
 
     // User commands
     case "init": {
-      try {
-        // If mode number provided as argument, use it
-        const mode = args[1] ? parseInt(args[1], 10) : undefined;
-        const config = await initializeStp(process.cwd(), mode);
-        saveConfig(process.cwd(), config);
+      // If mode number provided as argument, use it
+      const mode = args[1] ? parseInt(args[1], 10) : undefined;
+      const config = await initializeStp(process.cwd(), mode);
+      saveConfig(process.cwd(), config);
 
-        const currentMode = getCurrentMode(config);
-        console.log("");
-        console.log(`✅ STP initialized with mode ${currentMode.number}: ${currentMode.name}`);
-        console.log(`${currentMode.description}`);
-        console.log(`Install directory: .stp/`);
-        console.log(`Git hook: .git/hooks/post-commit\n`);
+      const currentMode = getCurrentMode(config);
+      console.log("");
+      console.log(`✅ STP initialized with mode ${currentMode.number}: ${currentMode.name}`);
+      console.log(`${currentMode.description}`);
+      console.log(`Install directory: .stp/`);
+      console.log(`Git hook: .git/hooks/post-commit\n`);
 
-        console.log("Analyzing repo...");
-        const stats = getStats(process.cwd());
-        console.log(formatStats(stats));
-      } catch (error) {
-        console.error("❌ Failed to initialize:", error);
-        process.exit(1);
-      }
+      console.log("Analyzing repo...");
+      const stats = getStats(process.cwd());
+      console.log(formatStats(stats));
       break;
     }
 
@@ -189,7 +184,4 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error("Error:", error);
-  process.exit(1);
-});
+main();
