@@ -84,34 +84,31 @@ function updateClaudeMd(projectPath: string, modeNumber: number): void {
 }
 
 /**
- * Update .gitignore to exclude .stp/ directory
+ * Add an entry to .gitignore
  * Creates .gitignore if it doesn't exist
  */
-function updateGitignore(projectPath: string): void {
+function addToGitignore(projectPath: string, entry: string): void {
   const gitignorePath = path.join(projectPath, ".gitignore");
-  const stpEntry = ".stp/";
 
   if (!fs.existsSync(gitignorePath)) {
     console.log("Creating .gitignore...");
-    fs.writeFileSync(gitignorePath, stpEntry + "\n", "utf-8");
-    console.log(`Added "${stpEntry}" to .gitignore`);
+    fs.writeFileSync(gitignorePath, entry + "\n", "utf-8");
+    console.log(`Added "${entry}" to .gitignore`);
     return;
   }
 
   const content = fs.readFileSync(gitignorePath, "utf-8");
   const lines = content.split("\n").map(line => line.trim());
 
-  // Check if .stp/ is already in .gitignore
-  if (lines.includes(stpEntry) || lines.includes(".stp")) {
-    console.log(`".stp/" already in .gitignore`);
+  if (lines.includes(entry)) {
+    console.log(`"${entry}" already in .gitignore`);
     return;
   }
 
-  // Append .stp/ to .gitignore
-  console.log(`Adding "${stpEntry}" to .gitignore...`);
-  const newContent = content.trimEnd() + "\n" + stpEntry + "\n";
+  console.log(`Adding "${entry}" to .gitignore...`);
+  const newContent = content.trimEnd() + "\n" + entry + "\n";
   fs.writeFileSync(gitignorePath, newContent, "utf-8");
-  console.log(`Added "${stpEntry}" to .gitignore`);
+  console.log(`Added "${entry}" to .gitignore`);
 }
 
 /**
@@ -258,11 +255,12 @@ export async function initializeStp(projectPath: string, modeNumber?: number): P
   };
   saveConfig(projectPath, config);
 
-  // Update CLAUDE.md with STP instructions
+  // Update CLAUDE.local.md with STP instructions
   updateClaudeMd(projectPath, config.mode);
 
-  // Update .gitignore to exclude .stp/
-  updateGitignore(projectPath);
+  // Update .gitignore to exclude STP files
+  addToGitignore(projectPath, ".stp/");
+  addToGitignore(projectPath, "CLAUDE.local.md");
 
   // Install git post-commit hook
   installGitHook(projectPath);
