@@ -264,6 +264,9 @@ export async function initializeStp(projectPath: string, modeNumber?: number): P
   // Update .gitignore to exclude .stp/
   updateGitignore(projectPath);
 
+  // Install git post-commit hook
+  installGitHook(projectPath);
+
   return config;
 }
 

@@ -79,9 +79,6 @@ async function main() {
         const config = await initializeStp(process.cwd(), mode);
         saveConfig(process.cwd(), config);
 
-        // Install git post-commit hook
-        installGitHook(process.cwd());
-
         const currentMode = getCurrentMode(config);
         console.log("");
         console.log(`✅ STP initialized with mode ${currentMode.number}: ${currentMode.name}`);
