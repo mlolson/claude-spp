@@ -82,9 +82,13 @@ async function main() {
         const currentMode = getCurrentMode(config);
         console.log("");
         console.log(`✅ STP initialized with mode ${currentMode.number}: ${currentMode.name}`);
-        console.log(`   ${currentMode.description}`);
-        console.log(`   Install directory: .stp/`);
-        console.log(`   Git hook: .git/hooks/post-commit`);
+        console.log(`${currentMode.description}`);
+        console.log(`Install directory: .stp/`);
+        console.log(`Git hook: .git/hooks/post-commit\n`);
+
+        console.log("Analyzing repo...");
+        const stats = getStats(process.cwd());
+        console.log(formatStats(stats));
       } catch (error) {
         console.error("❌ Failed to initialize:", error);
         process.exit(1);

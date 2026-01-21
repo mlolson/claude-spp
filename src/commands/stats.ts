@@ -60,27 +60,25 @@ export function formatStats(stats: StatsResult): string {
     return "STP is disabled in this project.";
   }
 
-  const cacheStatus = stats.lines?.fromCache
-    ? "(cached)"
-    : stats.lines?.commitsScanned
-      ? `(scanned ${stats.lines.commitsScanned} commits)`
-      : "";
-
   const modeDisplay = stats.mode
-    ? `${stats.mode.number}. ${stats.mode.name} (${stats.mode.description})`
+    ? `${stats.mode.name} (${stats.mode.description})`
     : "Unknown";
 
+  const humanLines = String(stats.lines?.humanLines ?? 0);
+  const claudeLines = String(stats.lines?.claudeLines ?? 0);
+  const humanCommits = String(stats.lines?.humanCommits ?? 0);
+  const claudeCommits = String(stats.lines?.claudeCommits ?? 0);
+  const maxLines = Math.max(humanLines.length, claudeLines.length);
+  const maxCommits = Math.max(humanCommits.length, claudeCommits.length);
+
   const lines: string[] = [
-    "## STP Stats",
+    "Current repo stats:",
+    `Mode:          ${modeDisplay}`,
+    `Target Ratio:  ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,
+    `Current Ratio: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${stats.ratioHealthy ? "(healthy)" : "(below target)"}`,
     "",
-    `**Mode:** ${modeDisplay}`,
-    `**Target Ratio:** ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,
-    `**Current Ratio:** ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${stats.ratioHealthy ? "(healthy)" : "(below target)"}`,
-    "",
-    "### Git History",
-    `- Human: ${stats.lines?.humanLines ?? 0} lines, ${stats.lines?.humanCommits ?? 0} commits`,
-    `- Claude: ${stats.lines?.claudeLines ?? 0} lines, ${stats.lines?.claudeCommits ?? 0} commits`,
-    `- ${cacheStatus}`,
+    `Human code:  ${humanCommits.padStart(maxCommits)} commits, ${humanLines.padStart(maxLines)} lines added/deleted`,
+    `Claude code: ${claudeCommits.padStart(maxCommits)} commits, ${claudeLines.padStart(maxLines)} lines added/deleted`,
     "",
   ];
 

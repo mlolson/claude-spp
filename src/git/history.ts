@@ -139,6 +139,7 @@ function parseCommit(
 
   // Get lines added in this commit
   let linesAdded = 0;
+  let linesDeleted = 0;
   try {
     let diffCmd: string;
     if (parentHash) {
@@ -159,8 +160,12 @@ function parseCommit(
       const parts = line.split("\t");
       if (parts.length >= 2) {
         const added = parseInt(parts[0], 10);
+        const deleted = parseInt(parts[1], 10);
         if (!isNaN(added)) {
           linesAdded += added;
+        }
+        if (!isNaN(deleted)) {
+          linesDeleted += deleted;
         }
       }
     }
@@ -169,8 +174,8 @@ function parseCommit(
   }
 
   return {
-    humanLines: isClaude ? 0 : linesAdded,
-    claudeLines: isClaude ? linesAdded : 0,
+    humanLines: isClaude ? 0 : linesAdded + linesDeleted,
+    claudeLines: isClaude ? linesAdded + linesDeleted : 0,
     isClaudeCommit: isClaude,
   };
 }
@@ -215,26 +220,12 @@ function getCommitRange(
 export function getLineCounts(projectPath: string): LineCounts {
   // Default result for non-git repos
   if (!isGitRepo(projectPath)) {
-    return {
-      humanLines: 0,
-      claudeLines: 0,
-      humanCommits: 0,
-      claudeCommits: 0,
-      fromCache: false,
-      commitsScanned: 0,
-    };
+    throw new Error("Must be a git repo");
   }
 
   const head = getHeadCommit(projectPath);
   if (!head) {
-    return {
-      humanLines: 0,
-      claudeLines: 0,
-      humanCommits: 0,
-      claudeCommits: 0,
-      fromCache: false,
-      commitsScanned: 0,
-    };
+    throw new Error("Head commit not found");
   }
 
   // Try to load cache
