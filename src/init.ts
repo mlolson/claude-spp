@@ -55,7 +55,7 @@ ${STP_END_MARKER}`;
  * Inserts or updates content between STP markers
  */
 function updateClaudeMd(projectPath: string, modeNumber: number): void {
-  const claudeMdPath = path.join(projectPath, "CLAUDE.md");
+  const claudeMdPath = path.join(projectPath, "CLAUDE.local.md");
   const stpContent = generateStpInstructions(modeNumber);
 
   if (!fs.existsSync(claudeMdPath)) {
@@ -81,6 +81,37 @@ function updateClaudeMd(projectPath: string, modeNumber: number): void {
   }
 
   fs.writeFileSync(claudeMdPath, content, "utf-8");
+}
+
+/**
+ * Update .gitignore to exclude .stp/ directory
+ * Creates .gitignore if it doesn't exist
+ */
+function updateGitignore(projectPath: string): void {
+  const gitignorePath = path.join(projectPath, ".gitignore");
+  const stpEntry = ".stp/";
+
+  if (!fs.existsSync(gitignorePath)) {
+    console.log("Creating .gitignore...");
+    fs.writeFileSync(gitignorePath, stpEntry + "\n", "utf-8");
+    console.log(`Added "${stpEntry}" to .gitignore`);
+    return;
+  }
+
+  const content = fs.readFileSync(gitignorePath, "utf-8");
+  const lines = content.split("\n").map(line => line.trim());
+
+  // Check if .stp/ is already in .gitignore
+  if (lines.includes(stpEntry) || lines.includes(".stp")) {
+    console.log(`".stp/" already in .gitignore`);
+    return;
+  }
+
+  // Append .stp/ to .gitignore
+  console.log(`Adding "${stpEntry}" to .gitignore...`);
+  const newContent = content.trimEnd() + "\n" + stpEntry + "\n";
+  fs.writeFileSync(gitignorePath, newContent, "utf-8");
+  console.log(`Added "${stpEntry}" to .gitignore`);
 }
 
 /**
@@ -229,6 +260,9 @@ export async function initializeStp(projectPath: string, modeNumber?: number): P
 
   // Update CLAUDE.md with STP instructions
   updateClaudeMd(projectPath, config.mode);
+
+  // Update .gitignore to exclude .stp/
+  updateGitignore(projectPath);
 
   return config;
 }
