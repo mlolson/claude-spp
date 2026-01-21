@@ -1,15 +1,15 @@
 ---
 name: init
-description: Initialize Dojo in the current project
+description: Initialize STP in the current project
 ---
 
-# Dojo Init Skill
+# STP Init Skill
 
-Initialize Dojo mode in the current project. This creates the `.dojo/` directory with configuration and state tracking.
+Initialize STP mode in the current project. This creates the `.stp/` directory with configuration and state tracking.
 
 ## Steps
 
-1. First, check if Dojo is already initialized:
+1. First, check if STP is already initialized:
    ```bash
    node dist/cli.js status
    ```
@@ -34,5 +34,5 @@ Initialize Dojo mode in the current project. This creates the `.dojo/` directory
    ```
 
 6. Confirm initialization was successful and explain what was created:
-   - `.dojo/config.json` - Configuration file
+   - `.stp/config.json` - Configuration file
 

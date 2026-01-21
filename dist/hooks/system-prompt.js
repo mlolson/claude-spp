@@ -3,11 +3,11 @@ import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
 import { getLineCounts } from "../git/history.js";
 /**
- * Generate the Dojo system prompt injection
+ * Generate the STP system prompt injection
  */
 export function generateSystemPrompt(projectPath) {
     const config = loadConfig(projectPath);
-    // If Dojo is disabled, return empty
+    // If STP is disabled, return empty
     if (!config.enabled) {
         return "";
     }
@@ -17,10 +17,10 @@ export function generateSystemPrompt(projectPath) {
     const isHealthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
     const currentMode = getCurrentMode(config);
     const lines = [
-        "<dojo>",
-        "# Dojo Mode Active",
+        "<stp>",
+        "# STP Mode Active",
         "",
-        "You are operating in Dojo mode. This mode helps the human maintain their programming skills",
+        "You are operating in STP mode. This mode helps the human maintain their programming skills",
         "by ensuring they write a minimum percentage of the code themselves.",
         "",
         "## Current Status",
@@ -48,14 +48,14 @@ export function generateSystemPrompt(projectPath) {
         lines.push("");
     }
     // Commands
-    lines.push("## Dojo Commands");
+    lines.push("## STP Commands");
     lines.push("");
     lines.push("The human can use these commands:");
-    lines.push("- `/dojo:status` - Show current status");
-    lines.push("- `/dojo:stats` - Show detailed metrics");
-    lines.push("- `/dojo:mode` - Show or change the current mode");
+    lines.push("- `/stp:status` - Show current status");
+    lines.push("- `/stp:stats` - Show detailed metrics");
+    lines.push("- `/stp:mode` - Show or change the current mode");
     lines.push("");
-    lines.push("</dojo>");
+    lines.push("</stp>");
     return lines.join("\n");
 }
 /**
@@ -71,6 +71,6 @@ export function generateStatusLine(projectPath) {
     const targetRatio = getEffectiveRatio(config);
     const isHealthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
     const status = isHealthy ? "✅" : "⚠️";
-    return `[Dojo ${status} ${(currentRatio * 100).toFixed(0)}%/${(targetRatio * 100).toFixed(0)}% human]`;
+    return `[STP ${status} ${(currentRatio * 100).toFixed(0)}%/${(targetRatio * 100).toFixed(0)}% human]`;
 }
 //# sourceMappingURL=system-prompt.js.map

@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
-  initializeDojo,
+  initializeStp,
   isFullyInitialized,
   ensureInitialized,
 } from "../src/init.js";
-import { getDojoDir, isDojoInitialized } from "../src/config/loader.js";
+import { getStpDir, isStpInitialized } from "../src/config/loader.js";
 
 const TEST_DIR = path.join(process.cwd(), ".test-init");
 
@@ -24,20 +24,20 @@ describe("Initialization", () => {
     }
   });
 
-  describe("initializeDojo", () => {
-    it("creates .dojo directory", async () => {
-      await initializeDojo(TEST_DIR, 4);
-      expect(fs.existsSync(getDojoDir(TEST_DIR))).toBe(true);
+  describe("initializeStp", () => {
+    it("creates .stp directory", async () => {
+      await initializeStp(TEST_DIR, 4);
+      expect(fs.existsSync(getStpDir(TEST_DIR))).toBe(true);
     });
 
     it("creates config.json", async () => {
-      await initializeDojo(TEST_DIR, 4);
-      const configPath = path.join(getDojoDir(TEST_DIR), "config.json");
+      await initializeStp(TEST_DIR, 4);
+      const configPath = path.join(getStpDir(TEST_DIR), "config.json");
       expect(fs.existsSync(configPath)).toBe(true);
     });
 
     it("uses specified mode", async () => {
-      const config = await initializeDojo(TEST_DIR, 3);
+      const config = await initializeStp(TEST_DIR, 3);
       expect(config.mode).toBe(3);
     });
   });
@@ -47,14 +47,14 @@ describe("Initialization", () => {
       expect(isFullyInitialized(TEST_DIR)).toBe(false);
     });
 
-    it("returns true when .dojo directory exists", () => {
-      fs.mkdirSync(getDojoDir(TEST_DIR), { recursive: true });
-      // isFullyInitialized just checks for .dojo directory existence
+    it("returns true when .stp directory exists", () => {
+      fs.mkdirSync(getStpDir(TEST_DIR), { recursive: true });
+      // isFullyInitialized just checks for .stp directory existence
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
 
     it("returns true after full initialization", async () => {
-      await initializeDojo(TEST_DIR, 4);
+      await initializeStp(TEST_DIR, 4);
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
   });
@@ -68,7 +68,7 @@ describe("Initialization", () => {
     });
 
     it("returns existing config if already initialized", async () => {
-      await initializeDojo(TEST_DIR, 5);
+      await initializeStp(TEST_DIR, 5);
 
       const config = await ensureInitialized(TEST_DIR);
 
@@ -77,12 +77,12 @@ describe("Initialization", () => {
   });
 
   describe("Component checks", () => {
-    it("isDojoInitialized checks .dojo directory", () => {
-      expect(isDojoInitialized(TEST_DIR)).toBe(false);
+    it("isStpInitialized checks .stp directory", () => {
+      expect(isStpInitialized(TEST_DIR)).toBe(false);
 
-      fs.mkdirSync(getDojoDir(TEST_DIR), { recursive: true });
+      fs.mkdirSync(getStpDir(TEST_DIR), { recursive: true });
 
-      expect(isDojoInitialized(TEST_DIR)).toBe(true);
+      expect(isStpInitialized(TEST_DIR)).toBe(true);
     });
   });
 });

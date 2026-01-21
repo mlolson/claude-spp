@@ -6,7 +6,7 @@ import {
   normalizeFilePath,
   fileMatchesPattern,
   fileMatchesPatterns,
-  isDojoInternalFile,
+  isStpInternalFile,
 } from "../src/hooks/file-matcher.js";
 import { preToolUseHook } from "../src/hooks/pre-tool-use.js";
 
@@ -85,34 +85,34 @@ describe("file-matcher", () => {
     });
   });
 
-  describe("isDojoInternalFile", () => {
-    it("should return true for files in .dojo directory", () => {
-      expect(isDojoInternalFile(".dojo/config.json", projectPath)).toBe(true);
-      expect(isDojoInternalFile(".dojo/state.json", projectPath)).toBe(true);
+  describe("isStpInternalFile", () => {
+    it("should return true for files in .stp directory", () => {
+      expect(isStpInternalFile(".stp/config.json", projectPath)).toBe(true);
+      expect(isStpInternalFile(".stp/state.json", projectPath)).toBe(true);
     });
 
-    it("should return true for absolute paths in .dojo directory", () => {
-      expect(isDojoInternalFile("/Users/test/project/.dojo/config.json", projectPath)).toBe(true);
+    it("should return true for absolute paths in .stp directory", () => {
+      expect(isStpInternalFile("/Users/test/project/.stp/config.json", projectPath)).toBe(true);
     });
 
     it("should return false for regular project files", () => {
-      expect(isDojoInternalFile("src/test.ts", projectPath)).toBe(false);
+      expect(isStpInternalFile("src/test.ts", projectPath)).toBe(false);
     });
   });
 });
 
 describe("preToolUseHook", () => {
   let tempDir: string;
-  let dojoDir: string;
+  let stpDir: string;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "dojo-test-"));
-    dojoDir = path.join(tempDir, ".dojo");
-    fs.mkdirSync(dojoDir, { recursive: true });
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "stp-test-"));
+    stpDir = path.join(tempDir, ".stp");
+    fs.mkdirSync(stpDir, { recursive: true });
 
     // Create config with mode
     fs.writeFileSync(
-      path.join(dojoDir, "config.json"),
+      path.join(stpDir, "config.json"),
       JSON.stringify({
         mode: 4,
         enabled: true,
@@ -122,7 +122,7 @@ describe("preToolUseHook", () => {
 
     // Create state
     fs.writeFileSync(
-      path.join(dojoDir, "state.json"),
+      path.join(stpDir, "state.json"),
       JSON.stringify({
         session: {
           startedAt: new Date().toISOString(),
@@ -143,8 +143,8 @@ describe("preToolUseHook", () => {
     expect(result.decision).toBe("allow");
   });
 
-  it("should allow writes when Dojo not initialized", () => {
-    const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), "dojo-empty-"));
+  it("should allow writes when STP not initialized", () => {
+    const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), "stp-empty-"));
     try {
       const result = preToolUseHook({
         tool: { name: "Write", input: { file_path: "src/test.ts", content: "test" } },
@@ -156,11 +156,11 @@ describe("preToolUseHook", () => {
     }
   });
 
-  it("should allow writes to .dojo directory", () => {
+  it("should allow writes to .stp directory", () => {
     const result = preToolUseHook({
       tool: {
         name: "Write",
-        input: { file_path: path.join(tempDir, ".dojo", "config.json"), content: "{}" },
+        input: { file_path: path.join(tempDir, ".stp", "config.json"), content: "{}" },
       },
       cwd: tempDir,
     });
@@ -180,7 +180,7 @@ describe("preToolUseHook", () => {
     // Create a git history cache with healthy ratio
     // 60 human lines, 40 claude lines = 60% human (above 50%)
     fs.writeFileSync(
-      path.join(dojoDir, ".git_history_cache.json"),
+      path.join(stpDir, ".git_history_cache.json"),
       JSON.stringify({
         lastCommit: headCommit,
         humanLines: 60,
@@ -214,7 +214,7 @@ describe("preToolUseHook", () => {
       // Create a git history cache with unhealthy ratio (mode 4 = 50% target)
       // 10 human lines, 100 claude lines = 9% human (below 50%)
       fs.writeFileSync(
-        path.join(dojoDir, ".git_history_cache.json"),
+        path.join(stpDir, ".git_history_cache.json"),
         JSON.stringify({
           lastCommit: headCommit,
           humanLines: 10,
@@ -235,7 +235,7 @@ describe("preToolUseHook", () => {
       expect(result.message).toContain("50%");
     });
 
-    it("should always allow writes to .dojo even with unhealthy ratio", () => {
+    it("should always allow writes to .stp even with unhealthy ratio", () => {
       // Initialize git repo
       const { execSync } = require("child_process");
       execSync("git init", { cwd: tempDir, stdio: "ignore" });
@@ -247,7 +247,7 @@ describe("preToolUseHook", () => {
 
       // Create unhealthy ratio
       fs.writeFileSync(
-        path.join(dojoDir, ".git_history_cache.json"),
+        path.join(stpDir, ".git_history_cache.json"),
         JSON.stringify({
           lastCommit: headCommit,
           humanLines: 0,
@@ -260,7 +260,7 @@ describe("preToolUseHook", () => {
       const result = preToolUseHook({
         tool: {
           name: "Write",
-          input: { file_path: path.join(tempDir, ".dojo", "state.json"), content: "{}" },
+          input: { file_path: path.join(tempDir, ".stp", "state.json"), content: "{}" },
         },
         cwd: tempDir,
       });

@@ -1,15 +1,15 @@
 ---
 name: init
-description: Initialize Dojo in the current project with a chosen mode
+description: Initialize STP in the current project with a chosen mode
 ---
 
-# Dojo Init Skill
+# STP Init Skill
 
-Initialize Dojo mode in the current project. This creates the `.dojo/` directory with configuration and state tracking.
+Initialize STP mode in the current project. This creates the `.stp/` directory with configuration and state tracking.
 
 ## Steps
 
-1. First, check if Dojo is already initialized:
+1. First, check if STP is already initialized:
    ```bash
    node dist/cli.js status
    ```
@@ -32,14 +32,14 @@ Initialize Dojo mode in the current project. This creates the `.dojo/` directory
    ```
 
 5. Confirm initialization was successful and explain what was created:
-   - `.dojo/config.json` - Configuration file
-   - `.dojo/state.json` - Session state (gitignored)
+   - `.stp/config.json` - Configuration file
+   - `.stp/state.json` - Session state (gitignored)
 
 ## Example Question
 
 Ask the user:
 ```
-Which Dojo mode would you like?
+Which STP mode would you like?
 - 4. 50-50 (Recommended) - Equal partnership
 - 1. Yolo - Let AI do everything
 - 2. Padawan - Mostly AI, some human

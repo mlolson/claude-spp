@@ -19,7 +19,7 @@ export interface StatsResult {
     };
 }
 /**
- * Get current Dojo statistics
+ * Get current STP statistics
  */
 export declare function getStats(projectPath: string): StatsResult;
 /**

@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { execSync } from "node:child_process";
 import { z } from "zod";
 
-const CACHE_FILE = ".dojo/.git_history_cache.json";
+const CACHE_FILE = ".stp/.git_history_cache.json";
 
 /**
  * Cache schema for git history line counts
@@ -102,10 +102,10 @@ function loadCache(projectPath: string): GitHistoryCache | null {
  */
 function saveCache(projectPath: string, cache: GitHistoryCache): void {
   const cachePath = getCachePath(projectPath);
-  const dojoDir = path.dirname(cachePath);
+  const stpDir = path.dirname(cachePath);
 
-  if (!fs.existsSync(dojoDir)) {
-    fs.mkdirSync(dojoDir, { recursive: true });
+  if (!fs.existsSync(stpDir)) {
+    fs.mkdirSync(stpDir, { recursive: true });
   }
 
   fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2) + "\n", "utf-8");

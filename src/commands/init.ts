@@ -1,6 +1,6 @@
-import { isDojoInitialized } from "../config/loader.js";
+import { isStpInitialized } from "../config/loader.js";
 import { getCurrentMode, type Mode } from "../config/schema.js";
-import { initializeDojo, isFullyInitialized } from "../init.js";
+import { initializeStp, isFullyInitialized } from "../init.js";
 
 export interface InitResult {
   success: boolean;
@@ -10,25 +10,25 @@ export interface InitResult {
 }
 
 /**
- * Initialize Dojo in a project
+ * Initialize STP in a project
  * @param projectPath - Path to the project
  * @param modeNumber - Optional mode number (1-6). Defaults to 4 (50-50).
  */
 export async function init(projectPath: string, modeNumber?: number): Promise<InitResult> {
-  const alreadyInitialized = isDojoInitialized(projectPath);
+  const alreadyInitialized = isStpInitialized(projectPath);
 
   if (alreadyInitialized && isFullyInitialized(projectPath)) {
-    const config = await initializeDojo(projectPath, undefined);
+    const config = await initializeStp(projectPath, undefined);
     const mode = getCurrentMode(config);
     return {
       success: true,
       alreadyInitialized: true,
       mode,
-      message: "Dojo is already initialized in this project.",
+      message: "STP is already initialized in this project.",
     };
   }
 
-  const config = await initializeDojo(projectPath, undefined);
+  const config = await initializeStp(projectPath, undefined);
   if (modeNumber && modeNumber >= 1 && modeNumber <= 6) {
     config.mode = modeNumber;
   }
@@ -38,7 +38,7 @@ export async function init(projectPath: string, modeNumber?: number): Promise<In
     success: true,
     alreadyInitialized: false,
     mode,
-    message: `Dojo initialized with mode ${mode.number}: ${mode.name} (${mode.description}).`,
+    message: `STP initialized with mode ${mode.number}: ${mode.name} (${mode.description}).`,
   };
 }
 
@@ -51,7 +51,7 @@ export function formatInitResult(result: InitResult): string {
   if (!result.alreadyInitialized) {
     lines.push("");
     lines.push("Created:");
-    lines.push("- `.dojo/config.json` - Project configuration");
+    lines.push("- `.stp/config.json` - Project configuration");
     lines.push("");
     lines.push("Run `node dist/cli.js stats` to see your current status.");
   }

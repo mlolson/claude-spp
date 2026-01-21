@@ -2,22 +2,20 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as readline from "node:readline";
 import { execSync } from "node:child_process";
-import { loadConfig, saveConfig, isDojoInitialized, getDojoDir } from "./config/loader.js";
+import { loadConfig, saveConfig, isStpInitialized, getStpDir } from "./config/loader.js";
 import { DEFAULT_CONFIG, MODES } from "./config/schema.js";
-import { saveState } from "./state/manager.js";
-import { createDefaultState } from "./state/schema.js";
-const DOJO_START_MARKER = "<!-- DOJO:START -->";
-const DOJO_END_MARKER = "<!-- DOJO:END -->";
+const STP_START_MARKER = "<!-- STP:START -->";
+const STP_END_MARKER = "<!-- STP:END -->";
 /**
- * Generate dojo instructions content for CLAUDE.md
+ * Generate STP instructions content for CLAUDE.md
  */
-function generateDojoInstructions(modeNumber) {
+function generateStpInstructions(modeNumber) {
     const mode = MODES.find((m) => m.number === modeNumber) ?? MODES[3]; // Default to 50-50
     const targetPercent = Math.round(mode.humanRatio * 100);
-    return `${DOJO_START_MARKER}
-## Dojo Mode
+    return `${STP_START_MARKER}
+## STP Mode
 
-This project has **Dojo mode** enabled. Dojo helps maintain programming skills by ensuring
+This project has **STP mode** enabled. STP helps maintain programming skills by ensuring
 the human writes a minimum percentage of code themselves.
 
 **Current Mode:** ${mode.number}. ${mode.name} (${mode.description})
@@ -46,33 +44,33 @@ node dist/cli.js status              # Show current ratio
 node dist/cli.js stats               # Show detailed statistics
 node dist/cli.js mode [n]            # Show or change mode
 \`\`\`
-${DOJO_END_MARKER}`;
+${STP_END_MARKER}`;
 }
 /**
- * Update CLAUDE.md with dojo instructions
- * Inserts or updates content between DOJO markers
+ * Update CLAUDE.md with STP instructions
+ * Inserts or updates content between STP markers
  */
 function updateClaudeMd(projectPath, modeNumber) {
     const claudeMdPath = path.join(projectPath, "CLAUDE.md");
-    const dojoContent = generateDojoInstructions(modeNumber);
+    const stpContent = generateStpInstructions(modeNumber);
     if (!fs.existsSync(claudeMdPath)) {
-        // No CLAUDE.md exists - create one with just dojo content
-        fs.writeFileSync(claudeMdPath, dojoContent + "\n", "utf-8");
+        // No CLAUDE.md exists - create one with just STP content
+        fs.writeFileSync(claudeMdPath, stpContent + "\n", "utf-8");
         return;
     }
     // Read existing content
     let content = fs.readFileSync(claudeMdPath, "utf-8");
-    const startIndex = content.indexOf(DOJO_START_MARKER);
-    const endIndex = content.indexOf(DOJO_END_MARKER);
+    const startIndex = content.indexOf(STP_START_MARKER);
+    const endIndex = content.indexOf(STP_END_MARKER);
     if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-        // Replace existing dojo section
+        // Replace existing STP section
         const before = content.substring(0, startIndex);
-        const after = content.substring(endIndex + DOJO_END_MARKER.length);
-        content = before + dojoContent + after;
+        const after = content.substring(endIndex + STP_END_MARKER.length);
+        content = before + stpContent + after;
     }
     else {
-        // Append dojo section
-        content = content.trimEnd() + "\n\n" + dojoContent + "\n";
+        // Append STP section
+        content = content.trimEnd() + "\n\n" + stpContent + "\n";
     }
     fs.writeFileSync(claudeMdPath, content, "utf-8");
 }
@@ -174,14 +172,14 @@ async function promptForMode() {
     });
 }
 /**
- * Initialize Dojo in a project
- * Creates .dojo directory with config and state
+ * Initialize STP in a project
+ * Creates .stp directory with config
  */
-export async function initializeDojo(projectPath, modeNumber) {
-    const dojoDir = getDojoDir(projectPath);
-    // Create .dojo directory if it doesn't exist
-    if (!fs.existsSync(dojoDir)) {
-        fs.mkdirSync(dojoDir, { recursive: true });
+export async function initializeStp(projectPath, modeNumber) {
+    const stpDir = getStpDir(projectPath);
+    // Create .stp directory if it doesn't exist
+    if (!fs.existsSync(stpDir)) {
+        fs.mkdirSync(stpDir, { recursive: true });
     }
     // Prompt for mode if not provided
     const selectedMode = modeNumber ?? await promptForMode();
@@ -191,30 +189,22 @@ export async function initializeDojo(projectPath, modeNumber) {
         mode: selectedMode,
     };
     saveConfig(projectPath, config);
-    // Initialize state
-    const state = createDefaultState();
-    saveState(projectPath, state);
-    // Create .gitignore for state.json
-    const gitignorePath = path.join(dojoDir, ".gitignore");
-    if (!fs.existsSync(gitignorePath)) {
-        fs.writeFileSync(gitignorePath, "state.json\n", "utf-8");
-    }
-    // Update CLAUDE.md with dojo instructions
+    // Update CLAUDE.md with STP instructions
     updateClaudeMd(projectPath, config.mode);
     return config;
 }
 /**
- * Check if Dojo is fully initialized
+ * Check if STP is fully initialized
  */
 export function isFullyInitialized(projectPath) {
-    return isDojoInitialized(projectPath);
+    return isStpInitialized(projectPath);
 }
 /**
- * Ensure Dojo is initialized, initializing if needed
+ * Ensure STP is initialized, initializing if needed
  */
 export async function ensureInitialized(projectPath, modeNumber) {
     if (!isFullyInitialized(projectPath)) {
-        return initializeDojo(projectPath, modeNumber);
+        return initializeStp(projectPath, modeNumber);
     }
     return loadConfig(projectPath);
 }

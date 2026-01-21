@@ -17,7 +17,7 @@ export interface PreResponseHookOutput {
 /**
  * Pre-response hook
  * Called before Claude generates a response
- * Injects Dojo context into the system prompt
+ * Injects STP context into the system prompt
  */
 export declare function preResponseHook(input: PreResponseHookInput): PreResponseHookOutput;
 /**

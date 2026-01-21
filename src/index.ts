@@ -1,5 +1,5 @@
 // Configuration
-export { loadConfig, saveConfig, isDojoInitialized, getDojoDir } from "./config/loader.js";
+export { loadConfig, saveConfig, isStpInitialized, getStpDir } from "./config/loader.js";
 export {
   ConfigSchema,
   PresetSchema,
@@ -26,7 +26,7 @@ export {
 } from "./git/history.js";
 
 // Initialization
-export { initializeDojo, isFullyInitialized, ensureInitialized } from "./init.js";
+export { initializeStp, isFullyInitialized, ensureInitialized } from "./init.js";
 
 // Commands
 export { getStats, formatStats, type StatsResult } from "./commands/stats.js";

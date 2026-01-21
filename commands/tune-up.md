@@ -2,14 +2,14 @@
 description: Tune up your knowledge of the codebase
 ---
 
-# /dojo:tune-up
+# /stp:tune-up
 
 Tune up your knowledge of the codebase with interactive questions.
 
 ## Usage
 
 ```
-/dojo:tune-up
+/stp:tune-up
 ```
 
 ## Description
@@ -31,7 +31,7 @@ The tune-up command generates 3-5 questions about the current codebase and prese
 ## Example Session
 
 ```
-> /dojo:tune-up
+> /stp:tune-up
 
 I'll analyze the codebase and create some questions for you.
 

@@ -1,4 +1,4 @@
-# Dojo Quiz Skill
+# STP Quiz Skill
 
 Test the user's knowledge of the codebase by generating and asking questions.
 

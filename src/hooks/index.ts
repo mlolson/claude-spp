@@ -23,5 +23,5 @@ export {
   normalizeFilePath,
   fileMatchesPattern,
   fileMatchesPatterns,
-  isDojoInternalFile,
+  isStpInternalFile,
 } from "./file-matcher.js";

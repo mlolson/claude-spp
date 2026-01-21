@@ -1,25 +1,25 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { ConfigSchema, DEFAULT_CONFIG } from "./schema.js";
-const DOJO_DIR = ".dojo";
+const STP_DIR = ".stp";
 const CONFIG_FILE = "config.json";
 /**
- * Get the path to the .dojo directory for a project
+ * Get the path to the .stp directory for a project
  */
-export function getDojoDir(projectPath) {
-    return path.join(projectPath, DOJO_DIR);
+export function getStpDir(projectPath) {
+    return path.join(projectPath, STP_DIR);
 }
 /**
  * Get the path to the config file
  */
 export function getConfigPath(projectPath) {
-    return path.join(getDojoDir(projectPath), CONFIG_FILE);
+    return path.join(getStpDir(projectPath), CONFIG_FILE);
 }
 /**
- * Check if Dojo is initialized in the project
+ * Check if STP is initialized in the project
  */
-export function isDojoInitialized(projectPath) {
-    return fs.existsSync(getDojoDir(projectPath));
+export function isStpInitialized(projectPath) {
+    return fs.existsSync(getStpDir(projectPath));
 }
 /**
  * Load and validate the config file
@@ -47,18 +47,18 @@ export function loadConfig(projectPath) {
  * Save config to file
  */
 export function saveConfig(projectPath, config) {
-    const dojoDir = getDojoDir(projectPath);
+    const stpDir = getStpDir(projectPath);
     const configPath = getConfigPath(projectPath);
-    // Ensure .dojo directory exists
-    if (!fs.existsSync(dojoDir)) {
-        fs.mkdirSync(dojoDir, { recursive: true });
+    // Ensure .stp directory exists
+    if (!fs.existsSync(stpDir)) {
+        fs.mkdirSync(stpDir, { recursive: true });
     }
     // Validate before saving
     const validated = ConfigSchema.parse(config);
     fs.writeFileSync(configPath, JSON.stringify(validated, null, 2) + "\n", "utf-8");
 }
 /**
- * Initialize Dojo in a project with default config
+ * Initialize STP in a project with default config
  */
 export function initializeConfig(projectPath, preset) {
     const config = {

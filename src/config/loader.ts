@@ -2,28 +2,28 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { ConfigSchema, DEFAULT_CONFIG, type Config } from "./schema.js";
 
-const DOJO_DIR = ".dojo";
+const STP_DIR = ".stp";
 const CONFIG_FILE = "config.json";
 
 /**
- * Get the path to the .dojo directory for a project
+ * Get the path to the .stp directory for a project
  */
-export function getDojoDir(projectPath: string): string {
-  return path.join(projectPath, DOJO_DIR);
+export function getStpDir(projectPath: string): string {
+  return path.join(projectPath, STP_DIR);
 }
 
 /**
  * Get the path to the config file
  */
 export function getConfigPath(projectPath: string): string {
-  return path.join(getDojoDir(projectPath), CONFIG_FILE);
+  return path.join(getStpDir(projectPath), CONFIG_FILE);
 }
 
 /**
- * Check if Dojo is initialized in the project
+ * Check if STP is initialized in the project
  */
-export function isDojoInitialized(projectPath: string): boolean {
-  return fs.existsSync(getDojoDir(projectPath));
+export function isStpInitialized(projectPath: string): boolean {
+  return fs.existsSync(getStpDir(projectPath));
 }
 
 /**
@@ -54,12 +54,12 @@ export function loadConfig(projectPath: string): Config {
  * Save config to file
  */
 export function saveConfig(projectPath: string, config: Config): void {
-  const dojoDir = getDojoDir(projectPath);
+  const stpDir = getStpDir(projectPath);
   const configPath = getConfigPath(projectPath);
 
-  // Ensure .dojo directory exists
-  if (!fs.existsSync(dojoDir)) {
-    fs.mkdirSync(dojoDir, { recursive: true });
+  // Ensure .stp directory exists
+  if (!fs.existsSync(stpDir)) {
+    fs.mkdirSync(stpDir, { recursive: true });
   }
 
   // Validate before saving
@@ -73,7 +73,7 @@ export function saveConfig(projectPath: string, config: Config): void {
 }
 
 /**
- * Initialize Dojo in a project with default config
+ * Initialize STP in a project with default config
  */
 export function initializeConfig(projectPath: string, preset?: string): Config {
   const config: Config = {

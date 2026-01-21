@@ -1,6 +1,6 @@
-# Dojo Mode - Project Instructions
+# STP Mode - Project Instructions
 
-This project has **Dojo mode** enabled. Dojo helps maintain programming skills by ensuring
+This project has **STP mode** enabled. STP (Simian Training Plugin) helps maintain programming skills by ensuring
 the human writes a minimum percentage of code themselves.
 
 ## Current Configuration
@@ -43,7 +43,7 @@ Lines are tracked **automatically from git history**:
 
 - Commits with `Co-Authored-By: Claude` are attributed to Claude
 - All other commits are attributed to human
-- Counts are cached in `.dojo/.git_history_cache.json`
+- Counts are cached in `.stp/.git_history_cache.json`
 
 **Important**: Always include `Co-Authored-By: Claude <noreply@anthropic.com>` when committing code you wrote.
 
@@ -76,10 +76,10 @@ To see the generated system prompt with current stats:
 node dist/cli.js hook:system-prompt
 ```
 
-<!-- DOJO:START -->
-## Dojo Mode
+<!-- STP:START -->
+## STP Mode
 
-This project has **Dojo mode** enabled. Dojo helps maintain programming skills by ensuring
+This project has **STP mode** enabled. STP helps maintain programming skills by ensuring
 the human writes a minimum percentage of code themselves.
 
 **Current Mode:** 4. 50-50 (50% AI / 50% human)
@@ -116,5 +116,5 @@ node dist/cli.js complete <file> human # Mark complete
 
 ### Learning
 
-Use `/dojo:quiz` to test your knowledge of the codebase.
-<!-- DOJO:END -->
+Use `/stp:quiz` to test your knowledge of the codebase.
+<!-- STP:END -->

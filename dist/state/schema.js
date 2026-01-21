@@ -1,28 +1,3 @@
-import { z } from "zod";
-/**
- * Session state
- */
-export const SessionSchema = z.object({
-    // When the session started
-    startedAt: z.string().datetime(),
-});
-/**
- * Main state schema for .dojo/state.json
- */
-export const StateSchema = z.object({
-    // Current session state
-    session: SessionSchema,
-});
-/**
- * Create a new default state
- */
-export function createDefaultState() {
-    return {
-        session: {
-            startedAt: new Date().toISOString(),
-        },
-    };
-}
 /**
  * Calculate the current human work ratio from line counts
  * Returns 1.0 if no work has been done yet (human is at 100% until Claude does something)

@@ -1,4 +1,4 @@
-import { isDojoInitialized, loadConfig } from "../config/loader.js";
+import { isStpInitialized, loadConfig } from "../config/loader.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { getEffectiveRatio } from "../config/schema.js";
 import { generateSystemPrompt } from "./system-prompt.js";
@@ -6,12 +6,12 @@ import { getLineCounts } from "../git/history.js";
 /**
  * Pre-response hook
  * Called before Claude generates a response
- * Injects Dojo context into the system prompt
+ * Injects STP context into the system prompt
  */
 export function preResponseHook(input) {
     const { cwd } = input;
-    // Check if Dojo is initialized in this project
-    if (!isDojoInitialized(cwd)) {
+    // Check if STP is initialized in this project
+    if (!isStpInitialized(cwd)) {
         return { proceed: true };
     }
     // Load config
@@ -29,7 +29,7 @@ export function preResponseHook(input) {
     // If ratio is unhealthy, we might want to show a warning
     let userMessage;
     if (!isHealthy && lineCounts.claudeLines > 0) {
-        userMessage = `⚠️ Dojo: Human work ratio (${(currentRatio * 100).toFixed(0)}%) is below target (${(targetRatio * 100).toFixed(0)}%). Consider having the human write more code.`;
+        userMessage = `⚠️ STP: Human work ratio (${(currentRatio * 100).toFixed(0)}%) is below target (${(targetRatio * 100).toFixed(0)}%). Consider having the human write more code.`;
     }
     return {
         systemPromptAddition,

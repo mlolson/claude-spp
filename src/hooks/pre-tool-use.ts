@@ -1,6 +1,6 @@
-import { isDojoInitialized, loadConfig } from "../config/loader.js";
+import { isStpInitialized, loadConfig } from "../config/loader.js";
 import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
-import { isDojoInternalFile } from "./file-matcher.js";
+import { isStpInternalFile } from "./file-matcher.js";
 import { getLineCounts } from "../git/history.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 
@@ -65,8 +65,8 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
     return { decision: "allow" };
   }
 
-  // Check if Dojo is initialized
-  if (!isDojoInitialized(cwd)) {
+  // Check if STP is initialized
+  if (!isStpInitialized(cwd)) {
     return { decision: "allow" };
   }
 
@@ -82,8 +82,8 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
     return { decision: "allow" };
   }
 
-  // Always allow .dojo internal files
-  if (isDojoInternalFile(filePath, cwd)) {
+  // Always allow .stp internal files
+  if (isStpInternalFile(filePath, cwd)) {
     return { decision: "allow" };
   }
 

@@ -1,17 +1,15 @@
-import { loadConfig, isDojoInitialized } from "../config/loader.js";
+import { loadConfig, isStpInitialized } from "../config/loader.js";
 import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
-import { loadState } from "../state/manager.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { getLineCounts } from "../git/history.js";
 /**
- * Get current Dojo statistics
+ * Get current STP statistics
  */
 export function getStats(projectPath) {
-    if (!isDojoInitialized(projectPath)) {
+    if (!isStpInitialized(projectPath)) {
         return { initialized: false };
     }
     const config = loadConfig(projectPath);
-    const state = loadState(projectPath);
     const lineCounts = getLineCounts(projectPath);
     const targetRatio = getEffectiveRatio(config);
     const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
@@ -24,9 +22,6 @@ export function getStats(projectPath) {
         currentRatio,
         ratioHealthy: isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio),
         lines: lineCounts,
-        session: {
-            startedAt: state.session.startedAt,
-        },
     };
 }
 /**
@@ -34,10 +29,10 @@ export function getStats(projectPath) {
  */
 export function formatStats(stats) {
     if (!stats.initialized) {
-        return "Dojo is not initialized in this project. Run `node dist/cli.js init` to get started.";
+        return "STP is not initialized in this project. Run `node dist/cli.js init` to get started.";
     }
     if (!stats.enabled) {
-        return "Dojo is disabled in this project.";
+        return "STP is disabled in this project.";
     }
     const cacheStatus = stats.lines?.fromCache
         ? "(cached)"
@@ -48,7 +43,7 @@ export function formatStats(stats) {
         ? `${stats.mode.number}. ${stats.mode.name} (${stats.mode.description})`
         : "Unknown";
     const lines = [
-        "## Dojo Stats",
+        "## STP Stats",
         "",
         `**Mode:** ${modeDisplay}`,
         `**Target Ratio:** ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,

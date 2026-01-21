@@ -1,4 +1,4 @@
-import { loadConfig, isDojoInitialized } from "../config/loader.js";
+import { loadConfig, isStpInitialized } from "../config/loader.js";
 import { getEffectiveRatio, getCurrentMode, type Mode } from "../config/schema.js";
 import { calculateRatio, isRatioHealthy } from "../state/schema.js";
 import { getLineCounts } from "../git/history.js";
@@ -24,10 +24,10 @@ export interface StatsResult {
 }
 
 /**
- * Get current Dojo statistics
+ * Get current STP statistics
  */
 export function getStats(projectPath: string): StatsResult {
-  if (!isDojoInitialized(projectPath)) {
+  if (!isStpInitialized(projectPath)) {
     return { initialized: false };
   }
 
@@ -53,11 +53,11 @@ export function getStats(projectPath: string): StatsResult {
  */
 export function formatStats(stats: StatsResult): string {
   if (!stats.initialized) {
-    return "Dojo is not initialized in this project. Run `node dist/cli.js init` to get started.";
+    return "STP is not initialized in this project. Run `node dist/cli.js init` to get started.";
   }
 
   if (!stats.enabled) {
-    return "Dojo is disabled in this project.";
+    return "STP is disabled in this project.";
   }
 
   const cacheStatus = stats.lines?.fromCache
@@ -71,7 +71,7 @@ export function formatStats(stats: StatsResult): string {
     : "Unknown";
 
   const lines: string[] = [
-    "## Dojo Stats",
+    "## STP Stats",
     "",
     `**Mode:** ${modeDisplay}`,
     `**Target Ratio:** ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,

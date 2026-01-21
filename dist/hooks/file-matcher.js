@@ -77,10 +77,10 @@ export function fileMatchesPatterns(filePath, patterns, projectPath) {
     return patterns.some((pattern) => fileMatchesPattern(filePath, pattern, projectPath));
 }
 /**
- * Check if a file path is within the .dojo directory
+ * Check if a file path is within the .stp directory
  */
-export function isDojoInternalFile(filePath, projectPath) {
+export function isStpInternalFile(filePath, projectPath) {
     const normalizedFile = normalizeFilePath(filePath, projectPath);
-    return normalizedFile.startsWith(".dojo/") || normalizedFile === ".dojo";
+    return normalizedFile.startsWith(".stp/") || normalizedFile === ".stp";
 }
 //# sourceMappingURL=file-matcher.js.map

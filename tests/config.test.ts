@@ -4,8 +4,8 @@ import * as path from "node:path";
 import {
   loadConfig,
   saveConfig,
-  isDojoInitialized,
-  getDojoDir,
+  isStpInitialized,
+  getStpDir,
 } from "../src/config/loader.js";
 import {
   DEFAULT_CONFIG,
@@ -38,10 +38,10 @@ describe("Configuration", () => {
     });
 
     it("loads config from file", () => {
-      const dojoDir = getDojoDir(TEST_DIR);
-      fs.mkdirSync(dojoDir, { recursive: true });
+      const stpDir = getStpDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
       fs.writeFileSync(
-        path.join(dojoDir, "config.json"),
+        path.join(stpDir, "config.json"),
         JSON.stringify({ enabled: false, mode: 3 })
       );
 
@@ -51,24 +51,24 @@ describe("Configuration", () => {
     });
 
     it("throws on invalid JSON", () => {
-      const dojoDir = getDojoDir(TEST_DIR);
-      fs.mkdirSync(dojoDir, { recursive: true });
-      fs.writeFileSync(path.join(dojoDir, "config.json"), "not json");
+      const stpDir = getStpDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
+      fs.writeFileSync(path.join(stpDir, "config.json"), "not json");
 
       expect(() => loadConfig(TEST_DIR)).toThrow("Invalid JSON");
     });
   });
 
   describe("saveConfig", () => {
-    it("creates .dojo directory if needed", () => {
+    it("creates .stp directory if needed", () => {
       saveConfig(TEST_DIR, DEFAULT_CONFIG);
-      expect(fs.existsSync(getDojoDir(TEST_DIR))).toBe(true);
+      expect(fs.existsSync(getStpDir(TEST_DIR))).toBe(true);
     });
 
     it("writes valid JSON", () => {
       saveConfig(TEST_DIR, { ...DEFAULT_CONFIG, mode: 5 });
       const content = fs.readFileSync(
-        path.join(getDojoDir(TEST_DIR), "config.json"),
+        path.join(getStpDir(TEST_DIR), "config.json"),
         "utf-8"
       );
       const parsed = JSON.parse(content);
@@ -76,14 +76,14 @@ describe("Configuration", () => {
     });
   });
 
-  describe("isDojoInitialized", () => {
-    it("returns false when .dojo does not exist", () => {
-      expect(isDojoInitialized(TEST_DIR)).toBe(false);
+  describe("isStpInitialized", () => {
+    it("returns false when .stp does not exist", () => {
+      expect(isStpInitialized(TEST_DIR)).toBe(false);
     });
 
-    it("returns true when .dojo exists", () => {
-      fs.mkdirSync(getDojoDir(TEST_DIR), { recursive: true });
-      expect(isDojoInitialized(TEST_DIR)).toBe(true);
+    it("returns true when .stp exists", () => {
+      fs.mkdirSync(getStpDir(TEST_DIR), { recursive: true });
+      expect(isStpInitialized(TEST_DIR)).toBe(true);
     });
   });
 

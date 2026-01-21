@@ -6,7 +6,7 @@ export interface InitResult {
     message: string;
 }
 /**
- * Initialize Dojo in a project
+ * Initialize STP in a project
  * @param projectPath - Path to the project
  * @param modeNumber - Optional mode number (1-6). Defaults to 4 (50-50).
  */

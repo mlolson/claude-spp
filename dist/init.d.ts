@@ -5,16 +5,16 @@ import { type Config } from "./config/schema.js";
  */
 export declare function installGitHook(projectPath: string): void;
 /**
- * Initialize Dojo in a project
- * Creates .dojo directory with config and state
+ * Initialize STP in a project
+ * Creates .stp directory with config
  */
-export declare function initializeDojo(projectPath: string, modeNumber?: number): Promise<Config>;
+export declare function initializeStp(projectPath: string, modeNumber?: number): Promise<Config>;
 /**
- * Check if Dojo is fully initialized
+ * Check if STP is fully initialized
  */
 export declare function isFullyInitialized(projectPath: string): boolean;
 /**
- * Ensure Dojo is initialized, initializing if needed
+ * Ensure STP is initialized, initializing if needed
  */
 export declare function ensureInitialized(projectPath: string, modeNumber?: number): Promise<Config>;
 //# sourceMappingURL=init.d.ts.map

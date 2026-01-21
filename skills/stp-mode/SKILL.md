@@ -1,11 +1,11 @@
 ---
 name: mode
-description: Show or change the current Dojo mode
+description: Show or change the current STP mode
 ---
 
-# Dojo Mode Skill
+# STP Mode Skill
 
-View available modes or change the current Dojo mode. Modes control the target ratio of human-written vs AI-written code.
+View available modes or change the current STP mode. Modes control the target ratio of human-written vs AI-written code.
 
 ## Steps
 

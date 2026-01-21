@@ -102,9 +102,9 @@ export function fileMatchesPatterns(
 }
 
 /**
- * Check if a file path is within the .dojo directory
+ * Check if a file path is within the .stp directory
  */
-export function isDojoInternalFile(filePath: string, projectPath: string): boolean {
+export function isStpInternalFile(filePath: string, projectPath: string): boolean {
   const normalizedFile = normalizeFilePath(filePath, projectPath);
-  return normalizedFile.startsWith(".dojo/") || normalizedFile === ".dojo";
+  return normalizedFile.startsWith(".stp/") || normalizedFile === ".stp";
 }

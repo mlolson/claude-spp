@@ -3,7 +3,7 @@ import { runPreResponseHook } from "./hooks/pre-response.js";
 import { runPostResponseHook } from "./hooks/post-response.js";
 import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
-import { initializeDojo, isFullyInitialized, installGitHook } from "./init.js";
+import { initializeStp, isFullyInitialized, installGitHook } from "./init.js";
 import { loadConfig, saveConfig } from "./config/loader.js";
 import { calculateRatio } from "./state/schema.js";
 import { getLineCounts } from "./git/history.js";
@@ -24,12 +24,12 @@ function getModesExplanation() {
 }
 function getHelpMessage() {
     return `
-Dojo CLI - Maintain your programming skills
+STP CLI - Simian Training Plugin
 
 Usage: node dist/cli.js <command> [options]
 
 Commands:
-  init [mode]                Initialize Dojo (mode: 1-6, default: 4)
+  init [mode]                Initialize STP (mode: 1-6, default: 4)
   mode [number|name]         Show or change the current mode
   stats                      Show detailed statistics
   status                     Show quick status
@@ -68,16 +68,16 @@ async function main() {
                 // If mode number provided as argument, use it
                 const modeArg = args[1] ? parseInt(args[1], 10) : undefined;
                 const mode = modeArg && modeArg >= 1 && modeArg <= 6 ? modeArg : 4; // Default to 50-50
-                const config = await initializeDojo(process.cwd(), undefined);
+                const config = await initializeStp(process.cwd(), undefined);
                 // Update with selected mode
                 config.mode = mode;
                 saveConfig(process.cwd(), config);
                 // Install git post-commit hook
                 installGitHook(process.cwd());
                 const currentMode = getCurrentMode(config);
-                console.log(`✅ Dojo initialized with mode ${currentMode.number}: ${currentMode.name}`);
+                console.log(`✅ STP initialized with mode ${currentMode.number}: ${currentMode.name}`);
                 console.log(`   ${currentMode.description}`);
-                console.log(`   Directory: .dojo/`);
+                console.log(`   Directory: .stp/`);
                 console.log(`   Git hook: .git/hooks/post-commit`);
             }
             catch (error) {
@@ -88,7 +88,7 @@ async function main() {
         }
         case "modes": {
             if (!isFullyInitialized(process.cwd())) {
-                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
+                console.error("❌ STP not initialized. Run: node dist/cli.js init");
                 process.exit(1);
             }
             console.log(getModesExplanation());
@@ -96,7 +96,7 @@ async function main() {
         }
         case "mode": {
             if (!isFullyInitialized(process.cwd())) {
-                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
+                console.error("❌ STP not initialized. Run: node dist/cli.js init");
                 process.exit(1);
             }
             const config = loadConfig(process.cwd());
@@ -130,7 +130,7 @@ async function main() {
         }
         case "stats": {
             if (!isFullyInitialized(process.cwd())) {
-                console.error("❌ Dojo not initialized. Run: node dist/cli.js init");
+                console.error("❌ STP not initialized. Run: node dist/cli.js init");
                 process.exit(1);
             }
             const stats = getStats(process.cwd());
@@ -139,12 +139,12 @@ async function main() {
         }
         case "status": {
             if (!isFullyInitialized(process.cwd())) {
-                console.log("Dojo: Not initialized");
+                console.log("STP: Not initialized");
                 break;
             }
             const config = loadConfig(process.cwd());
             if (!config.enabled) {
-                console.log("Dojo: Disabled");
+                console.log("STP: Disabled");
                 break;
             }
             const currentMode = getCurrentMode(config);
@@ -152,7 +152,7 @@ async function main() {
             const ratio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
             const target = getEffectiveRatio(config);
             const healthy = ratio >= target;
-            console.log(`Dojo: ${healthy ? "✅" : "⚠️"} ${(ratio * 100).toFixed(0)}% human / ${(target * 100).toFixed(0)}% target`);
+            console.log(`STP: ${healthy ? "✅" : "⚠️"} ${(ratio * 100).toFixed(0)}% human / ${(target * 100).toFixed(0)}% target`);
             console.log(`  Mode: ${currentMode.number}. ${currentMode.name} (${currentMode.description})`);
             console.log(`  Human: ${lineCounts.humanLines} lines, ${lineCounts.humanCommits} commits`);
             console.log(`  Claude: ${lineCounts.claudeLines} lines, ${lineCounts.claudeCommits} commits`);

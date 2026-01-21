@@ -1,5 +1,5 @@
 /**
- * Generate the Dojo system prompt injection
+ * Generate the STP system prompt injection
  */
 export declare function generateSystemPrompt(projectPath: string): string;
 /**
