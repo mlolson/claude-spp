@@ -17,7 +17,6 @@ export {
   runPreToolUseHook,
   type PreToolUseHookInput,
   type PreToolUseHookOutput,
-  type ToolInput,
 } from "./pre-tool-use.js";
 export {
   normalizeFilePath,

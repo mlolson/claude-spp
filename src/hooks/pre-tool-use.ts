@@ -5,29 +5,28 @@ import { getLineCounts } from "../git/history.js";
 import { calculateRatio, isRatioHealthy } from "../stats.js";
 
 /**
- * Tool information from Claude Code
- */
-export interface ToolInput {
-  name: string;
-  input: Record<string, unknown>;
-}
-
-/**
- * Hook input from Claude Code
+ * Hook input from Claude Code (actual format)
  */
 export interface PreToolUseHookInput {
-  tool: ToolInput;
-  sessionId?: string;
+  session_id?: string;
+  transcript_path?: string;
   cwd: string;
+  permission_mode?: string;
+  hook_event_name?: string;
+  tool_name: string;
+  tool_input: Record<string, unknown>;
+  tool_use_id?: string;
 }
 
 /**
- * Hook output to Claude Code
+ * Hook output to Claude Code (correct format)
  */
 export interface PreToolUseHookOutput {
-  decision: "allow" | "block" | "ask";
-  reason?: string;
-  message?: string;
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse";
+    permissionDecision: "allow" | "deny" | "ask";
+    permissionDecisionReason?: string;
+  };
 }
 
 /**
@@ -38,18 +37,43 @@ const WRITE_TOOLS = ["Write", "Edit", "NotebookEdit"];
 /**
  * Extract file path from tool input
  */
-function extractFilePath(tool: ToolInput): string | null {
-  if (tool.name === "Write" || tool.name === "Edit") {
-    const filePath = tool.input.file_path;
+function extractFilePath(toolName: string, toolInput: Record<string, unknown>): string | null {
+  if (toolName === "Write" || toolName === "Edit") {
+    const filePath = toolInput.file_path;
     return typeof filePath === "string" ? filePath : null;
   }
 
-  if (tool.name === "NotebookEdit") {
-    const notebookPath = tool.input.notebook_path;
+  if (toolName === "NotebookEdit") {
+    const notebookPath = toolInput.notebook_path;
     return typeof notebookPath === "string" ? notebookPath : null;
   }
 
   return null;
+}
+
+/**
+ * Create an allow response
+ */
+function allowResponse(): PreToolUseHookOutput {
+  return {
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "allow",
+    },
+  };
+}
+
+/**
+ * Create a deny response with reason
+ */
+function denyResponse(reason: string): PreToolUseHookOutput {
+  return {
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: reason,
+    },
+  };
 }
 
 /**
@@ -58,59 +82,56 @@ function extractFilePath(tool: ToolInput): string | null {
  * Checks the work ratio before allowing writes
  */
 export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput {
-  const { tool, cwd } = input;
+  const { tool_name, tool_input, cwd } = input;
 
   // Only process write-related tools
-  if (!WRITE_TOOLS.includes(tool.name)) {
-    return { decision: "allow" };
+  if (!WRITE_TOOLS.includes(tool_name)) {
+    return allowResponse();
   }
 
   // Check if STP is initialized
   if (!isStpInitialized(cwd)) {
-    return { decision: "allow" };
+    return allowResponse();
   }
 
   // Load config
   const config = loadConfig(cwd);
   if (!config.enabled) {
-    return { decision: "allow" };
+    return allowResponse();
   }
 
   // Extract the file path being written to
-  const filePath = extractFilePath(tool);
+  const filePath = extractFilePath(tool_name, tool_input);
   if (!filePath) {
-    return { decision: "allow" };
+    return allowResponse();
   }
 
   // Always allow .stp internal files
   if (isStpInternalFile(filePath, cwd)) {
-    return { decision: "allow" };
+    return allowResponse();
   }
 
   // Check the work ratio - block if below target
   const lineCounts = getLineCounts(cwd);
   const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
   const targetRatio = getEffectiveRatio(config);
-  const currentMode = getCurrentMode(config);
 
   if (!isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio)) {
     // Ratio is below target - block Claude from writing
-    const lines: string[] = [
+    const reason = [
       `Human work ratio is below target: ${(currentRatio * 100).toFixed(0)}% actual vs ${(targetRatio * 100).toFixed(0)}% required`,
       "",
       "The human needs to write more code before Claude can continue.",
       "",
-      "This directive cannot be overriden. Offer to create a task for the user including step by step instructions, and to offer them hints."
-    ];
+      "This directive cannot be overriden. Offer to create a task for the user including step by step instructions, and to offer them hints.",
+      "",
+      "Do not give the user suggestions on how to disable STP or switch modes."
+    ].join("\n");
 
-    return {
-      decision: "block",
-      reason: "ratio_below_target",
-      message: lines.join("\n"),
-    };
+    return denyResponse(reason);
   }
 
-  return { decision: "allow" };
+  return allowResponse();
 }
 
 /**
@@ -130,12 +151,26 @@ export async function runPreToolUseHook(): Promise<void> {
     input = JSON.parse(inputJson);
   } catch {
     // If no input or invalid JSON, allow by default
-    console.log(JSON.stringify({ decision: "allow" }));
+    console.log(JSON.stringify(allowResponse()));
     return;
   }
 
   // Run hook
-  const output = preToolUseHook(input);
+  let output: PreToolUseHookOutput;
+  try {
+    output = preToolUseHook(input);
+  } catch (error) {
+    // Return error details for debugging
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    output = {
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "allow",
+        permissionDecisionReason: `Hook error: ${errorMessage}\n\nStack: ${errorStack}\n\nInput: ${JSON.stringify(input, null, 2)}`,
+      },
+    };
+  }
 
   // Write output to stdout
   console.log(JSON.stringify(output));
