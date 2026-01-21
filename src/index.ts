@@ -15,7 +15,7 @@ export {
 export {
   calculateRatio,
   isRatioHealthy,
-} from "./state/schema.js";
+} from "./stats.js";
 
 // Git History
 export {

@@ -1,5 +1,5 @@
 import { isStpInitialized, loadConfig } from "../config/loader.js";
-import { calculateRatio, isRatioHealthy } from "../state/schema.js";
+import { calculateRatio, isRatioHealthy } from "../stats.js";
 import { getEffectiveRatio } from "../config/schema.js";
 import { generateSystemPrompt } from "./system-prompt.js";
 import { getLineCounts } from "../git/history.js";

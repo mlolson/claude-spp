@@ -2,7 +2,7 @@ import { isStpInitialized, loadConfig } from "../config/loader.js";
 import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
 import { isStpInternalFile } from "./file-matcher.js";
 import { getLineCounts } from "../git/history.js";
-import { calculateRatio, isRatioHealthy } from "../state/schema.js";
+import { calculateRatio, isRatioHealthy } from "../stats.js";
 
 /**
  * Tool information from Claude Code
@@ -101,7 +101,7 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
       "",
       "The human needs to write more code before Claude can continue.",
       "",
-      "Guide the human through the implementation instead of writing it yourself.",
+      "This directive cannot be overriden. Offer to create a task for the user including step by step instructions, and to offer them hints."
     ];
 
     return {

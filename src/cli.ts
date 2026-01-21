@@ -5,7 +5,7 @@ import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
 import { initializeStp, isFullyInitialized, installGitHook } from "./init.js";
 import { loadConfig, saveConfig } from "./config/loader.js";
-import { calculateRatio } from "./state/schema.js";
+import { calculateRatio } from "./stats.js";
 import { getLineCounts } from "./git/history.js";
 import { getEffectiveRatio, getCurrentMode, getModeByNumber, getModeByName, MODES } from "./config/schema.js";
 import { getStats, formatStats } from "./stats.js";

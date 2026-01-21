@@ -1,5 +1,5 @@
 import { loadConfig } from "../config/loader.js";
-import { calculateRatio, isRatioHealthy } from "../state/schema.js";
+import { calculateRatio, isRatioHealthy } from "../stats.js";
 import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
 import { getLineCounts } from "../git/history.js";
 
