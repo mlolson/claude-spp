@@ -72,13 +72,13 @@ export function formatStats(stats: StatsResult): string {
   const maxCommits = Math.max(humanCommits.length, claudeCommits.length);
 
   const lines: string[] = [
-    "Current repo stats:",
-    `Mode:          ${modeDisplay}`,
-    `Target Ratio:  ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,
-    `Current Ratio: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${stats.ratioHealthy ? "(healthy)" : "(below target)"}`,
     "",
-    `Human code:  ${humanCommits.padStart(maxCommits)} commits, ${humanLines.padStart(maxLines)} lines added/deleted`,
-    `Claude code: ${claudeCommits.padStart(maxCommits)} commits, ${claudeLines.padStart(maxLines)} lines added/deleted`,
+    "Current repo stats:",
+    "",
+    `Target Ratio:  ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,
+    `Current Ratio: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${stats.ratioHealthy ? "(on target) 💪🐵" : "(below target) 🙊"}`,
+    `Human:  ${humanCommits.padStart(maxCommits)} commits, ${humanLines.padStart(maxLines)} lines added/deleted`,
+    `Claude: ${claudeCommits.padStart(maxCommits)} commits, ${claudeLines.padStart(maxLines)} lines added/deleted`,
     "",
   ];
 
