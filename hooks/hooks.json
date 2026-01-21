@@ -2,8 +2,13 @@
   "hooks": {
     "PreToolUse": [
       {
-        "type": "command",
-        "command": "node dist/cli.js hook:pre-tool-use"
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "stp hook:pre-tool-use"
+          }
+        ]
       }
     ]
   }

@@ -10,19 +10,19 @@ View available modes or change the current STP mode. Modes control the target ra
 
 1. First, get the current status to show the active mode:
    ```bash
-   node dist/cli.js mode
+   stp mode
    ```
 
 2. Run the following command and display the output to the user without alteration:
    ```bash
-   node dist/cli.js modes
+   stp modes
    ```
 
 3. Ask the user to input a mode as a number
 
 4. Set the chosen mode:
    ```bash
-   node dist/cli.js mode <number>
+   stp mode <number>
    ```
 
 4. Confirm the mode was changed.

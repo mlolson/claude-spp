@@ -97,7 +97,6 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
     // Ratio is below target - block Claude from writing
     const lines: string[] = [
       `Human work ratio is below target: ${(currentRatio * 100).toFixed(0)}% actual vs ${(targetRatio * 100).toFixed(0)}% required`,
-      `Mode: ${currentMode.number}. ${currentMode.name} (${currentMode.description})`,
       "",
       "The human needs to write more code before Claude can continue.",
       "",

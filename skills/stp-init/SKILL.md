@@ -11,7 +11,7 @@ Initialize STP mode in the current project. This creates the `.stp/` directory w
 
 1. First, check if STP is already initialized:
    ```bash
-   node dist/cli.js status
+   stp status
    ```
 
 2. If already initialized, inform the user and ask if they want to reinitialize.
@@ -28,7 +28,7 @@ Initialize STP mode in the current project. This creates the `.stp/` directory w
 
 4. Run the init command with their chosen mode:
    ```bash
-   node dist/cli.js init <mode_number>
+   stp init <mode_number>
    ```
 
 5. Confirm initialization was successful and explain what was created:

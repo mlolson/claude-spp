@@ -48,7 +48,7 @@ After all questions are answered:
 
 Good quiz questions:
 - "What function is responsible for calculating the work ratio in this project?"
-- "What happens when a user runs `node dist/cli.js status`?"
+- "What happens when a user runs `stp status`?"
 - "How does the system track lines of code written by Claude vs the human?"
 - "What are the available modes and what do they control?"
 

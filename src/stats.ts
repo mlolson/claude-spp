@@ -82,7 +82,7 @@ export function getStats(projectPath: string): StatsResult {
  */
 export function formatStats(stats: StatsResult): string {
   if (!stats.initialized) {
-    return "STP is not initialized in this project. Run `node dist/cli.js init` to get started.";
+    return "STP is not initialized in this project. Run `stp init` to get started.";
   }
 
   if (!stats.enabled) {

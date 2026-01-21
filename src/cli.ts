@@ -26,15 +26,17 @@ function getModesExplanation(): string {
 
 function getHelpMessage(): string {
   return `
-STP CLI - Simian Training Plugin
+STP CLI - Simian Training Plugin for Claude - https://github.com/mlolson/claude-stp
 
-Usage: node dist/cli.js <command> [options]
+Usage: stp <command> [options]
 
 Commands:
   init [mode]                Initialize STP (mode: 1-6, default: 4)
   mode [number|name]         Show or change the current mode
   stats                      Show detailed statistics
   status                     Show quick status
+  pause                      Pause STP (Claude writes freely)
+  resume                     Resume STP
 
 ${getModesExplanation()}
 
@@ -93,18 +95,18 @@ async function main() {
 
     case "modes": {
       if (!isFullyInitialized(process.cwd())) {
-        console.error("❌ STP not initialized. Run: node dist/cli.js init");
+        console.error("❌ STP not initialized. Run: stp init");
         process.exit(1);
       }
 
       console.log(getModesExplanation());
-      console.log("To change mode: node dist/cli.js mode <number>");
+      console.log("To change mode: stp mode <number>");
       break;
     }
 
     case "mode": {
       if (!isFullyInitialized(process.cwd())) {
-        console.error("❌ STP not initialized. Run: node dist/cli.js init");
+        console.error("❌ STP not initialized. Run: stp init");
         process.exit(1);
       }
 
@@ -146,7 +148,7 @@ async function main() {
 
     case "stats": {
       if (!isFullyInitialized(process.cwd())) {
-        console.error("❌ STP not initialized. Run: node dist/cli.js init");
+        console.error("❌ STP not initialized. Run: stp init");
         process.exit(1);
       }
       const stats = getStats(process.cwd());
@@ -161,7 +163,7 @@ async function main() {
       }
       const config = loadConfig(process.cwd());
       if (!config.enabled) {
-        console.log("STP: Disabled");
+        console.log("STP is disabled. Claude may write code freely. To resume run 'stp resume'");
         break;
       }
       const currentMode = getCurrentMode(config);
@@ -176,11 +178,35 @@ async function main() {
       break;
     }
 
+    case "pause": {
+      if (!isFullyInitialized(process.cwd())) {
+        console.error("❌ STP not initialized. Run: stp init");
+        process.exit(1);
+      }
+      const config = loadConfig(process.cwd());
+      config.enabled = false;
+      saveConfig(process.cwd(), config);
+      console.log("⏸️  STP paused. Claude may write code freely.");
+      console.log("   Run 'stp resume' to resume tracking.");
+      break;
+    }
+
+    case "resume": {
+      if (!isFullyInitialized(process.cwd())) {
+        console.error("❌ STP not initialized. Run: stp init");
+        process.exit(1);
+      }
+      const config = loadConfig(process.cwd());
+      config.enabled = true;
+      saveConfig(process.cwd(), config);
+      console.log("▶️  STP resumed. Ratio tracking is active.");
+      break;
+    }
+
     case "help":
+    default:
       console.log(getHelpMessage());
       break;
-    default:
-      throw new Error(getHelpMessage());
   }
 }
 

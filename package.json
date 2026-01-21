@@ -1,5 +1,5 @@
 {
-  "name": "stp",
+  "name": "claude-stp",
   "version": "0.1.0",
   "description": "Claude Code plugin for maintaining programming skills through guided learning",
   "type": "module",
@@ -26,6 +26,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "commander": "^14.0.2",
     "zod": "^3.22.4"
   },
   "devDependencies": {

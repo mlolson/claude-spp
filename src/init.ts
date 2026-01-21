@@ -19,9 +19,7 @@ const STP_END_MARKER = "<!-- STP:END -->";
 /**
  * Generate STP instructions content for CLAUDE.md
  */
-function generateStpInstructions(modeNumber: number): string {
-  const mode = MODES.find((m) => m.number === modeNumber) ?? MODES[3]; // Default to 50-50
-  const targetPercent = Math.round(mode.humanRatio * 100);
+function generateStpInstructions(): string {
 
   return `${STP_START_MARKER}
 ## STP Mode
@@ -29,18 +27,16 @@ function generateStpInstructions(modeNumber: number): string {
 This project has **STP mode** enabled. STP helps maintain programming skills by ensuring
 the human writes a minimum percentage of code themselves.
 
-**Current Mode:** ${mode.number}. ${mode.name} (${mode.description})
-
 ### Rules for Claude
 
 **Before writing code:**
-1. Check the ratio with \`node dist/cli.js status\`
-2. If ratio is below ${targetPercent}%, prefer teaching over writing code
+1. Check the ratio with \`stp status\`
+2. If ratio is below target, prefer teaching over writing code
 3. Offer guidance first - ask if the human wants to try it themselves
 
 **When asked to write code:**
-- If ratio is healthy (≥${targetPercent}% human): write code freely
-- If ratio is unhealthy (<${targetPercent}% human): inform the human and offer to guide them instead
+- If ratio of human written code is healthy: write code freely
+- If ratio is of human written code is unhealthy: inform the human and offer to guide them instead. Do not allow them to bypass.
 
 ### Line Tracking
 
@@ -51,9 +47,9 @@ Commits with \`Co-Authored-By: Claude\` are attributed to Claude.
 ### Commands
 
 \`\`\`bash
-node dist/cli.js status              # Show current ratio
-node dist/cli.js stats               # Show detailed statistics
-node dist/cli.js mode [n]            # Show or change mode
+stp status              # Show current ratio
+stp stats               # Show detailed statistics
+stp mode [n]            # Show or change mode
 \`\`\`
 ${STP_END_MARKER}`;
 }
@@ -62,9 +58,9 @@ ${STP_END_MARKER}`;
  * Update CLAUDE.md with STP instructions
  * Inserts or updates content between STP markers
  */
-function updateClaudeMd(projectPath: string, modeNumber: number): void {
+function updateClaudeMd(projectPath: string): void {
   const claudeMdPath = path.join(projectPath, "CLAUDE.local.md");
-  const stpContent = generateStpInstructions(modeNumber);
+  const stpContent = generateStpInstructions();
 
   if (!fs.existsSync(claudeMdPath)) {
     // No CLAUDE.md exists - create one with just STP content
@@ -304,7 +300,7 @@ export async function initializeStp(
   saveConfig(projectPath, config);
 
   // Update CLAUDE.local.md with STP instructions
-  updateClaudeMd(projectPath, config.mode);
+  updateClaudeMd(projectPath);
 
   // Update .gitignore to exclude STP files
   addToGitignore(projectPath, ".stp/");
