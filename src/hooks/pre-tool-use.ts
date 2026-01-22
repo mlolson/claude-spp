@@ -110,6 +110,10 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
   if (isStpInternalFile(filePath, cwd)) {
     return allowResponse();
   }
+  // Always allow markdown files (documentation, not code)
+  if (filePath.endsWith(".md")) {
+    return allowResponse();
+  }
 
   // Check the work ratio - block if below target
   const lineCounts = getLineCounts(cwd);
