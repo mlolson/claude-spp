@@ -30,7 +30,7 @@ export function isStpInitialized(projectPath: string): boolean {
  * Load and validate the config file
  * Returns default config if file doesn't exist
  * Throws if config is invalid
- * Auto-unpauses if unpauseAfter time has passed
+ * Auto-unpauses if pausedUntil time has passed
  */
 export function loadConfig(projectPath: string): Config {
   const configPath = getConfigPath(projectPath);
@@ -44,12 +44,12 @@ export function loadConfig(projectPath: string): Config {
     const json = JSON.parse(raw);
     const config = ConfigSchema.parse(json);
 
-    // Auto-unpause if unpauseAfter time has passed
-    if (config.unpauseAfter) {
-      const unpauseTime = new Date(config.unpauseAfter).getTime();
+    // Auto-unpause if pausedUntil time has passed
+    if (config.pausedUntil) {
+      const unpauseTime = new Date(config.pausedUntil).getTime();
       if (Date.now() > unpauseTime) {
         config.enabled = true;
-        delete config.unpauseAfter;
+        delete config.pausedUntil;
         saveConfig(projectPath, config);
       }
     }

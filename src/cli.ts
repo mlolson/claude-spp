@@ -131,7 +131,13 @@ program
     }
     const config = loadConfig(process.cwd());
     if (!config.enabled) {
-      console.log("STP is disabled. Claude may write code freely. To resume run 'stp resume'");
+      if (config.pausedUntil) {
+        const pausedUntilDate = new Date(config.pausedUntil);
+        const pretty = pausedUntilDate.toLocaleString();
+        console.log(`STP is paused until ${pretty}. Claude may write code freely. To resume run 'stp resume'`);
+      } else {
+        console.log("STP is disabled. Claude may write code freely. To resume run 'stp resume'");
+      }
       return;
     }
     const currentMode = getCurrentMode(config);
@@ -155,7 +161,7 @@ program
     }
     const config = loadConfig(process.cwd());
     config.enabled = false;
-    config.unpauseAfter = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    config.pausedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     saveConfig(process.cwd(), config);
     console.log("⏸️  STP paused for 24 hours. Claude may write code freely.");
     console.log("   Run 'stp resume' to resume tracking immediately.");
@@ -171,7 +177,7 @@ program
     }
     const config = loadConfig(process.cwd());
     config.enabled = true;
-    delete config.unpauseAfter;
+    delete config.pausedUntil;
     saveConfig(process.cwd(), config);
     console.log("▶️  STP resumed. Ratio tracking is active.");
   });
