@@ -1,17 +1,15 @@
 #!/usr/bin/env node
+import { Command } from "commander";
 import { runPreResponseHook } from "./hooks/pre-response.js";
 import { runPostResponseHook } from "./hooks/post-response.js";
 import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
-import { initializeStp, isFullyInitialized, installGitHook } from "./init.js";
+import { initializeStp, isFullyInitialized } from "./init.js";
 import { loadConfig, saveConfig } from "./config/loader.js";
 import { calculateRatio } from "./stats.js";
 import { getLineCounts } from "./git/history.js";
 import { getEffectiveRatio, getCurrentMode, getModeByNumber, getModeByName, MODES } from "./config/schema.js";
 import { getStats, formatStats } from "./stats.js";
-
-const args = process.argv.slice(2);
-const command = args[0];
 
 function getModesExplanation(): string {
   const config = loadConfig(process.cwd());
@@ -24,190 +22,193 @@ function getModesExplanation(): string {
   return lines.join("\n");
 }
 
-function getHelpMessage(): string {
-  return `
-STP CLI - Simian Training Plugin for Claude - https://github.com/mlolson/claude-stp
+const program = new Command();
 
-Usage: stp <command> [options]
+program
+  .name("stp")
+  .description("STP CLI - Simian Training Plugin for Claude - https://github.com/mlolson/claude-stp")
+  .version("0.1.0");
 
-Commands:
-  init [mode]                Initialize STP (mode: 1-6, default: 4)
-  mode [number|name]         Show or change the current mode
-  stats                      Show detailed statistics
-  status                     Show quick status
-  pause                      Pause STP (Claude writes freely)
-  resume                     Resume STP
+// User commands
 
-${getModesExplanation()}
+program
+  .command("init")
+  .argument("[mode]", "mode number 1-6")
+  .description("Initialize STP")
+  .action(async (mode: string | undefined) => {
+    const modeNum = mode ? parseInt(mode, 10) : undefined;
+    const config = await initializeStp(process.cwd(), modeNum);
+    saveConfig(process.cwd(), config);
 
-Hook Commands (used by Claude Code):
-  hook:pre-tool-use          Pre-tool-use hook (reads JSON from stdin)
-  hook:system-prompt         Output system prompt injection
-  hook:status                Output compact status line
-`;
-}
+    const currentMode = getCurrentMode(config);
+    console.log("");
+    console.log(`✅ STP initialized with mode ${currentMode.number}: ${currentMode.name}`);
+    console.log(`${currentMode.description}`);
+    console.log(`Install directory: .stp/`);
+    console.log(`Git hook: .git/hooks/post-commit\n`);
 
-async function main() {
-  switch (command) {
-    // Hook commands (called by Claude Code)
+    console.log("Analyzing repo...");
+    const stats = getStats(process.cwd());
+    console.log(formatStats(stats));
+  });
 
-    case "hook:pre-response":
-      await runPreResponseHook();
-      break;
-
-    case "hook:post-response":
-      await runPostResponseHook();
-      break;
-
-    case "hook:pre-tool-use":
-      await runPreToolUseHook();
-      break;
-
-    case "hook:system-prompt":
-      // Output system prompt for current directory
-      console.log(generateSystemPrompt(process.cwd()));
-      break;
-
-    case "hook:status":
-      // Output compact status line
-      console.log(generateStatusLine(process.cwd()));
-      break;
-
-    // User commands
-    case "init": {
-      // If mode number provided as argument, use it
-      const mode = args[1] ? parseInt(args[1], 10) : undefined;
-      const config = await initializeStp(process.cwd(), mode);
-      saveConfig(process.cwd(), config);
-
-      const currentMode = getCurrentMode(config);
-      console.log("");
-      console.log(`✅ STP initialized with mode ${currentMode.number}: ${currentMode.name}`);
-      console.log(`${currentMode.description}`);
-      console.log(`Install directory: .stp/`);
-      console.log(`Git hook: .git/hooks/post-commit\n`);
-
-      console.log("Analyzing repo...");
-      const stats = getStats(process.cwd());
-      console.log(formatStats(stats));
-      break;
+program
+  .command("mode")
+  .argument("[value]", "mode number or name")
+  .description("Show or change the current mode")
+  .action(async (value: string | undefined) => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ STP not initialized. Run: stp init");
+      process.exit(1);
     }
 
-    case "modes": {
-      if (!isFullyInitialized(process.cwd())) {
-        console.error("❌ STP not initialized. Run: stp init");
-        process.exit(1);
-      }
+    const config = loadConfig(process.cwd());
 
-      console.log(getModesExplanation());
-      console.log("To change mode: stp mode <number>");
-      break;
+    // If no argument, show current mode
+    if (!value) {
+      const currentMode = getModeByNumber(config.mode);
+
+      if (!currentMode) {
+        console.log("Current mode: none");
+      } else {
+        console.log(`Current mode: ${currentMode.number}, ${currentMode.name}, ${currentMode.description}`);
+      }
+      return;
     }
 
-    case "mode": {
-      if (!isFullyInitialized(process.cwd())) {
-        console.error("❌ STP not initialized. Run: stp init");
-        process.exit(1);
-      }
+    // Try to parse as number first
+    let selectedMode = getModeByNumber(parseInt(value, 10));
 
-      const config = loadConfig(process.cwd());
-      const modeArg = args[1];
-
-      // If no argument, get current mode
-      if (!modeArg) {
-        const currentMode = getModeByNumber(config.mode);
-
-        if (!currentMode) {
-          console.log("Current mode: none");
-        } else {
-          console.log(`Current mode: ${currentMode.number}, ${currentMode.name}, ${currentMode.description}`);
-        }
-        break;
-      }
-
-      // Try to parse as number first
-      let selectedMode = getModeByNumber(parseInt(modeArg, 10));
-
-      // If not a number, try by name
-      if (!selectedMode) {
-        selectedMode = getModeByName(modeArg);
-      }
-
-      if (!selectedMode) {
-        throw Error(`❌ Unknown mode: ${modeArg}  Use a number 1-6 or a mode name`);
-      }
-
-      // Update config
-      config.mode = selectedMode.number;
-      saveConfig(process.cwd(), config);
-
-      console.log(`✅ Mode changed to ${selectedMode.number}: ${selectedMode.name}`);
-      console.log(`   ${selectedMode.description}`);
-      break;
+    // If not a number, try by name
+    if (!selectedMode) {
+      selectedMode = getModeByName(value);
     }
 
-    case "stats": {
-      if (!isFullyInitialized(process.cwd())) {
-        console.error("❌ STP not initialized. Run: stp init");
-        process.exit(1);
-      }
-      const stats = getStats(process.cwd());
-      console.log(formatStats(stats));
-      break;
+    if (!selectedMode) {
+      throw Error(`❌ Unknown mode: ${value}  Use a number 1-6 or a mode name`);
     }
 
-    case "status": {
-      if (!isFullyInitialized(process.cwd())) {
-        console.log("STP: Not initialized");
-        break;
-      }
-      const config = loadConfig(process.cwd());
-      if (!config.enabled) {
-        console.log("STP is disabled. Claude may write code freely. To resume run 'stp resume'");
-        break;
-      }
-      const currentMode = getCurrentMode(config);
-      const lineCounts = getLineCounts(process.cwd());
-      const ratio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
-      const target = getEffectiveRatio(config);
-      const healthy = ratio >= target;
-      console.log(`STP: ${healthy ? "✅" : "⚠️"} ${(ratio * 100).toFixed(0)}% human / ${(target * 100).toFixed(0)}% target`);
-      console.log(`  Mode: ${currentMode.number}. ${currentMode.name} (${currentMode.description})`);
-      console.log(`  Human: ${lineCounts.humanLines} lines, ${lineCounts.humanCommits} commits`);
-      console.log(`  Claude: ${lineCounts.claudeLines} lines, ${lineCounts.claudeCommits} commits`);
-      break;
+    // Update config
+    config.mode = selectedMode.number;
+    saveConfig(process.cwd(), config);
+
+    console.log(`✅ Mode changed to ${selectedMode.number}: ${selectedMode.name}`);
+    console.log(`   ${selectedMode.description}`);
+  });
+
+program
+  .command("modes")
+  .description("List available modes")
+  .action(() => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ STP not initialized. Run: stp init");
+      process.exit(1);
     }
 
-    case "pause": {
-      if (!isFullyInitialized(process.cwd())) {
-        console.error("❌ STP not initialized. Run: stp init");
-        process.exit(1);
-      }
-      const config = loadConfig(process.cwd());
-      config.enabled = false;
-      saveConfig(process.cwd(), config);
-      console.log("⏸️  STP paused. Claude may write code freely.");
-      console.log("   Run 'stp resume' to resume tracking.");
-      break;
+    console.log(getModesExplanation());
+    console.log("To change mode: stp mode <number>");
+  });
+
+program
+  .command("stats")
+  .description("Show detailed statistics")
+  .action(() => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ STP not initialized. Run: stp init");
+      process.exit(1);
     }
+    const stats = getStats(process.cwd());
+    console.log(formatStats(stats));
+  });
 
-    case "resume": {
-      if (!isFullyInitialized(process.cwd())) {
-        console.error("❌ STP not initialized. Run: stp init");
-        process.exit(1);
-      }
-      const config = loadConfig(process.cwd());
-      config.enabled = true;
-      saveConfig(process.cwd(), config);
-      console.log("▶️  STP resumed. Ratio tracking is active.");
-      break;
+program
+  .command("status")
+  .description("Show quick status")
+  .action(() => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.log("STP: Not initialized");
+      return;
     }
+    const config = loadConfig(process.cwd());
+    if (!config.enabled) {
+      console.log("STP is disabled. Claude may write code freely. To resume run 'stp resume'");
+      return;
+    }
+    const currentMode = getCurrentMode(config);
+    const lineCounts = getLineCounts(process.cwd());
+    const ratio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
+    const target = getEffectiveRatio(config);
+    const healthy = ratio >= target;
+    console.log(`STP: ${healthy ? "✅" : "⚠️"} ${(ratio * 100).toFixed(0)}% human / ${(target * 100).toFixed(0)}% target`);
+    console.log(`  Mode: ${currentMode.number}. ${currentMode.name} (${currentMode.description})`);
+    console.log(`  Human: ${lineCounts.humanLines} lines, ${lineCounts.humanCommits} commits`);
+    console.log(`  Claude: ${lineCounts.claudeLines} lines, ${lineCounts.claudeCommits} commits`);
+  });
 
-    case "help":
-    default:
-      console.log(getHelpMessage());
-      break;
-  }
-}
+program
+  .command("pause")
+  .description("Pause STP (Claude writes freely)")
+  .action(() => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ STP not initialized. Run: stp init");
+      process.exit(1);
+    }
+    const config = loadConfig(process.cwd());
+    config.enabled = false;
+    saveConfig(process.cwd(), config);
+    console.log("⏸️  STP paused. Claude may write code freely.");
+    console.log("   Run 'stp resume' to resume tracking.");
+  });
 
-main();
+program
+  .command("resume")
+  .description("Resume STP tracking")
+  .action(() => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ STP not initialized. Run: stp init");
+      process.exit(1);
+    }
+    const config = loadConfig(process.cwd());
+    config.enabled = true;
+    saveConfig(process.cwd(), config);
+    console.log("▶️  STP resumed. Ratio tracking is active.");
+  });
+
+// Hook commands (called by Claude Code)
+
+program
+  .command("hook:pre-response")
+  .description("Pre-response hook (internal)")
+  .action(async () => {
+    await runPreResponseHook();
+  });
+
+program
+  .command("hook:post-response")
+  .description("Post-response hook (internal)")
+  .action(async () => {
+    await runPostResponseHook();
+  });
+
+program
+  .command("hook:pre-tool-use")
+  .description("Pre-tool-use hook (internal, reads JSON from stdin)")
+  .action(async () => {
+    await runPreToolUseHook();
+  });
+
+program
+  .command("hook:system-prompt")
+  .description("Output system prompt injection (internal)")
+  .action(() => {
+    console.log(generateSystemPrompt(process.cwd()));
+  });
+
+program
+  .command("hook:status")
+  .description("Output compact status line (internal)")
+  .action(() => {
+    console.log(generateStatusLine(process.cwd()));
+  });
+
+program.parseAsync();
