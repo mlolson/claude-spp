@@ -58,6 +58,50 @@ function getHeadCommit(projectPath: string): string | null {
 }
 
 /**
+ * Get the current HEAD commit hash (exported version)
+ */
+export function getHeadCommitHash(projectPath: string): string | null {
+  return getHeadCommit(projectPath);
+}
+
+/**
+ * Get total number of commits in the repo
+ */
+export function getTotalCommitCount(projectPath: string): number {
+  try {
+    const output = execSync("git rev-list --count HEAD", {
+      cwd: projectPath,
+      encoding: "utf-8",
+    });
+    return parseInt(output.trim(), 10) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Get the hash of the Nth commit (1-indexed, chronological order)
+ * Returns null if there aren't enough commits
+ */
+export function getNthCommitHash(projectPath: string, n: number): string | null {
+  try {
+    // Get all commits in chronological order (oldest first)
+    const output = execSync(`git rev-list --reverse HEAD`, {
+      cwd: projectPath,
+      encoding: "utf-8",
+    });
+
+    const commits = output.trim().split("\n").filter(Boolean);
+    if (commits.length >= n) {
+      return commits[n - 1]; // n is 1-indexed
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Check if a commit is an ancestor of HEAD
  */
 function isAncestor(projectPath: string, commit: string): boolean {
@@ -317,19 +361,20 @@ export function getLineCounts(projectPath: string): LineCounts {
 }
 
 /**
- * Get line counts with optional time window filter
- * @param since If null, uses cached getLineCounts(). If Date, bypasses cache and filters commits.
+ * Get line counts with optional filters
+ * @param since If null, no time filter. If Date, filters commits after this date.
+ * @param afterCommit If provided, only includes commits after this commit hash (exclusive).
  */
 export function getLineCountsWithWindow(
   projectPath: string,
-  options: { since: Date | null }
+  options: { since: Date | null; afterCommit?: string | null }
 ): LineCounts {
-  // If no time filter, use the cached version
-  if (options.since === null) {
+  // If no filters at all, use the cached version
+  if (options.since === null && !options.afterCommit) {
     return getLineCounts(projectPath);
   }
 
-  // Time-filtered query bypasses cache (window is relative to "now")
+  // Filtered query bypasses cache
   if (!isGitRepo(projectPath)) {
     throw new Error("Must be a git repo");
   }
@@ -339,8 +384,9 @@ export function getLineCountsWithWindow(
     throw new Error("Head commit not found");
   }
 
-  // Get commits within the time window
-  const commits = getCommitRange(projectPath, null, head, options.since);
+  // Get commits with optional start commit filter
+  const startCommit = options.afterCommit ?? null;
+  const commits = getCommitRange(projectPath, startCommit, head, options.since ?? undefined);
 
   let humanLines = 0;
   let claudeLines = 0;

@@ -14,7 +14,9 @@ import {
   TRACKING_MODE_LABELS,
   TrackingModeSchema,
   type TrackingMode,
+  MIN_COMMITS_FOR_TRACKING,
 } from "./config/schema.js";
+import { getTotalCommitCount, getHeadCommitHash } from "./git/history.js";
 
 const STP_START_MARKER = "<!-- STP:START -->";
 const STP_END_MARKER = "<!-- STP:END -->";
@@ -413,6 +415,17 @@ export async function initializeStp(
     trackingMode: selectedTrackingMode,
     statsWindow: selectedStatsWindow,
   };
+
+  // For pre-existing repos with enough commits, set trackingStartCommit to HEAD
+  // This gives them a clean slate - only new commits after init will be tracked
+  const totalCommits = getTotalCommitCount(projectPath);
+  if (totalCommits >= MIN_COMMITS_FOR_TRACKING) {
+    const headCommit = getHeadCommitHash(projectPath);
+    if (headCommit) {
+      config.trackingStartCommit = headCommit;
+    }
+  }
+
   saveConfig(projectPath, config);
 
   // Update CLAUDE.local.md with STP instructions

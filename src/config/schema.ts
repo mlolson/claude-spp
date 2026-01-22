@@ -57,6 +57,12 @@ export const TRACKING_MODE_LABELS: Record<TrackingMode, string> = {
 };
 
 /**
+ * Minimum number of total commits before tracking is enforced
+ * This grace period allows Claude to help with initial boilerplate setup
+ */
+export const MIN_COMMITS_FOR_TRACKING = 10;
+
+/**
  * Human-readable labels for stats windows
  */
 export const STATS_WINDOW_LABELS: Record<StatsWindow, string> = {
@@ -99,6 +105,11 @@ export const ConfigSchema = z.object({
 
   // ISO timestamp when STP pause expires (set by pause command)
   pausedUntil: z.string().optional(),
+
+  // Git commit hash of the last commit to exclude from tracking
+  // Set to the 10th commit hash once we reach MIN_COMMITS_FOR_TRACKING
+  // Stats only include commits after this one
+  trackingStartCommit: z.string().optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

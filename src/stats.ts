@@ -1,15 +1,16 @@
-import { loadConfig, isStpInitialized } from "./config/loader.js";
+import { loadConfig, isStpInitialized, saveConfig } from "./config/loader.js";
 import {
   getEffectiveRatio,
   getCurrentMode,
   getStatsWindowCutoff,
   STATS_WINDOW_LABELS,
   TRACKING_MODE_LABELS,
+  MIN_COMMITS_FOR_TRACKING,
   type Mode,
   type StatsWindow,
   type TrackingMode,
 } from "./config/schema.js";
-import { getLineCountsWithWindow } from "./git/history.js";
+import { getLineCountsWithWindow, getNthCommitHash } from "./git/history.js";
 
 /**
  * Calculate the current human work ratio from line counts
@@ -39,6 +40,9 @@ export interface StatsResult {
   ratioHealthy?: boolean;
   statsWindow?: StatsWindow;
   trackingMode?: TrackingMode;
+  inGracePeriod?: boolean;
+  totalCommits?: number;
+  commitsUntilTracking?: number;
   lines?: {
     humanLines: number;
     claudeLines: number;
@@ -60,18 +64,50 @@ export function getStats(projectPath: string): StatsResult {
     return { initialized: false };
   }
 
-  const config = loadConfig(projectPath);
+  let config = loadConfig(projectPath);
   const statsWindow = config.statsWindow ?? "oneWeek";
   const trackingMode = config.trackingMode ?? "commits";
-  const cutoff = getStatsWindowCutoff(statsWindow);
-  const lineCounts = getLineCountsWithWindow(projectPath, { since: cutoff });
   const targetRatio = getEffectiveRatio(config);
   const mode = getCurrentMode(config);
+
+  // First, get ALL commits (no filter) to check if we're in grace period
+  const allTimeCounts = getLineCountsWithWindow(projectPath, { since: null });
+  const totalCommits = allTimeCounts.humanCommits + allTimeCounts.claudeCommits;
+
+  // Check if in grace period (no trackingStartCommit set yet)
+  let inGracePeriod = !config.trackingStartCommit;
+  let commitsUntilTracking = 0;
+
+  if (inGracePeriod) {
+    // Check if we've reached enough commits to start tracking
+    if (totalCommits >= MIN_COMMITS_FOR_TRACKING) {
+      // Grace period is over! Set trackingStartCommit to the Nth commit
+      const nthCommit = getNthCommitHash(projectPath, MIN_COMMITS_FOR_TRACKING);
+      if (nthCommit) {
+        config.trackingStartCommit = nthCommit;
+        saveConfig(projectPath, config);
+        inGracePeriod = false;
+      }
+    } else {
+      commitsUntilTracking = MIN_COMMITS_FOR_TRACKING - totalCommits;
+    }
+  }
+
+  // Get counts for ratio calculation
+  // Filter by trackingStartCommit (if set) and statsWindow cutoff
+  const statsWindowCutoff = getStatsWindowCutoff(statsWindow);
+  const lineCounts = getLineCountsWithWindow(projectPath, {
+    since: statsWindowCutoff,
+    afterCommit: config.trackingStartCommit,
+  });
 
   // Calculate ratio based on tracking mode
   const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
   const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
   const currentRatio = calculateRatio(humanValue, claudeValue);
+
+  // During grace period, ratio is always considered healthy
+  const ratioHealthy = inGracePeriod || isRatioHealthy(humanValue, claudeValue, targetRatio);
 
   return {
     initialized: true,
@@ -79,9 +115,12 @@ export function getStats(projectPath: string): StatsResult {
     mode,
     targetRatio,
     currentRatio,
-    ratioHealthy: isRatioHealthy(humanValue, claudeValue, targetRatio),
+    ratioHealthy,
     statsWindow,
     trackingMode,
+    inGracePeriod,
+    totalCommits,
+    commitsUntilTracking,
     lines: lineCounts,
   };
 }
@@ -109,20 +148,30 @@ export function formatStats(stats: StatsResult): string {
   const maxLines = Math.max(humanLines.length, claudeLines.length);
   const maxCommits = Math.max(humanCommits.length, claudeCommits.length);
 
+  // Build ratio status message
+  let ratioStatus: string;
+  if (stats.inGracePeriod) {
+    ratioStatus = `(grace period - ${stats.commitsUntilTracking} commits until tracking) 🌱`;
+  } else if (stats.ratioHealthy) {
+    ratioStatus = "(on target) 💪🐵";
+  } else {
+    ratioStatus = "(below target) 🙊";
+  }
+
   const lines: string[] = [
     "",
     `Current repo stats (${windowLabel}):`,
     "",
     `Tracking:      ${trackingLabel}`,
     `Target Ratio:  ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,
-    `Current Ratio: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${stats.ratioHealthy ? "(on target) 💪🐵" : "(below target) 🙊"}`,
+    `Current Ratio: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${ratioStatus}`,
     `Human:  ${humanCommits.padStart(maxCommits)} commits, ${humanLines.padStart(maxLines)} lines added/deleted`,
     `Claude: ${claudeCommits.padStart(maxCommits)} commits, ${claudeLines.padStart(maxLines)} lines added/deleted`,
     "",
   ];
 
   if (!stats.enabled) {
-    lines.unshift("", "STP tracking is paused. Run 'stp resume' to unpause.");
+    lines.unshift("", "⏸️ STP tracking is paused. Run 'stp resume' to unpause.");
   }
 
   return lines.join("\n");

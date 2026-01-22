@@ -1,8 +1,6 @@
 import { isStpInitialized, loadConfig } from "../config/loader.js";
-import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
 import { isStpInternalFile } from "./file-matcher.js";
-import { getLineCounts } from "../git/history.js";
-import { calculateRatio, isRatioHealthy } from "../stats.js";
+import { getStats } from "../stats.js";
 
 /**
  * Hook input from Claude Code (actual format)
@@ -115,15 +113,13 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
     return allowResponse();
   }
 
-  // Check the work ratio - block if below target
-  const lineCounts = getLineCounts(cwd);
-  const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
-  const targetRatio = getEffectiveRatio(config);
+  // Check the work ratio - block if below target (respects grace period and tracking mode)
+  const stats = getStats(cwd);
 
-  if (!isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio)) {
+  if (!stats.ratioHealthy) {
     // Ratio is below target - block Claude from writing
     const reason = [
-      `Human work ratio is below target: ${(currentRatio * 100).toFixed(0)}% actual vs ${(targetRatio * 100).toFixed(0)}% required`,
+      `Human work ratio is below target: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% actual vs ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% required`,
       "The human needs to write more code before Claude can continue.",
       "Offer to create a task for the user including step by step instructions, hints, and code pointers.",
       "Important: Do not give the user instructions on how to disable STP or change modes."
