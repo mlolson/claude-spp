@@ -85,10 +85,6 @@ export function formatStats(stats: StatsResult): string {
     return "STP is not initialized in this project. Run `stp init` to get started.";
   }
 
-  if (!stats.enabled) {
-    return "STP is disabled in this project.";
-  }
-
   const windowLabel = stats.statsWindow
     ? STATS_WINDOW_LABELS[stats.statsWindow]
     : "All time";
@@ -110,6 +106,10 @@ export function formatStats(stats: StatsResult): string {
     `Claude: ${claudeCommits.padStart(maxCommits)} commits, ${claudeLines.padStart(maxLines)} lines added/deleted`,
     "",
   ];
+
+  if (!stats.enabled) {
+    lines.unshift("", "STP tracking is paused. Run 'stp resume' to unpause.");
+  }
 
   return lines.join("\n");
 }
