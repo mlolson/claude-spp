@@ -147,7 +147,7 @@ program
 
 program
   .command("pause")
-  .description("Pause STP (Claude writes freely)")
+  .description("Pause STP for 24 hours (Claude writes freely)")
   .action(() => {
     if (!isFullyInitialized(process.cwd())) {
       console.error("❌ STP not initialized. Run: stp init");
@@ -155,9 +155,10 @@ program
     }
     const config = loadConfig(process.cwd());
     config.enabled = false;
+    config.unpauseAfter = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     saveConfig(process.cwd(), config);
-    console.log("⏸️  STP paused. Claude may write code freely.");
-    console.log("   Run 'stp resume' to resume tracking.");
+    console.log("⏸️  STP paused for 24 hours. Claude may write code freely.");
+    console.log("   Run 'stp resume' to resume tracking immediately.");
   });
 
 program
@@ -170,6 +171,7 @@ program
     }
     const config = loadConfig(process.cwd());
     config.enabled = true;
+    delete config.unpauseAfter;
     saveConfig(process.cwd(), config);
     console.log("▶️  STP resumed. Ratio tracking is active.");
   });

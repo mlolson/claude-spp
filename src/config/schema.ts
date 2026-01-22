@@ -110,6 +110,9 @@ export const ConfigSchema = z.object({
 
   // Stats window for filtering commit history
   statsWindow: StatsWindowSchema.default("oneWeek"),
+
+  // ISO timestamp when STP should auto-unpause (set by pause command)
+  unpauseAfter: z.string().optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

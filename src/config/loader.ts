@@ -30,6 +30,7 @@ export function isStpInitialized(projectPath: string): boolean {
  * Load and validate the config file
  * Returns default config if file doesn't exist
  * Throws if config is invalid
+ * Auto-unpauses if unpauseAfter time has passed
  */
 export function loadConfig(projectPath: string): Config {
   const configPath = getConfigPath(projectPath);
@@ -41,7 +42,19 @@ export function loadConfig(projectPath: string): Config {
   try {
     const raw = fs.readFileSync(configPath, "utf-8");
     const json = JSON.parse(raw);
-    return ConfigSchema.parse(json);
+    const config = ConfigSchema.parse(json);
+
+    // Auto-unpause if unpauseAfter time has passed
+    if (config.unpauseAfter) {
+      const unpauseTime = new Date(config.unpauseAfter).getTime();
+      if (Date.now() > unpauseTime) {
+        config.enabled = true;
+        delete config.unpauseAfter;
+        saveConfig(projectPath, config);
+      }
+    }
+
+    return config;
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error(`Invalid JSON in ${configPath}: ${error.message}`);
