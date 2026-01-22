@@ -88,17 +88,10 @@ export function saveConfig(projectPath: string, config: Config): void {
 /**
  * Initialize STP in a project with default config
  */
-export function initializeConfig(projectPath: string, preset?: string): Config {
+export function initializeConfig(projectPath: string): Config {
   const config: Config = {
     ...DEFAULT_CONFIG,
   };
-
-  if (preset) {
-    const result = ConfigSchema.shape.preset.safeParse(preset);
-    if (result.success) {
-      config.preset = result.data;
-    }
-  }
 
   saveConfig(projectPath, config);
   return config;

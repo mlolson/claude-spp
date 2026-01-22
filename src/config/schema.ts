@@ -37,32 +37,24 @@ export function getModeByName(name: string): Mode | undefined {
 }
 
 /**
- * Available presets (legacy, kept for backwards compatibility)
- */
-export const PresetSchema = z.enum(["light", "balanced", "intensive", "training"]);
-export type Preset = z.infer<typeof PresetSchema>;
-
-/**
- * Preset configurations mapping preset names to human work ratios (legacy)
- */
-export const PRESET_RATIOS: Record<Preset, number> = {
-  light: 0.1,      // 10% human work
-  balanced: 0.25,  // 25% human work (default)
-  intensive: 0.5,  // 50% human work
-  training: 0.75,  // 75% human work
-};
-
-/**
- * Difficulty levels for tasks and quizzes
- */
-export const DifficultySchema = z.enum(["easy", "medium", "hard"]);
-export type Difficulty = z.infer<typeof DifficultySchema>;
-
-/**
  * Stats window options for filtering commit history
  */
 export const StatsWindowSchema = z.enum(["oneDay", "oneWeek", "allTime"]);
 export type StatsWindow = z.infer<typeof StatsWindowSchema>;
+
+/**
+ * Tracking mode options - what to count for ratio calculation
+ */
+export const TrackingModeSchema = z.enum(["commits", "lines"]);
+export type TrackingMode = z.infer<typeof TrackingModeSchema>;
+
+/**
+ * Human-readable labels for tracking modes
+ */
+export const TRACKING_MODE_LABELS: Record<TrackingMode, string> = {
+  commits: "Commits",
+  lines: "Lines of code",
+};
 
 /**
  * Human-readable labels for stats windows
@@ -99,17 +91,11 @@ export const ConfigSchema = z.object({
   // Mode number (1-6)
   mode: z.number().int().min(1).max(6).default(4),
 
-  // Legacy: Preset name (kept for backwards compatibility)
-  preset: PresetSchema.optional(),
-
-  // Legacy: Custom human work ratio (kept for backwards compatibility)
-  humanWorkRatio: z.number().min(0).max(1).optional(),
-
-  // Default difficulty for generated tasks
-  difficulty: DifficultySchema.default("medium"),
-
   // Stats window for filtering commit history
   statsWindow: StatsWindowSchema.default("oneWeek"),
+
+  // Tracking mode - what to count for ratio calculation
+  trackingMode: TrackingModeSchema.default("commits"),
 
   // ISO timestamp when STP pause expires (set by pause command)
   pausedUntil: z.string().optional(),
@@ -123,8 +109,8 @@ export type Config = z.infer<typeof ConfigSchema>;
 export const DEFAULT_CONFIG: Config = {
   enabled: true,
   mode: 4, // 50-50
-  difficulty: "medium",
   statsWindow: "oneWeek",
+  trackingMode: "commits",
 };
 
 /**
@@ -138,10 +124,6 @@ export function getCurrentMode(config: Config): Mode {
  * Get the effective human work ratio from config
  */
 export function getEffectiveRatio(config: Config): number {
-  // Legacy support: custom ratio overrides everything
-  if (config.humanWorkRatio !== undefined) {
-    return config.humanWorkRatio;
-  }
   // Use mode
   const mode = getCurrentMode(config);
   return mode.humanRatio;

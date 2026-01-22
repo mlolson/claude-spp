@@ -2,14 +2,9 @@
 export { loadConfig, saveConfig, isStpInitialized, getStpDir } from "./config/loader.js";
 export {
   ConfigSchema,
-  PresetSchema,
-  DifficultySchema,
-  PRESET_RATIOS,
   DEFAULT_CONFIG,
   getEffectiveRatio,
   type Config,
-  type Preset,
-  type Difficulty,
 } from "./config/schema.js";
 
 export {

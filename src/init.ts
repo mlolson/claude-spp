@@ -11,6 +11,9 @@ import {
   STATS_WINDOW_LABELS,
   StatsWindowSchema,
   type StatsWindow,
+  TRACKING_MODE_LABELS,
+  TrackingModeSchema,
+  type TrackingMode,
 } from "./config/schema.js";
 
 const STP_START_MARKER = "<!-- STP:START -->";
@@ -312,6 +315,35 @@ async function promptForStatsWindow(): Promise<StatsWindow> {
   }
 }
 
+/**
+ * Prompt user to select a tracking mode interactively
+ */
+async function promptForTrackingMode(): Promise<TrackingMode> {
+  const options = TrackingModeSchema.options;
+  console.log("\nTracking mode (what to count for ratio calculation):\n");
+
+  options.forEach((option, index) => {
+    const label = TRACKING_MODE_LABELS[option];
+    const defaultMarker = option === "commits" ? " (default)" : "";
+    console.log(`  ${index + 1}. ${label}${defaultMarker}`);
+  });
+  console.log("");
+
+  while (true) {
+    const userResponse = await promptUser(`Select a tracking mode [1-${options.length}, or press Enter for Commits]: `);
+    if (userResponse === "") {
+      return "commits";
+    }
+
+    const choice = parseInt(userResponse, 10);
+    if (choice >= 1 && choice <= options.length) {
+      return options[choice - 1];
+    }
+
+    console.log(`Invalid choice: ${userResponse}. Must be in range [1, ${options.length}]`);
+  }
+}
+
 async function promptShouldOverwriteInstall(): Promise<boolean> {
   const answer = await promptUser("An STP installation already exists. Overwrite it? N/Y\n");
   return answer.toLowerCase() === "y";
@@ -337,11 +369,13 @@ async function promptUser(prompt: string): Promise<string> {
  * @param projectPath Path to the project
  * @param modeNumber Optional mode number to skip the mode prompt
  * @param statsWindow Optional stats window to skip the stats window prompt
+ * @param trackingMode Optional tracking mode to skip the tracking mode prompt
  */
 export async function initializeStp(
   projectPath: string,
   modeNumber?: number,
-  statsWindow?: StatsWindow
+  statsWindow?: StatsWindow,
+  trackingMode?: TrackingMode
 ): Promise<Config> {
   // Ensure stp command is installed globally (required for hooks)
   await ensureGlobalInstall();
@@ -366,6 +400,9 @@ export async function initializeStp(
     throw new Error(`Invalid mode: ${selectedMode}. Must be in range [1, ${MODES.length}]`);
   }
 
+  // Prompt for tracking mode if not provided
+  const selectedTrackingMode = trackingMode ?? await promptForTrackingMode();
+
   // Prompt for stats window if not provided
   const selectedStatsWindow = statsWindow ?? await promptForStatsWindow();
 
@@ -373,6 +410,7 @@ export async function initializeStp(
   const config: Config = {
     ...DEFAULT_CONFIG,
     mode: selectedMode,
+    trackingMode: selectedTrackingMode,
     statsWindow: selectedStatsWindow,
   };
   saveConfig(projectPath, config);
@@ -403,10 +441,11 @@ export function isFullyInitialized(projectPath: string): boolean {
 export async function ensureInitialized(
   projectPath: string,
   modeNumber?: number,
-  statsWindow?: StatsWindow
+  statsWindow?: StatsWindow,
+  trackingMode?: TrackingMode
 ): Promise<Config> {
   if (!isFullyInitialized(projectPath)) {
-    return initializeStp(projectPath, modeNumber, statsWindow);
+    return initializeStp(projectPath, modeNumber, statsWindow, trackingMode);
   }
   return loadConfig(projectPath);
 }

@@ -4,8 +4,10 @@ import {
   getCurrentMode,
   getStatsWindowCutoff,
   STATS_WINDOW_LABELS,
+  TRACKING_MODE_LABELS,
   type Mode,
   type StatsWindow,
+  type TrackingMode,
 } from "./config/schema.js";
 import { getLineCountsWithWindow } from "./git/history.js";
 
@@ -36,6 +38,7 @@ export interface StatsResult {
   currentRatio?: number;
   ratioHealthy?: boolean;
   statsWindow?: StatsWindow;
+  trackingMode?: TrackingMode;
   lines?: {
     humanLines: number;
     claudeLines: number;
@@ -59,11 +62,16 @@ export function getStats(projectPath: string): StatsResult {
 
   const config = loadConfig(projectPath);
   const statsWindow = config.statsWindow ?? "oneWeek";
+  const trackingMode = config.trackingMode ?? "commits";
   const cutoff = getStatsWindowCutoff(statsWindow);
   const lineCounts = getLineCountsWithWindow(projectPath, { since: cutoff });
   const targetRatio = getEffectiveRatio(config);
-  const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
   const mode = getCurrentMode(config);
+
+  // Calculate ratio based on tracking mode
+  const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
+  const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
+  const currentRatio = calculateRatio(humanValue, claudeValue);
 
   return {
     initialized: true,
@@ -71,8 +79,9 @@ export function getStats(projectPath: string): StatsResult {
     mode,
     targetRatio,
     currentRatio,
-    ratioHealthy: isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio),
+    ratioHealthy: isRatioHealthy(humanValue, claudeValue, targetRatio),
     statsWindow,
+    trackingMode,
     lines: lineCounts,
   };
 }
@@ -89,6 +98,10 @@ export function formatStats(stats: StatsResult): string {
     ? STATS_WINDOW_LABELS[stats.statsWindow]
     : "All time";
 
+  const trackingLabel = stats.trackingMode
+    ? TRACKING_MODE_LABELS[stats.trackingMode]
+    : "Commits";
+
   const humanLines = String(stats.lines?.humanLines ?? 0);
   const claudeLines = String(stats.lines?.claudeLines ?? 0);
   const humanCommits = String(stats.lines?.humanCommits ?? 0);
@@ -100,6 +113,7 @@ export function formatStats(stats: StatsResult): string {
     "",
     `Current repo stats (${windowLabel}):`,
     "",
+    `Tracking:      ${trackingLabel}`,
     `Target Ratio:  ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,
     `Current Ratio: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${stats.ratioHealthy ? "(on target) 💪🐵" : "(below target) 🙊"}`,
     `Human:  ${humanCommits.padStart(maxCommits)} commits, ${humanLines.padStart(maxLines)} lines added/deleted`,
