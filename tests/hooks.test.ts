@@ -137,20 +137,22 @@ describe("preToolUseHook", () => {
 
   it("should allow non-write tools", () => {
     const result = preToolUseHook({
-      tool: { name: "Read", input: { file_path: "src/test.ts" } },
+      tool_name: "Read",
+      tool_input: { file_path: "src/test.ts" },
       cwd: tempDir,
     });
-    expect(result.decision).toBe("allow");
+    expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
   });
 
   it("should allow writes when STP not initialized", () => {
     const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), "stp-empty-"));
     try {
       const result = preToolUseHook({
-        tool: { name: "Write", input: { file_path: "src/test.ts", content: "test" } },
+        tool_name: "Write",
+        tool_input: { file_path: "src/test.ts", content: "test" },
         cwd: emptyDir,
       });
-      expect(result.decision).toBe("allow");
+      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
     } finally {
       fs.rmSync(emptyDir, { recursive: true, force: true });
     }
@@ -158,13 +160,11 @@ describe("preToolUseHook", () => {
 
   it("should allow writes to .claude-stp directory", () => {
     const result = preToolUseHook({
-      tool: {
-        name: "Write",
-        input: { file_path: path.join(tempDir, ".claude-stp", "config.json"), content: "{}" },
-      },
+      tool_name: "Write",
+      tool_input: { file_path: path.join(tempDir, ".claude-stp", "config.json"), content: "{}" },
       cwd: tempDir,
     });
-    expect(result.decision).toBe("allow");
+    expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
   });
 
   it("should allow writes when ratio is healthy", () => {
@@ -173,29 +173,27 @@ describe("preToolUseHook", () => {
     execSync("git init", { cwd: tempDir, stdio: "ignore" });
     execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
     execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
-    fs.writeFileSync(path.join(tempDir, "init.txt"), "init");
-    execSync("git add . && git commit -m 'init'", { cwd: tempDir, stdio: "ignore" });
-    const headCommit = execSync("git rev-parse HEAD", { cwd: tempDir, encoding: "utf-8" }).trim();
 
-    // Create a git history cache with healthy ratio
-    // 60 human lines, 40 claude lines = 60% human (above 50%)
-    fs.writeFileSync(
-      path.join(stpDir, ".git_history_cache.json"),
-      JSON.stringify({
-        lastCommit: headCommit,
-        humanLines: 60,
-        claudeLines: 40,
-        humanCommits: 6,
-        claudeCommits: 4,
-      })
-    );
+    // Create commits with healthy ratio (mode 4 = 50% target)
+    // More human commits than Claude commits
+    for (let i = 0; i < 6; i++) {
+      fs.writeFileSync(path.join(tempDir, `human${i}.txt`), `human code ${i}`);
+      execSync(`git add . && git commit -m "human commit ${i}"`, { cwd: tempDir, stdio: "ignore" });
+    }
+
+    // Add fewer Claude commits
+    for (let i = 0; i < 4; i++) {
+      fs.writeFileSync(path.join(tempDir, `claude${i}.txt`), `claude code ${i}`);
+      execSync(`git add . && git commit -m "Add claude${i}\n\nCo-Authored-By: Claude <claude@anthropic.com>"`, { cwd: tempDir, stdio: "ignore" });
+    }
 
     const result = preToolUseHook({
-      tool: { name: "Write", input: { file_path: "src/test.ts", content: "test" } },
+      tool_name: "Write",
+      tool_input: { file_path: "src/test.ts", content: "test" },
       cwd: tempDir,
     });
 
-    expect(result.decision).toBe("allow");
+    expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
   });
 
   describe("ratio enforcement", () => {
@@ -205,34 +203,27 @@ describe("preToolUseHook", () => {
       execSync("git init", { cwd: tempDir, stdio: "ignore" });
       execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
       execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
-      fs.writeFileSync(path.join(tempDir, "init.txt"), "init");
-      execSync("git add . && git commit -m 'init'", { cwd: tempDir, stdio: "ignore" });
 
-      // Get the HEAD commit hash
-      const headCommit = execSync("git rev-parse HEAD", { cwd: tempDir, encoding: "utf-8" }).trim();
+      // Create multiple Claude commits to get an unhealthy ratio (mode 4 = 50% target)
+      // We need more Claude commits than human commits
+      for (let i = 0; i < 10; i++) {
+        fs.writeFileSync(path.join(tempDir, `claude${i}.txt`), `claude code ${i}`);
+        execSync(`git add . && git commit -m "Add claude${i}\n\nCo-Authored-By: Claude <claude@anthropic.com>"`, { cwd: tempDir, stdio: "ignore" });
+      }
 
-      // Create a git history cache with unhealthy ratio (mode 4 = 50% target)
-      // 10 human lines, 100 claude lines = 9% human (below 50%)
-      fs.writeFileSync(
-        path.join(stpDir, ".git_history_cache.json"),
-        JSON.stringify({
-          lastCommit: headCommit,
-          humanLines: 10,
-          claudeLines: 100,
-          humanCommits: 1,
-          claudeCommits: 10,
-        })
-      );
+      // Add 1 human commit (no Co-Authored-By)
+      fs.writeFileSync(path.join(tempDir, "human.txt"), "human code");
+      execSync("git add . && git commit -m 'human commit'", { cwd: tempDir, stdio: "ignore" });
 
       const result = preToolUseHook({
-        tool: { name: "Write", input: { file_path: "src/test.ts", content: "test" } },
+        tool_name: "Write",
+        tool_input: { file_path: "src/test.ts", content: "test" },
         cwd: tempDir,
       });
 
-      expect(result.decision).toBe("block");
-      expect(result.reason).toBe("ratio_below_target");
-      expect(result.message).toContain("below target");
-      expect(result.message).toContain("50%");
+      expect(result.hookSpecificOutput.permissionDecision).toBe("deny");
+      expect(result.hookSpecificOutput.permissionDecisionReason).toContain("below target");
+      expect(result.hookSpecificOutput.permissionDecisionReason).toContain("50%");
     });
 
     it("should always allow writes to .claude-stp even with unhealthy ratio", () => {
@@ -241,31 +232,20 @@ describe("preToolUseHook", () => {
       execSync("git init", { cwd: tempDir, stdio: "ignore" });
       execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
       execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
-      fs.writeFileSync(path.join(tempDir, "init.txt"), "init");
-      execSync("git add . && git commit -m 'init'", { cwd: tempDir, stdio: "ignore" });
-      const headCommit = execSync("git rev-parse HEAD", { cwd: tempDir, encoding: "utf-8" }).trim();
 
-      // Create unhealthy ratio
-      fs.writeFileSync(
-        path.join(stpDir, ".git_history_cache.json"),
-        JSON.stringify({
-          lastCommit: headCommit,
-          humanLines: 0,
-          claudeLines: 100,
-          humanCommits: 0,
-          claudeCommits: 10,
-        })
-      );
+      // Create unhealthy ratio with only Claude commits
+      for (let i = 0; i < 10; i++) {
+        fs.writeFileSync(path.join(tempDir, `claude${i}.txt`), `claude code ${i}`);
+        execSync(`git add . && git commit -m "Add claude${i}\n\nCo-Authored-By: Claude <claude@anthropic.com>"`, { cwd: tempDir, stdio: "ignore" });
+      }
 
       const result = preToolUseHook({
-        tool: {
-          name: "Write",
-          input: { file_path: path.join(tempDir, ".claude-stp", "state.json"), content: "{}" },
-        },
+        tool_name: "Write",
+        tool_input: { file_path: path.join(tempDir, ".claude-stp", "state.json"), content: "{}" },
         cwd: tempDir,
       });
 
-      expect(result.decision).toBe("allow");
+      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
     });
   });
 });

@@ -89,23 +89,17 @@ describe("Configuration", () => {
   });
 
   describe("Modes", () => {
-    it("returns mode ratio when no custom ratio", () => {
+    it("returns mode ratio", () => {
       const config: Config = { ...DEFAULT_CONFIG, mode: 4 };
-      expect(getEffectiveRatio(config)).toBe(0.5); // 50-50 mode
-    });
-
-    it("returns custom ratio when set", () => {
-      const config: Config = { ...DEFAULT_CONFIG, humanWorkRatio: 0.4 };
-      expect(getEffectiveRatio(config)).toBe(0.4);
+      expect(getEffectiveRatio(config)).toBe(0.5); // Wise monkey mode
     });
 
     it("has correct mode values", () => {
-      expect(MODES[0].humanRatio).toBe(0);     // Yolo
-      expect(MODES[1].humanRatio).toBe(0.1);   // Padawan
+      expect(MODES[0].humanRatio).toBe(0);     // Lazy monkey
+      expect(MODES[1].humanRatio).toBe(0.1);   // Curious monkey
       expect(MODES[2].humanRatio).toBe(0.25);  // Clever monkey
-      expect(MODES[3].humanRatio).toBe(0.5);   // 50-50
-      expect(MODES[4].humanRatio).toBe(0.75);  // Finger workout
-      expect(MODES[5].humanRatio).toBe(1);     // Switching to guns
+      expect(MODES[3].humanRatio).toBe(0.5);   // Wise monkey
+      expect(MODES[4].humanRatio).toBe(1);     // Crazy monkey
     });
 
     it("getCurrentMode returns correct mode", () => {
