@@ -71,62 +71,11 @@ function isStpCommandAvailable(): boolean {
 
 /**
  * Prompt user to install claude-stp globally
- * Returns true if installation was successful or already installed
  */
-async function ensureGlobalInstall(): Promise<boolean> {
-  if (isStpCommandAvailable()) {
-    return true;
-  }
-
-  console.log("\nThe 'stp' command is not installed globally.");
-  console.log("It needs to be installed for the hooks to work correctly.\n");
-
-  const shouldInstall = await promptUser("Install claude-stp globally? (Y/n): ");
-  if (shouldInstall.toLowerCase() === "n") {
-    console.log("\nSkipping global install. Note: hooks will not work without the 'stp' command.");
-    return false;
-  }
-
-  console.log("\nSelect package manager:\n");
-  console.log("  1. npm");
-  console.log("  2. bun");
-  console.log("");
-
-  let packageManager: "npm" | "bun" | undefined;
-  while (!packageManager) {
-    const choice = await promptUser("Select [1-2, or press Enter for npm]: ");
-    if (choice === "" || choice === "1") {
-      packageManager = "npm";
-    } else if (choice === "2") {
-      packageManager = "bun";
-    } else {
-      console.log("Invalid choice. Please enter 1 or 2.");
-    }
-  }
-
-  console.log(`\nInstalling claude-stp globally using ${packageManager}...`);
-
-  try {
+function ensureGlobalInstall(): void {
+  if (!isStpCommandAvailable()) {
     const packageName = "git+https://github.com/mlolson/claude-stp.git";
-
-    if (packageManager === "npm") {
-      execSync(`npm install -g ${packageName}`, { stdio: "inherit" });
-    } else {
-      execSync(`bun add -g ${packageName}`, { stdio: "inherit" });
-    }
-
-    // Verify installation
-    if (isStpCommandAvailable()) {
-      console.log("\n'stp' command installed successfully.\n");
-      return true;
-    } else {
-      console.log("\nWarning: Installation completed but 'stp' command not found in PATH.");
-      console.log("You may need to restart your terminal or add the global bin directory to your PATH.");
-      return false;
-    }
-  } catch (error) {
-    console.error("\nFailed to install claude-stp globally:", error);
-    return false;
+    throw new Error(`stp command not found. Please install:\n  npm install -g ${packageName}`);
   }
 }
 
