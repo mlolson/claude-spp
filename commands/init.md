@@ -8,22 +8,22 @@ Initialize STP mode in the current project. This creates the `.claude-stp/` dire
 
 ## Steps
 
-1. Ensure that the `stp` command exists:
+1. Check to see if the `stp` command exists:
 
 ```bash
-stp
+command -v stp
 ```
 If it does not exist, install with bun or npm depending on user choice:
 ```bash
-npm install -g claude-stp
+npm i -g git+https://github.com/mlolson/claude-stp.git
 ```
 or 
 ```bash
-bun install -g claude-stp
+bun i -g git+https://github.com/mlolson/claude-stp.git
 ```
 
 
-2. Run the init command with their chosen mode:
+2. Run the init command:
    ```bash
    stp init
    ```
