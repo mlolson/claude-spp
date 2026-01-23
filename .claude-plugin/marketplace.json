@@ -6,7 +6,7 @@
     "plugins": [
       {
         "name": "stp",
-        "source": ".",
+        "source": "./",
         "description": "Simian Training Plugin"
       }
     ]
