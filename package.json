@@ -10,8 +10,8 @@
   },
   "scripts": {
     "prepare": "npm run build",
-    "build": "npx tsc",
-    "dev": "npx tsc --watch",
+    "build": "./node_modules/.bin/tsc",
+    "dev": "./node_modules/.bin/tsc --watch",
     "lint": "eslint src",
     "test": "vitest run",
     "test:watch": "vitest",
