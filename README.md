@@ -109,7 +109,7 @@ After you commit, a post-commit hook prints out current stats:
 ```bash
 # Start claude and run:
 /plugin marketplace add mlolson/claude-stp
-/plugin install claude-stp@mlolson
+/plugin install stp@mlolson
 ```
 
 2. Install the CLI globally
