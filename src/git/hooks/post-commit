@@ -1,4 +1,6 @@
 # <STP>
-# Print STP stats
-stp stats
+# Print Claude STP plugin stats
+if command -v stp &> /dev/null && [ -d "$(git rev-parse --show-toplevel)/.claude-stp" ]; then
+  stp stats
+fi
 # </STP>
