@@ -3,7 +3,7 @@ name: stp-help-human-code
 description: Help a human complete a coding task
 ---
 
-# STP Human Task Skill
+# STP Help Human Code Skill
 
 Guide a human through completing a coding task themselves. Use this skill when the STP ratio is unhealthy (too much AI-written code) and the human needs to write code to improve their ratio. Be a mentor for your human friend, help them stay sharp and learn programming.
 
