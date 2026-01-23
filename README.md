@@ -122,10 +122,6 @@ npm i -g git+https://github.com/mlolson/claude-stp.git
 cd /path/to/your/project
 stp init
 ```
-or in claude code:
-```
-/stp:init
-```
 
 4. Bonus step: Turn off AI suggestions in your IDE. (It kind of of defeats the purpose)
 
@@ -147,6 +143,5 @@ or in claude code:
 
 | Command | Description |
 |---------|-------------|
-| `/stp:init` | Initialize STP in the repo. Wrapper for the `stp init` command  |
 | `/stp:stats` | Show current coding stats |
 | `/stp:help` | Get help with the CLI interface |
