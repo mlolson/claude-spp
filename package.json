@@ -9,9 +9,8 @@
     "stp": "./dist/cli.js"
   },
   "scripts": {
-    "prepare": "npm run build",
-    "build": "node ./node_modules/typescript/bin/tsc",
-    "dev": "node ./node_modules/typescript/bin/tsc --watch",
+    "build": "tsc",
+    "dev": "tsc --watch",
     "lint": "eslint src",
     "test": "vitest run",
     "test:watch": "vitest",
