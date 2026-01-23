@@ -40,6 +40,22 @@ stp reset```
 
 Don't feel bad, no one is keeping score!
 
+# git hook
+
+After you commit, a post-commit hook prints out current stats:
+```
+% git commit -m "Adjust some wording"
+
+✅ 🐒 Human coding on target. Current: 100% Target: 25%. Keep up the great work!
+
+  Mode       Clever monkey (75% AI / 25% human)
+  Tracking   Commits since a4e1e8c "remove .stp" 1/22/2026
+
+  Human      1 commits   10 lines
+  Claude     0 commits    0 lines
+```
+
+
 ### Getting started
 
 1. Add the plugin in claude:
@@ -51,11 +67,7 @@ Don't feel bad, no one is keeping score!
 
 2. Install the CLI globally
 ```bash
-npm i -g claude-stp
-```
-or 
-```bash
-bun i -g claude-stp
+npm i -g git+https://github.com/mlolson/claude-stp.git
 ```
 
 3. Initialize STP in your project:

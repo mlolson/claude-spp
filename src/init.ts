@@ -107,9 +107,7 @@ async function ensureGlobalInstall(): Promise<boolean> {
   console.log(`\nInstalling claude-stp globally using ${packageManager}...`);
 
   try {
-    // TODO: When published to npm, use this:
-    // const packageName = "claude-stp";
-    const packageName = "/Users/mattolson/code/claude-stp";
+    const packageName = "git+https://github.com/mlolson/claude-stp.git";
 
     if (packageManager === "npm") {
       execSync(`npm install -g ${packageName}`, { stdio: "inherit" });
