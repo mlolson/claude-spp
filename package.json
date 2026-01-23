@@ -9,6 +9,7 @@
     "stp": "./dist/cli.js"
   },
   "scripts": {
+    "prepare": "npm run build",
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "eslint src",
