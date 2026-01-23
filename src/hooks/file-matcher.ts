@@ -102,9 +102,9 @@ export function fileMatchesPatterns(
 }
 
 /**
- * Check if a file path is within the .claude-stp directory
+ * Check if a file path is within the .claude-spp directory
  */
-export function isStpInternalFile(filePath: string, projectPath: string): boolean {
+export function isSppInternalFile(filePath: string, projectPath: string): boolean {
   const normalizedFile = normalizeFilePath(filePath, projectPath);
-  return normalizedFile.startsWith(".claude-stp/") || normalizedFile === ".claude-stp";
+  return normalizedFile.startsWith(".claude-spp/") || normalizedFile === ".claude-spp";
 }

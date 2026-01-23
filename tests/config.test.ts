@@ -4,8 +4,8 @@ import * as path from "node:path";
 import {
   loadConfig,
   saveConfig,
-  isStpInitialized,
-  getStpDir,
+  isSppInitialized,
+  getSppDir,
 } from "../src/config/loader.js";
 import {
   DEFAULT_CONFIG,
@@ -39,7 +39,7 @@ describe("Configuration", () => {
     });
 
     it("loads config from file", () => {
-      const stpDir = getStpDir(TEST_DIR);
+      const stpDir = getSppDir(TEST_DIR);
       fs.mkdirSync(stpDir, { recursive: true });
       fs.writeFileSync(
         path.join(stpDir, "config.json"),
@@ -52,7 +52,7 @@ describe("Configuration", () => {
     });
 
     it("throws on invalid JSON", () => {
-      const stpDir = getStpDir(TEST_DIR);
+      const stpDir = getSppDir(TEST_DIR);
       fs.mkdirSync(stpDir, { recursive: true });
       fs.writeFileSync(path.join(stpDir, "config.json"), "not json");
 
@@ -61,15 +61,15 @@ describe("Configuration", () => {
   });
 
   describe("saveConfig", () => {
-    it("creates .claude-stp directory if needed", () => {
+    it("creates .claude-spp directory if needed", () => {
       saveConfig(TEST_DIR, DEFAULT_CONFIG);
-      expect(fs.existsSync(getStpDir(TEST_DIR))).toBe(true);
+      expect(fs.existsSync(getSppDir(TEST_DIR))).toBe(true);
     });
 
     it("writes valid JSON", () => {
       saveConfig(TEST_DIR, { ...DEFAULT_CONFIG, mode: 5 });
       const content = fs.readFileSync(
-        path.join(getStpDir(TEST_DIR), "config.json"),
+        path.join(getSppDir(TEST_DIR), "config.json"),
         "utf-8"
       );
       const parsed = JSON.parse(content);
@@ -77,14 +77,14 @@ describe("Configuration", () => {
     });
   });
 
-  describe("isStpInitialized", () => {
-    it("returns false when .claude-stp does not exist", () => {
-      expect(isStpInitialized(TEST_DIR)).toBe(false);
+  describe("isSppInitialized", () => {
+    it("returns false when .claude-spp does not exist", () => {
+      expect(isSppInitialized(TEST_DIR)).toBe(false);
     });
 
-    it("returns true when .claude-stp exists", () => {
-      fs.mkdirSync(getStpDir(TEST_DIR), { recursive: true });
-      expect(isStpInitialized(TEST_DIR)).toBe(true);
+    it("returns true when .claude-spp exists", () => {
+      fs.mkdirSync(getSppDir(TEST_DIR), { recursive: true });
+      expect(isSppInitialized(TEST_DIR)).toBe(true);
     });
   });
 
@@ -116,7 +116,7 @@ describe("Configuration", () => {
     });
 
     it("persists different statsWindow values", () => {
-      const stpDir = getStpDir(TEST_DIR);
+      const stpDir = getSppDir(TEST_DIR);
       fs.mkdirSync(stpDir, { recursive: true });
 
       const config: Config = { ...DEFAULT_CONFIG, statsWindow: "oneDay" };
@@ -127,7 +127,7 @@ describe("Configuration", () => {
     });
 
     it("persists allTime statsWindow", () => {
-      const stpDir = getStpDir(TEST_DIR);
+      const stpDir = getSppDir(TEST_DIR);
       fs.mkdirSync(stpDir, { recursive: true });
 
       const config: Config = { ...DEFAULT_CONFIG, statsWindow: "allTime" };

@@ -2,7 +2,7 @@
 import { Command } from "commander";
 import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
-import { initializeStp, isFullyInitialized, promptUser } from "./init.js";
+import { initializeSpp, isFullyInitialized, promptUser } from "./init.js";
 import { getHeadCommitHash } from "./git/history.js";
 import { loadConfig, saveConfig } from "./config/loader.js";
 import { getCurrentMode, getModeByNumber, getModeByName, MODES } from "./config/schema.js";
@@ -22,8 +22,8 @@ function getModesExplanation(): string {
 const program = new Command();
 
 program
-  .name("stp")
-  .description("STP CLI - Simian Training Plugin for Claude - https://github.com/mlolson/claude-stp")
+  .name("spp")
+  .description("SPP CLI - Simian Programmer Plugin for Claude - https://github.com/mlolson/claude-spp")
   .version("0.1.0");
 
 // User commands
@@ -31,17 +31,17 @@ program
 program
   .command("init")
   .argument("[mode]", "mode number 1-6")
-  .description("Initialize STP")
+  .description("Initialize SPP")
   .action(async (mode: string | undefined) => {
     const modeNum = mode ? parseInt(mode, 10) : undefined;
-    const config = await initializeStp(process.cwd(), modeNum);
+    const config = await initializeSpp(process.cwd(), modeNum);
     saveConfig(process.cwd(), config);
 
     const currentMode = getCurrentMode(config);
     console.log("");
-    console.log(`✅ STP initialized with mode ${currentMode.number}: ${currentMode.name}`);
+    console.log(`✅ SPP initialized with mode ${currentMode.number}: ${currentMode.name}`);
     console.log(`${currentMode.description}`);
-    console.log(`Install directory: .claude-stp/`);
+    console.log(`Install directory: .claude-spp/`);
     console.log(`Git hook: .git/hooks/post-commit\n`);
 
     console.log("Analyzing repo...");
@@ -55,7 +55,7 @@ program
   .description("Show or change the current mode")
   .action(async (value: string | undefined) => {
     if (!isFullyInitialized(process.cwd())) {
-      console.error("❌ STP not initialized. Run: stp init");
+      console.error("❌ SPP not initialized. Run: spp init");
       process.exit(1);
     }
 
@@ -98,17 +98,17 @@ program
   .description("List available modes")
   .action(() => {
     if (!isFullyInitialized(process.cwd())) {
-      console.error("❌ STP not initialized. Run: stp init");
+      console.error("❌ SPP not initialized. Run: spp init");
       process.exit(1);
     }
 
     console.log(getModesExplanation());
-    console.log("To change mode: stp mode <number>");
+    console.log("To change mode: spp mode <number>");
   });
 
 program
   .command("stats")
-  .description("Show STP status and statistics")
+  .description("Show SPP status and statistics")
   .action(() => {
     const stats = getStats(process.cwd());
     console.log(formatStats(stats));
@@ -116,33 +116,33 @@ program
 
 program
   .command("pause")
-  .description("Pause STP for 24 hours (Claude writes freely)")
+  .description("Pause SPP for 24 hours (Claude writes freely)")
   .action(() => {
     if (!isFullyInitialized(process.cwd())) {
-      console.error("❌ STP not initialized. Run: stp init");
+      console.error("❌ SPP not initialized. Run: spp init");
       process.exit(1);
     }
     const config = loadConfig(process.cwd());
     config.enabled = false;
     config.pausedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     saveConfig(process.cwd(), config);
-    console.log("⏸️  STP enforcement paused for 24 hours. Claude may write code freely.");
-    console.log("   Run 'stp resume' to resume STP enforcement immediately.");
+    console.log("⏸️  SPP enforcement paused for 24 hours. Claude may write code freely.");
+    console.log("   Run 'spp resume' to resume SPP enforcement immediately.");
   });
 
 program
   .command("resume")
-  .description("Resume STP tracking")
+  .description("Resume SPP tracking")
   .action(() => {
     if (!isFullyInitialized(process.cwd())) {
-      console.error("❌ STP not initialized. Run: stp init");
+      console.error("❌ SPP not initialized. Run: spp init");
       process.exit(1);
     }
     const config = loadConfig(process.cwd());
     config.enabled = true;
     delete config.pausedUntil;
     saveConfig(process.cwd(), config);
-    console.log("▶️  STP resumed. Coding enforcement is active.");
+    console.log("▶️  SPP resumed. Coding enforcement is active.");
   });
 
 program
@@ -150,7 +150,7 @@ program
   .description("Reset tracking to start from current commit")
   .action(async () => {
     if (!isFullyInitialized(process.cwd())) {
-      console.error("❌ STP not initialized. Run: stp init");
+      console.error("❌ SPP not initialized. Run: spp init");
       process.exit(1);
     }
 

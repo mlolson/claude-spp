@@ -1,13 +1,13 @@
 {
-    "name": "claude-stp",
+    "name": "claude-spp",
     "owner": {
       "name": "Matt Olson"
     },
     "plugins": [
       {
-        "name": "stp",
+        "name": "spp",
         "source": "./",
-        "description": "Simian Training Plugin"
+        "description": "Simian Programmer Plugin"
       }
     ]
   }

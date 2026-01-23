@@ -1,4 +1,4 @@
-import { loadConfig, isStpInitialized, saveConfig } from "./config/loader.js";
+import { loadConfig, isSppInitialized, saveConfig } from "./config/loader.js";
 import {
   getEffectiveRatio,
   getCurrentMode,
@@ -53,10 +53,10 @@ export interface StatsResult {
 }
 
 /**
- * Get current STP statistics
+ * Get current SPP statistics
  */
 export function getStats(projectPath: string): StatsResult {
-  if (!isStpInitialized(projectPath)) {
+  if (!isSppInitialized(projectPath)) {
     return { initialized: false };
   }
 
@@ -98,7 +98,7 @@ export function getStats(projectPath: string): StatsResult {
  */
 export function formatStats(stats: StatsResult): string {
   if (!stats.initialized) {
-    return "STP is not initialized in this project. Run `stp init` to get started.";
+    return "SPP is not initialized in this project. Run `spp init` to get started.";
   }
 
   const trackingMode = stats.trackingMode ?? "commits";
@@ -179,11 +179,11 @@ export function formatStats(stats: StatsResult): string {
 
   if (!stats.enabled) {
     const config = loadConfig(process.cwd());
-    let pauseMsg = "STP is disabled";
+    let pauseMsg = "SPP is disabled";
     if (config.pausedUntil) {
       const pausedUntilDate = new Date(config.pausedUntil);
-      pauseMsg = `⏸️  STP enforcement is paused until ${pausedUntilDate.toLocaleString()}. Claude may write code freely. Run 'stp resume' to unpause.`;
-    } 
+      pauseMsg = `⏸️  SPP enforcement is paused until ${pausedUntilDate.toLocaleString()}. Claude may write code freely. Run 'spp resume' to unpause.`;
+    }
     lines.splice(1, 0, pauseMsg, "");
   }
 

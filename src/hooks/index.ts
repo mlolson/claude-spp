@@ -9,5 +9,5 @@ export {
   normalizeFilePath,
   fileMatchesPattern,
   fileMatchesPatterns,
-  isStpInternalFile,
+  isSppInternalFile,
 } from "./file-matcher.js";

@@ -1,11 +1,11 @@
 ---
-description: Help using Simian Trainng Plugin (STP) CLI
+description: Help using Simian Programmer Plugin (SPP) CLI
 ---
 
-# STP help
+# SPP help
 
 ```bash
-stp help
+spp help
 ```
 
-Show the help message. Instruct the user that they can run commands using bash mode ("!stp $command")
+Show the help message. Instruct the user that they can run commands using bash mode ("!spp $command")

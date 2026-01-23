@@ -3,11 +3,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
 import {
-  initializeStp,
+  initializeSpp,
   isFullyInitialized,
   ensureInitialized,
 } from "../src/init.js";
-import { getStpDir, isStpInitialized } from "../src/config/loader.js";
+import { getSppDir, isSppInitialized } from "../src/config/loader.js";
 
 const TEST_DIR = path.join(process.cwd(), ".test-init");
 
@@ -26,7 +26,7 @@ describe("Initialization", () => {
     // Create the source hook file that installGitHook expects
     const hooksDir = path.join(TEST_DIR, "src", "git", "hooks");
     fs.mkdirSync(hooksDir, { recursive: true });
-    fs.writeFileSync(path.join(hooksDir, "post-commit"), "# <STP>\n# STP post-commit hook\n# </STP>\n");
+    fs.writeFileSync(path.join(hooksDir, "post-commit"), "# <SPP>\n# SPP post-commit hook\n# </SPP>\n");
   });
 
   afterEach(() => {
@@ -35,25 +35,25 @@ describe("Initialization", () => {
     }
   });
 
-  describe("initializeStp", () => {
-    it("creates .claude-stp directory", async () => {
-      await initializeStp(TEST_DIR, 4, "oneWeek", "commits");
-      expect(fs.existsSync(getStpDir(TEST_DIR))).toBe(true);
+  describe("initializeSpp", () => {
+    it("creates .claude-spp directory", async () => {
+      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits");
+      expect(fs.existsSync(getSppDir(TEST_DIR))).toBe(true);
     });
 
     it("creates config.json", async () => {
-      await initializeStp(TEST_DIR, 4, "oneWeek", "commits");
-      const configPath = path.join(getStpDir(TEST_DIR), "config.json");
+      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits");
+      const configPath = path.join(getSppDir(TEST_DIR), "config.json");
       expect(fs.existsSync(configPath)).toBe(true);
     });
 
     it("uses specified mode", async () => {
-      const config = await initializeStp(TEST_DIR, 3, "oneWeek", "commits");
+      const config = await initializeSpp(TEST_DIR, 3, "oneWeek", "commits");
       expect(config.mode).toBe(3);
     });
 
     it("uses specified statsWindow", async () => {
-      const config = await initializeStp(TEST_DIR, 4, "oneDay", "commits");
+      const config = await initializeSpp(TEST_DIR, 4, "oneDay", "commits");
       expect(config.statsWindow).toBe("oneDay");
     });
   });
@@ -63,14 +63,14 @@ describe("Initialization", () => {
       expect(isFullyInitialized(TEST_DIR)).toBe(false);
     });
 
-    it("returns true when .claude-stp directory exists", () => {
-      fs.mkdirSync(getStpDir(TEST_DIR), { recursive: true });
-      // isFullyInitialized just checks for .claude-stp directory existence
+    it("returns true when .claude-spp directory exists", () => {
+      fs.mkdirSync(getSppDir(TEST_DIR), { recursive: true });
+      // isFullyInitialized just checks for .claude-spp directory existence
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
 
     it("returns true after full initialization", async () => {
-      await initializeStp(TEST_DIR, 4, "oneWeek", "commits");
+      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits");
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
   });
@@ -84,7 +84,7 @@ describe("Initialization", () => {
     });
 
     it("returns existing config if already initialized", async () => {
-      await initializeStp(TEST_DIR, 5, "allTime", "commits");
+      await initializeSpp(TEST_DIR, 5, "allTime", "commits");
 
       const config = await ensureInitialized(TEST_DIR);
 
@@ -94,12 +94,12 @@ describe("Initialization", () => {
   });
 
   describe("Component checks", () => {
-    it("isStpInitialized checks .claude-stp directory", () => {
-      expect(isStpInitialized(TEST_DIR)).toBe(false);
+    it("isSppInitialized checks .claude-spp directory", () => {
+      expect(isSppInitialized(TEST_DIR)).toBe(false);
 
-      fs.mkdirSync(getStpDir(TEST_DIR), { recursive: true });
+      fs.mkdirSync(getSppDir(TEST_DIR), { recursive: true });
 
-      expect(isStpInitialized(TEST_DIR)).toBe(true);
+      expect(isSppInitialized(TEST_DIR)).toBe(true);
     });
   });
 });

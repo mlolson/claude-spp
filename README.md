@@ -1,4 +1,4 @@
-# Simian Training Plugin (STP) for Claude
+# Simian Programmer Plugin (SPP) for Claude
 
 >  If you’re learning how to play the guitar, you can watch as many YouTube videos as you want, you’re not going to learn the guitar. You have to put your fingers on the strings to actually learn the motions. I think there is a parallel here to programming, where programming has to be learned in part by the actual typing.
 
@@ -6,7 +6,7 @@
 
 ## How it works
 
-STP is a Claude plugin that encourages you to keep writing code. It is configured per-project, and provides 5 modes:
+SPP is a Claude plugin that encourages you to keep writing code. It is configured per-project, and provides 5 modes:
 
 | Mode | Description |
 |------|-------------|
@@ -30,8 +30,8 @@ When the ratio of human/AI commits becomes too low, Claude is **blocked** from w
 ```
 ❯ Some tests are failing, can you fix them?
 
-⏺ I'd be happy to help, but I'm currently blocked from writing code due to STP restrictions -
-your human coding ratio is below the 100% target. Let me use the stp-human-task skill to guide
+⏺ I'd be happy to help, but I'm currently blocked from writing code due to SPP restrictions -
+your human coding ratio is below the 100% target. Let me use the spp-human-task skill to guide
 you through fixing the tests yourself.
 ...
 ---
@@ -77,12 +77,12 @@ After you make the fix, you can ask claude to review and commit your changes.
 
 Sometimes you gotta do what you gotta do.
 
-You may **pause** STP to allow Claude to freely write code (`stp pause`). This pause expires after 24 hours, or you can unpause with `stp resume`.
+You may **pause** SPP to allow Claude to freely write code (`spp pause`). This pause expires after 24 hours, or you can unpause with `spp resume`.
 
 If you get way behind on your coding and want to declare bankruptcy, you can reset tracking from the current commit using:
 
 ```bash
-stp reset
+spp reset
 ```
 
 Don't feel bad, no one is keeping score!
@@ -96,7 +96,7 @@ After you commit, a post-commit hook prints out current stats:
 ✅ 🐒 Human coding on target. Current: 100% Target: 25%. Keep up the great work!
 
   Mode       Clever monkey (75% AI / 25% human)
-  Tracking   Commits since a4e1e8c "remove .stp" 1/22/2026
+  Tracking   Commits since a4e1e8c "remove .spp" 1/22/2026
 
   Human      1 commits   10 lines
   Claude     0 commits    0 lines
@@ -108,19 +108,19 @@ After you commit, a post-commit hook prints out current stats:
 1. Add the plugin in claude:
 ```bash
 # Start claude and run:
-/plugin marketplace add mlolson/claude-stp
-/plugin install stp@mlolson
+/plugin marketplace add mlolson/claude-spp
+/plugin install spp@mlolson
 ```
 
 2. Install the CLI globally
 ```bash
-npm i -g git+https://github.com/mlolson/claude-stp.git
+npm i -g git+https://github.com/mlolson/claude-spp.git
 ```
 
-3. Initialize STP in your project:
+3. Initialize SPP in your project:
 ```bash
 cd /path/to/your/project
-stp init
+spp init
 ```
 
 4. Bonus step: Turn off AI suggestions in your IDE. (It kind of of defeats the purpose)
@@ -130,18 +130,18 @@ stp init
 
 | Command | Description |
 |---------|-------------|
-| `stp help` | Print help message
-| `stp init` | Initialize STP in the current project |
-| `stp stats` | Show current ratio and statistics |
-| `stp modes` | List all available modes |
-| `stp mode [n]` | Show or change the current mode (1-5) |
-| `stp pause` | Pause enforcement for 24 hours |
-| `stp resume` | Resume enforcement immediately |
-| `stp reset` | Reset tracking to start from current commit |
+| `spp help` | Print help message
+| `spp init` | Initialize SPP in the current project |
+| `spp stats` | Show current ratio and statistics |
+| `spp modes` | List all available modes |
+| `spp mode [n]` | Show or change the current mode (1-5) |
+| `spp pause` | Pause enforcement for 24 hours |
+| `spp resume` | Resume enforcement immediately |
+| `spp reset` | Reset tracking to start from current commit |
 
 ### Claude slash commands
 
 | Command | Description |
 |---------|-------------|
-| `/stp:stats` | Show current coding stats |
-| `/stp:help` | Get help with the CLI interface |
+| `/spp:stats` | Show current coding stats |
+| `/spp:help` | Get help with the CLI interface |

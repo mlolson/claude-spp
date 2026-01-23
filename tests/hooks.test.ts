@@ -6,7 +6,7 @@ import {
   normalizeFilePath,
   fileMatchesPattern,
   fileMatchesPatterns,
-  isStpInternalFile,
+  isSppInternalFile,
 } from "../src/hooks/file-matcher.js";
 import { preToolUseHook } from "../src/hooks/pre-tool-use.js";
 
@@ -85,18 +85,18 @@ describe("file-matcher", () => {
     });
   });
 
-  describe("isStpInternalFile", () => {
-    it("should return true for files in .claude-stp directory", () => {
-      expect(isStpInternalFile(".claude-stp/config.json", projectPath)).toBe(true);
-      expect(isStpInternalFile(".claude-stp/state.json", projectPath)).toBe(true);
+  describe("isSppInternalFile", () => {
+    it("should return true for files in .claude-spp directory", () => {
+      expect(isSppInternalFile(".claude-spp/config.json", projectPath)).toBe(true);
+      expect(isSppInternalFile(".claude-spp/state.json", projectPath)).toBe(true);
     });
 
-    it("should return true for absolute paths in .claude-stp directory", () => {
-      expect(isStpInternalFile("/Users/test/project/.claude-stp/config.json", projectPath)).toBe(true);
+    it("should return true for absolute paths in .claude-spp directory", () => {
+      expect(isSppInternalFile("/Users/test/project/.claude-spp/config.json", projectPath)).toBe(true);
     });
 
     it("should return false for regular project files", () => {
-      expect(isStpInternalFile("src/test.ts", projectPath)).toBe(false);
+      expect(isSppInternalFile("src/test.ts", projectPath)).toBe(false);
     });
   });
 });
@@ -106,8 +106,8 @@ describe("preToolUseHook", () => {
   let stpDir: string;
 
   beforeEach(() => {
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "stp-test-"));
-    stpDir = path.join(tempDir, ".claude-stp");
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "spp-test-"));
+    stpDir = path.join(tempDir, ".claude-spp");
     fs.mkdirSync(stpDir, { recursive: true });
 
     // Create config with mode
@@ -144,8 +144,8 @@ describe("preToolUseHook", () => {
     expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
   });
 
-  it("should allow writes when STP not initialized", () => {
-    const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), "stp-empty-"));
+  it("should allow writes when SPP not initialized", () => {
+    const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), "spp-empty-"));
     try {
       const result = preToolUseHook({
         tool_name: "Write",
@@ -158,10 +158,10 @@ describe("preToolUseHook", () => {
     }
   });
 
-  it("should allow writes to .claude-stp directory", () => {
+  it("should allow writes to .claude-spp directory", () => {
     const result = preToolUseHook({
       tool_name: "Write",
-      tool_input: { file_path: path.join(tempDir, ".claude-stp", "config.json"), content: "{}" },
+      tool_input: { file_path: path.join(tempDir, ".claude-spp", "config.json"), content: "{}" },
       cwd: tempDir,
     });
     expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
@@ -226,7 +226,7 @@ describe("preToolUseHook", () => {
       expect(result.hookSpecificOutput.permissionDecisionReason).toContain("50%");
     });
 
-    it("should always allow writes to .claude-stp even with unhealthy ratio", () => {
+    it("should always allow writes to .claude-spp even with unhealthy ratio", () => {
       // Initialize git repo
       const { execSync } = require("child_process");
       execSync("git init", { cwd: tempDir, stdio: "ignore" });
@@ -241,7 +241,7 @@ describe("preToolUseHook", () => {
 
       const result = preToolUseHook({
         tool_name: "Write",
-        tool_input: { file_path: path.join(tempDir, ".claude-stp", "state.json"), content: "{}" },
+        tool_input: { file_path: path.join(tempDir, ".claude-spp", "state.json"), content: "{}" },
         cwd: tempDir,
       });
 

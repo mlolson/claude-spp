@@ -1,25 +1,25 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { ConfigSchema, DEFAULT_CONFIG } from "./schema.js";
-const STP_DIR = ".claude-stp";
+const SPP_DIR = ".claude-spp";
 const CONFIG_FILE = "config.json";
 /**
- * Get the path to the .claude-stp directory for a project
+ * Get the path to the .claude-spp directory for a project
  */
-export function getStpDir(projectPath) {
-    return path.join(projectPath, STP_DIR);
+export function getSppDir(projectPath) {
+    return path.join(projectPath, SPP_DIR);
 }
 /**
  * Get the path to the config file
  */
 export function getConfigPath(projectPath) {
-    return path.join(getStpDir(projectPath), CONFIG_FILE);
+    return path.join(getSppDir(projectPath), CONFIG_FILE);
 }
 /**
- * Check if STP is initialized in the project
+ * Check if SPP is initialized in the project
  */
-export function isStpInitialized(projectPath) {
-    return fs.existsSync(getStpDir(projectPath));
+export function isSppInitialized(projectPath) {
+    return fs.existsSync(getSppDir(projectPath));
 }
 /**
  * Load and validate the config file
@@ -58,18 +58,18 @@ export function loadConfig(projectPath) {
  * Save config to file
  */
 export function saveConfig(projectPath, config) {
-    const stpDir = getStpDir(projectPath);
+    const sppDir = getSppDir(projectPath);
     const configPath = getConfigPath(projectPath);
-    // Ensure .claude-stp directory exists
-    if (!fs.existsSync(stpDir)) {
-        fs.mkdirSync(stpDir, { recursive: true });
+    // Ensure .claude-spp directory exists
+    if (!fs.existsSync(sppDir)) {
+        fs.mkdirSync(sppDir, { recursive: true });
     }
     // Validate before saving
     const validated = ConfigSchema.parse(config);
     fs.writeFileSync(configPath, JSON.stringify(validated, null, 2) + "\n", "utf-8");
 }
 /**
- * Initialize STP in a project with default config
+ * Initialize SPP in a project with default config
  */
 export function initializeConfig(projectPath) {
     const config = {

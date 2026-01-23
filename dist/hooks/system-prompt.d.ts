@@ -1,5 +1,5 @@
 /**
- * Generate the STP system prompt injection
+ * Generate the SPP system prompt injection
  */
 export declare function generateSystemPrompt(projectPath: string): string;
 /**

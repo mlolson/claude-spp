@@ -77,10 +77,10 @@ export function fileMatchesPatterns(filePath, patterns, projectPath) {
     return patterns.some((pattern) => fileMatchesPattern(filePath, pattern, projectPath));
 }
 /**
- * Check if a file path is within the .claude-stp directory
+ * Check if a file path is within the .claude-spp directory
  */
-export function isStpInternalFile(filePath, projectPath) {
+export function isSppInternalFile(filePath, projectPath) {
     const normalizedFile = normalizeFilePath(filePath, projectPath);
-    return normalizedFile.startsWith(".claude-stp/") || normalizedFile === ".claude-stp";
+    return normalizedFile.startsWith(".claude-spp/") || normalizedFile === ".claude-spp";
 }
 //# sourceMappingURL=file-matcher.js.map

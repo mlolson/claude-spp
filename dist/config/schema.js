@@ -71,7 +71,7 @@ export const ConfigSchema = z.object({
     statsWindow: StatsWindowSchema.default("oneWeek"),
     // Tracking mode - what to count for ratio calculation
     trackingMode: TrackingModeSchema.default("commits"),
-    // ISO timestamp when STP pause expires (set by pause command)
+    // ISO timestamp when SPP pause expires (set by pause command)
     pausedUntil: z.string().optional(),
     // Git commit hash of the last commit to exclude from tracking
     // Set to the 10th commit hash once we reach MIN_COMMITS_FOR_TRACKING

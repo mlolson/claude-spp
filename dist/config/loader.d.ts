@@ -1,16 +1,16 @@
 import { type Config } from "./schema.js";
 /**
- * Get the path to the .claude-stp directory for a project
+ * Get the path to the .claude-spp directory for a project
  */
-export declare function getStpDir(projectPath: string): string;
+export declare function getSppDir(projectPath: string): string;
 /**
  * Get the path to the config file
  */
 export declare function getConfigPath(projectPath: string): string;
 /**
- * Check if STP is initialized in the project
+ * Check if SPP is initialized in the project
  */
-export declare function isStpInitialized(projectPath: string): boolean;
+export declare function isSppInitialized(projectPath: string): boolean;
 /**
  * Load and validate the config file
  * Returns default config if file doesn't exist
@@ -23,7 +23,7 @@ export declare function loadConfig(projectPath: string): Config;
  */
 export declare function saveConfig(projectPath: string, config: Config): void;
 /**
- * Initialize STP in a project with default config
+ * Initialize SPP in a project with default config
  */
 export declare function initializeConfig(projectPath: string): Config;
 //# sourceMappingURL=loader.d.ts.map

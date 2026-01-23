@@ -1,4 +1,4 @@
-import { loadConfig, isStpInitialized } from "../config/loader.js";
+import { loadConfig, isSppInitialized } from "../config/loader.js";
 import { calculateRatio, isRatioHealthy } from "../stats.js";
 import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
 import { getLineCounts } from "../git/history.js";
@@ -14,14 +14,14 @@ function calculateCatchUp(humanValue, claudeValue, targetRatio) {
     return Math.ceil((targetRatio * total - humanValue) / (1 - targetRatio));
 }
 /**
- * Generate the STP system prompt injection
+ * Generate the SPP system prompt injection
  */
 export function generateSystemPrompt(projectPath) {
-    if (!isStpInitialized(projectPath)) {
+    if (!isSppInitialized(projectPath)) {
         return "";
     }
     const config = loadConfig(projectPath);
-    // If STP is disabled, return empty
+    // If SPP is disabled, return empty
     if (!config.enabled) {
         return "";
     }
@@ -35,10 +35,10 @@ export function generateSystemPrompt(projectPath) {
     const isHealthy = isRatioHealthy(humanValue, claudeValue, targetRatio);
     const currentMode = getCurrentMode(config);
     const lines = [
-        "<stp>",
-        "# Simian Training Plugin Active",
+        "<spp>",
+        "# Simian Programmer Plugin Active",
         "",
-        "You are operating in Simian Training mode. This mode helps the human maintain their programming skills",
+        "You are operating in Simian Programmer mode. This mode helps the human maintain their programming skills",
         "by ensuring they write a minimum percentage of the code themselves.",
         "Help your human friend level up and stay sharp.",
         "",
@@ -49,13 +49,13 @@ export function generateSystemPrompt(projectPath) {
         `- **Current ratio:** ${(currentRatio * 100).toFixed(0)}% human (${humanValue} ${unit}) / ${(100 - currentRatio * 100).toFixed(0)}% Claude (${claudeValue} ${unit})`,
         `- **Status:** ${isHealthy ? "✅ Healthy" : "⚠️ Below target"}`,
         "",
-        "A note on STP tracking:",
-        "STP tracks commits in git history, within a window and/or after a starting commit.",
+        "A note on SPP tracking:",
+        "SPP tracks commits in git history, within a window and/or after a starting commit.",
         "Commits that include 'Co-authored by: Claude...' in the message are counted as Claude commits.",
         "Commits without that phrase are counted as human commits.",
         "Therefore, if asked to commit human authored code, don't include the 'Co-authored by: Claude...' phrase",
         "Also, if you write code, ask the user if they would like to commit it and DO include the 'Co-authored by: Claude' phrase",
-        "This way, STP tracking will work properly",
+        "This way, SPP tracking will work properly",
     ];
     // Add rules based on ratio health
     if (!isHealthy) {
@@ -65,9 +65,9 @@ export function generateSystemPrompt(projectPath) {
         lines.push("The human coding ratio is below the target.");
         lines.push(`The human needs to write **${needed} more ${unit}** to get back to a healthy ratio.`);
         lines.push("You will be hard blocked from writing code (except .md files).");
-        lines.push("Instead of writing code, use the stp-human-task skill to help the human complete the coding task.");
+        lines.push("Instead of writing code, use the spp-human-task skill to help the human complete the coding task.");
     }
-    lines.push("</stp>");
+    lines.push("</spp>");
     return lines.join("\n");
 }
 /**
@@ -83,6 +83,6 @@ export function generateStatusLine(projectPath) {
     const targetRatio = getEffectiveRatio(config);
     const isHealthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
     const status = isHealthy ? "✅" : "⚠️";
-    return `[STP ${status} ${(currentRatio * 100).toFixed(0)}%/${(targetRatio * 100).toFixed(0)}% human]`;
+    return `[SPP ${status} ${(currentRatio * 100).toFixed(0)}%/${(targetRatio * 100).toFixed(0)}% human]`;
 }
 //# sourceMappingURL=system-prompt.js.map

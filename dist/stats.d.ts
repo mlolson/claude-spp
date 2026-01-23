@@ -30,7 +30,7 @@ export interface StatsResult {
     };
 }
 /**
- * Get current STP statistics
+ * Get current SPP statistics
  */
 export declare function getStats(projectPath: string): StatsResult;
 /**

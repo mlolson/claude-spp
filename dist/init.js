@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as readline from "node:readline";
 import { execSync } from "node:child_process";
-import { loadConfig, saveConfig, isStpInitialized, getStpDir } from "./config/loader.js";
+import { loadConfig, saveConfig, isSppInitialized, getSppDir } from "./config/loader.js";
 import { DEFAULT_CONFIG, MODES, STATS_WINDOW_LABELS, StatsWindowSchema, TRACKING_MODE_LABELS, TrackingModeSchema, } from "./config/schema.js";
 import { getTotalCommitCount, getHeadCommitHash } from "./git/history.js";
 /**
@@ -41,11 +41,11 @@ function isGitRepo(projectPath) {
     }
 }
 /**
- * Check if the stp command is available globally
+ * Check if the spp command is available globally
  */
-function isStpCommandAvailable() {
+function isSppCommandAvailable() {
     try {
-        execSync("which stp", { stdio: "ignore" });
+        execSync("which spp", { stdio: "ignore" });
         return true;
     }
     catch {
@@ -53,12 +53,12 @@ function isStpCommandAvailable() {
     }
 }
 /**
- * Prompt user to install claude-stp globally
+ * Prompt user to install claude-spp globally
  */
 function ensureGlobalInstall() {
-    if (!isStpCommandAvailable()) {
-        const packageName = "git+https://github.com/mlolson/claude-stp.git";
-        throw new Error(`stp command not found. Please install:\n  npm install -g ${packageName}`);
+    if (!isSppCommandAvailable()) {
+        const packageName = "git+https://github.com/mlolson/claude-spp.git";
+        throw new Error(`spp command not found. Please install:\n  npm install -g ${packageName}`);
     }
 }
 /**
@@ -87,8 +87,8 @@ export function installGitHook(projectPath) {
     // Check if hook already contains our content
     if (fs.existsSync(hookPath)) {
         const existingContent = fs.readFileSync(hookPath, "utf-8");
-        if (existingContent.includes("# <STP>")) {
-            fs.writeFileSync(hookPath, existingContent.replace(/# <STP>[\s\S]*?# <\/STP>/g, sourceContent));
+        if (existingContent.includes("# <SPP>")) {
+            fs.writeFileSync(hookPath, existingContent.replace(/# <SPP>[\s\S]*?# <\/SPP>/g, sourceContent));
         }
         else {
             if (existingContent.trim() === "") {
@@ -185,7 +185,7 @@ async function promptForTrackingMode() {
     }
 }
 async function promptShouldOverwriteInstall() {
-    const answer = await promptUser("An STP installation already exists. Overwrite it? N/Y\n");
+    const answer = await promptUser("An SPP installation already exists. Overwrite it? N/Y\n");
     return answer.toLowerCase() === "y";
 }
 export async function promptUser(prompt) {
@@ -201,29 +201,29 @@ export async function promptUser(prompt) {
     });
 }
 /**
- * Initialize STP in a project
- * Creates .claude-stp directory with config
+ * Initialize SPP in a project
+ * Creates .claude-spp directory with config
  * @param projectPath Path to the project
  * @param modeNumber Optional mode number to skip the mode prompt
  * @param statsWindow Optional stats window to skip the stats window prompt
  * @param trackingMode Optional tracking mode to skip the tracking mode prompt
  */
-export async function initializeStp(projectPath, modeNumber, statsWindow, trackingMode) {
-    // Ensure stp command is installed globally (required for hooks)
+export async function initializeSpp(projectPath, modeNumber, statsWindow, trackingMode) {
+    // Ensure spp command is installed globally (required for hooks)
     await ensureGlobalInstall();
-    const stpDir = getStpDir(projectPath);
-    // Create .claude-stp directory if it doesn't exist
-    if (fs.existsSync(stpDir)) {
+    const sppDir = getSppDir(projectPath);
+    // Create .claude-spp directory if it doesn't exist
+    if (fs.existsSync(sppDir)) {
         if (await promptShouldOverwriteInstall()) {
             console.log("Removing existing install...");
-            fs.rmSync(stpDir, { recursive: true, force: true });
+            fs.rmSync(sppDir, { recursive: true, force: true });
         }
         else {
             console.log("Aborting install...");
             return await loadConfig(projectPath);
         }
     }
-    fs.mkdirSync(stpDir, { recursive: true });
+    fs.mkdirSync(sppDir, { recursive: true });
     // Prompt for mode if not provided
     const selectedMode = modeNumber ?? await promptForMode();
     if (selectedMode < 1 || selectedMode > MODES.length) {
@@ -250,24 +250,24 @@ export async function initializeStp(projectPath, modeNumber, statsWindow, tracki
         }
     }
     saveConfig(projectPath, config);
-    // Update .gitignore to exclude STP files
-    addToGitignore(projectPath, ".claude-stp/");
+    // Update .gitignore to exclude SPP files
+    addToGitignore(projectPath, ".claude-spp/");
     // Install git post-commit hook
     installGitHook(projectPath);
     return config;
 }
 /**
- * Check if STP is fully initialized
+ * Check if SPP is fully initialized
  */
 export function isFullyInitialized(projectPath) {
-    return isStpInitialized(projectPath);
+    return isSppInitialized(projectPath);
 }
 /**
- * Ensure STP is initialized, initializing if needed
+ * Ensure SPP is initialized, initializing if needed
  */
 export async function ensureInitialized(projectPath, modeNumber, statsWindow, trackingMode) {
     if (!isFullyInitialized(projectPath)) {
-        return initializeStp(projectPath, modeNumber, statsWindow, trackingMode);
+        return initializeSpp(projectPath, modeNumber, statsWindow, trackingMode);
     }
     return loadConfig(projectPath);
 }

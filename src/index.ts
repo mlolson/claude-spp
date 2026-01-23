@@ -1,5 +1,5 @@
 // Configuration
-export { loadConfig, saveConfig, isStpInitialized, getStpDir } from "./config/loader.js";
+export { loadConfig, saveConfig, isSppInitialized, getSppDir } from "./config/loader.js";
 export {
   ConfigSchema,
   DEFAULT_CONFIG,
@@ -20,7 +20,7 @@ export {
 } from "./git/history.js";
 
 // Initialization
-export { initializeStp, isFullyInitialized, ensureInitialized } from "./init.js";
+export { initializeSpp, isFullyInitialized, ensureInitialized } from "./init.js";
 
 // Commands
 export { getStats, formatStats, type StatsResult } from "./stats.js";

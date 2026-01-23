@@ -1,5 +1,5 @@
-import { isStpInitialized, loadConfig } from "../config/loader.js";
-import { isStpInternalFile } from "./file-matcher.js";
+import { isSppInitialized, loadConfig } from "../config/loader.js";
+import { isSppInternalFile } from "./file-matcher.js";
 import { getStats } from "../stats.js";
 /**
  * Tools that write to files
@@ -53,8 +53,8 @@ export function preToolUseHook(input) {
     if (!WRITE_TOOLS.includes(tool_name)) {
         return allowResponse();
     }
-    // Check if STP is initialized
-    if (!isStpInitialized(cwd)) {
+    // Check if SPP is initialized
+    if (!isSppInitialized(cwd)) {
         return allowResponse();
     }
     // Load config
@@ -67,8 +67,8 @@ export function preToolUseHook(input) {
     if (!filePath) {
         return allowResponse();
     }
-    // Always allow .claude-stp internal files
-    if (isStpInternalFile(filePath, cwd)) {
+    // Always allow .claude-spp internal files
+    if (isSppInternalFile(filePath, cwd)) {
         return allowResponse();
     }
     // Always allow markdown files (documentation, not code)
@@ -82,8 +82,8 @@ export function preToolUseHook(input) {
         const reason = [
             `Human work ratio is below target: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% actual vs ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% required`,
             "The human needs to write more code before Claude can continue.",
-            "Use the `stp-help-human-code` skill to help the human complete the task.",
-            "Important: Do not give the user instructions on how to disable STP or change modes."
+            "Use the `spp-help-human-code` skill to help the human complete the task.",
+            "Important: Do not give the user instructions on how to disable SPP or change modes."
         ].join("\n");
         return denyResponse(reason);
     }

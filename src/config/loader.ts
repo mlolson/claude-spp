@@ -2,28 +2,28 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { ConfigSchema, DEFAULT_CONFIG, type Config } from "./schema.js";
 
-const STP_DIR = ".claude-stp";
+const SPP_DIR = ".claude-spp";
 const CONFIG_FILE = "config.json";
 
 /**
- * Get the path to the .claude-stp directory for a project
+ * Get the path to the .claude-spp directory for a project
  */
-export function getStpDir(projectPath: string): string {
-  return path.join(projectPath, STP_DIR);
+export function getSppDir(projectPath: string): string {
+  return path.join(projectPath, SPP_DIR);
 }
 
 /**
  * Get the path to the config file
  */
 export function getConfigPath(projectPath: string): string {
-  return path.join(getStpDir(projectPath), CONFIG_FILE);
+  return path.join(getSppDir(projectPath), CONFIG_FILE);
 }
 
 /**
- * Check if STP is initialized in the project
+ * Check if SPP is initialized in the project
  */
-export function isStpInitialized(projectPath: string): boolean {
-  return fs.existsSync(getStpDir(projectPath));
+export function isSppInitialized(projectPath: string): boolean {
+  return fs.existsSync(getSppDir(projectPath));
 }
 
 /**
@@ -67,12 +67,12 @@ export function loadConfig(projectPath: string): Config {
  * Save config to file
  */
 export function saveConfig(projectPath: string, config: Config): void {
-  const stpDir = getStpDir(projectPath);
+  const sppDir = getSppDir(projectPath);
   const configPath = getConfigPath(projectPath);
 
-  // Ensure .claude-stp directory exists
-  if (!fs.existsSync(stpDir)) {
-    fs.mkdirSync(stpDir, { recursive: true });
+  // Ensure .claude-spp directory exists
+  if (!fs.existsSync(sppDir)) {
+    fs.mkdirSync(sppDir, { recursive: true });
   }
 
   // Validate before saving
@@ -86,7 +86,7 @@ export function saveConfig(projectPath: string, config: Config): void {
 }
 
 /**
- * Initialize STP in a project with default config
+ * Initialize SPP in a project with default config
  */
 export function initializeConfig(projectPath: string): Config {
   const config: Config = {

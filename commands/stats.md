@@ -1,11 +1,11 @@
 ---
-description: Show detailed STP statistics
+description: Show detailed SPP statistics
 ---
 
-# STP Stats
+# SPP Stats
 
 ```bash
-stp stats
+spp stats
 ```
 
 Present the statistics in a clear, formatted way.

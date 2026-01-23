@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "stp hook:system-prompt"
+            "command": "spp hook:system-prompt"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "stp hook:pre-tool-use"
+            "command": "spp hook:pre-tool-use"
           }
         ]
       }

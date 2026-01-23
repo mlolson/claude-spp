@@ -1,16 +1,16 @@
 ---
-name: stp-help-human-code
+name: spp-help-human-code
 description: Help a human complete a coding task
 ---
 
-# STP Help Human Code Skill
+# SPP Help Human Code Skill
 
-Guide a human through completing a coding task themselves. Use this skill when the STP ratio is unhealthy (too much AI-written code) and the human needs to write code to improve their ratio. Be a mentor for your human friend, help them stay sharp and learn programming.
+Guide a human through completing a coding task themselves. Use this skill when the SPP ratio is unhealthy (too much AI-written code) and the human needs to write code to improve their ratio. Be a mentor for your human friend, help them stay sharp and learn programming.
 
 ## When to Use
 
-- When blocked from writing code by STP write hook.
-- When `stp status` shows the human ratio is below target
+- When blocked from writing code by SPP write hook.
+- When `spp status` shows the human ratio is below target
 - When the human wants to practice writing code themselves
 - When teaching mode is appropriate
 
@@ -27,4 +27,4 @@ Guide a human through completing a coding task themselves. Use this skill when t
 
 5. **Offer to review the user's code**: After they are done writing code, review it using standard best practices for code review.
 
-6. **Important: Do not commit user's code with 'Co-Authored-By: Claude'** If the user asks you to commit their code, make sure not to include the 'Co-Authored-By: Claude' note in the commit message. Otherwise, STP will track the commit as written by Claude and not the human.
+6. **Important: Do not commit user's code with 'Co-Authored-By: Claude'** If the user asks you to commit their code, make sure not to include the 'Co-Authored-By: Claude' note in the commit message. Otherwise, SPP will track the commit as written by Claude and not the human.

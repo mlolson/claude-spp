@@ -1,4 +1,4 @@
-import { loadConfig, isStpInitialized } from "./config/loader.js";
+import { loadConfig, isSppInitialized } from "./config/loader.js";
 import { getEffectiveRatio, getCurrentMode, getStatsWindowCutoff, STATS_WINDOW_LABELS, TRACKING_MODE_LABELS, } from "./config/schema.js";
 import { getLineCountsWithWindow, getCommitInfo } from "./git/history.js";
 /**
@@ -19,10 +19,10 @@ export function isRatioHealthy(humanLines, claudeLines, targetRatio) {
     return calculateRatio(humanLines, claudeLines) >= targetRatio;
 }
 /**
- * Get current STP statistics
+ * Get current SPP statistics
  */
 export function getStats(projectPath) {
-    if (!isStpInitialized(projectPath)) {
+    if (!isSppInitialized(projectPath)) {
         return { initialized: false };
     }
     const config = loadConfig(projectPath);
@@ -59,7 +59,7 @@ export function getStats(projectPath) {
  */
 export function formatStats(stats) {
     if (!stats.initialized) {
-        return "STP is not initialized in this project. Run `stp init` to get started.";
+        return "SPP is not initialized in this project. Run `spp init` to get started.";
     }
     const trackingMode = stats.trackingMode ?? "commits";
     const target = stats.targetRatio ?? 0;
@@ -134,10 +134,10 @@ export function formatStats(stats) {
     ];
     if (!stats.enabled) {
         const config = loadConfig(process.cwd());
-        let pauseMsg = "STP is disabled";
+        let pauseMsg = "SPP is disabled";
         if (config.pausedUntil) {
             const pausedUntilDate = new Date(config.pausedUntil);
-            pauseMsg = `⏸️  STP enforcement is paused until ${pausedUntilDate.toLocaleString()}. Claude may write code freely. Run 'stp resume' to unpause.`;
+            pauseMsg = `⏸️  SPP enforcement is paused until ${pausedUntilDate.toLocaleString()}. Claude may write code freely. Run 'spp resume' to unpause.`;
         }
         lines.splice(1, 0, pauseMsg, "");
     }
