@@ -1,7 +1,19 @@
 import { loadConfig } from "../config/loader.js";
 import { calculateRatio, isRatioHealthy } from "../stats.js";
-import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
+import { getEffectiveRatio, getCurrentMode, type TrackingMode } from "../config/schema.js";
 import { getLineCounts } from "../git/history.js";
+
+/**
+ * Calculate how many more commits/lines the human needs to reach the target ratio
+ */
+function calculateCatchUp(humanValue: number, claudeValue: number, targetRatio: number): number {
+  const total = humanValue + claudeValue;
+  if (targetRatio >= 1) {
+    // 100% human target - can never catch up if Claude has written anything
+    return claudeValue;
+  }
+  return Math.ceil((targetRatio * total - humanValue) / (1 - targetRatio));
+}
 
 /**
  * Generate the STP system prompt injection
@@ -15,52 +27,51 @@ export function generateSystemPrompt(projectPath: string): string {
   }
 
   const lineCounts = getLineCounts(projectPath);
-  const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
+  const trackingMode: TrackingMode = config.trackingMode ?? "commits";
+  const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
+  const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
+  const unit = trackingMode === "commits" ? "commits" : "lines";
+
+  const currentRatio = calculateRatio(humanValue, claudeValue);
   const targetRatio = getEffectiveRatio(config);
-  const isHealthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
+  const isHealthy = isRatioHealthy(humanValue, claudeValue, targetRatio);
   const currentMode = getCurrentMode(config);
 
   const lines: string[] = [
     "<stp>",
-    "# STP Mode Active",
+    "# Simian Training Plugin Active",
     "",
-    "You are operating in STP mode. This mode helps the human maintain their programming skills",
+    "You are operating in Simian Training mode. This mode helps the human maintain their programming skills",
     "by ensuring they write a minimum percentage of the code themselves.",
+    "Help your human friend level up and stay sharp.",
     "",
     "## Current Status",
     "",
     `- **Mode:** ${currentMode.number}. ${currentMode.name} (${currentMode.description})`,
     `- **Target ratio:** ${(targetRatio * 100).toFixed(0)}% human-written code`,
-    `- **Current ratio:** ${(currentRatio * 100).toFixed(0)}% human (${lineCounts.humanLines} lines) / ${(100 - currentRatio * 100).toFixed(0)}% Claude (${lineCounts.claudeLines} lines)`,
+    `- **Current ratio:** ${(currentRatio * 100).toFixed(0)}% human (${humanValue} ${unit}) / ${(100 - currentRatio * 100).toFixed(0)}% Claude (${claudeValue} ${unit})`,
     `- **Status:** ${isHealthy ? "✅ Healthy" : "⚠️ Below target"}`,
     "",
+    "A note on STP tracking:",
+    "STP tracks commits in git history, within a window and/or after a starting commit.",
+    "Commits that include 'Co-authored by: Claude...' in the message are counted as Claude commits.",
+    "Commits without that phrase are counted as human commits.",
+    "Therefore, if asked to commit human authored code, don't include the 'Co-authored by: Claude...' phrase",
+    "Also, if you write code, ask the user if they would like to commit it and DO include the 'Co-authored by: Claude' phrase",
+    "This way, STP tracking will work properly",
   ];
+
 
   // Add rules based on ratio health
   if (!isHealthy) {
-    lines.push("## ⚠️ Action Required");
+    const needed = calculateCatchUp(humanValue, claudeValue, targetRatio);
+    lines.push("## ⚠️ NOTICE");
     lines.push("");
-    lines.push("The human work ratio is below the target. Before writing more code:");
-    lines.push("");
-    lines.push("1. **Prefer teaching over doing** - Guide the human through the solution instead of writing it");
-    lines.push("2. **Use Socratic method** - Ask questions that help the human discover the solution");
-    lines.push("3. **Offer hints, not solutions** - Provide guidance without writing the full code");
-    lines.push("");
-    lines.push("You MAY still write code if:");
-    lines.push("- The human explicitly requests it after being informed of the ratio");
-    lines.push("- It's a trivial change (< 5 lines)");
-    lines.push("- It's fixing a bug you introduced");
-    lines.push("");
+    lines.push("The human coding ratio is below the target.");
+    lines.push(`The human needs to write **${needed} more ${unit}** to get back to a healthy ratio.`);
+    lines.push("You will be hard blocked from writing code (except .md files).");
+    lines.push("Instead of writing code, use the stp-human-task skill to help the human complete the coding task.");
   }
-
-  // Commands
-  lines.push("## STP Commands");
-  lines.push("");
-  lines.push("The human can use these commands:");
-  lines.push("- `/stp:status` - Show current status");
-  lines.push("- `/stp:stats` - Show detailed metrics");
-  lines.push("- `/stp:mode` - Show or change the current mode");
-  lines.push("");
 
   lines.push("</stp>");
 

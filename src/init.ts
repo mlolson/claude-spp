@@ -17,80 +17,6 @@ import {
 } from "./config/schema.js";
 import { getTotalCommitCount, getHeadCommitHash } from "./git/history.js";
 
-const STP_START_MARKER = "<!-- STP:START -->";
-const STP_END_MARKER = "<!-- STP:END -->";
-
-/**
- * Generate STP instructions content for CLAUDE.md
- */
-function generateStpInstructions(): string {
-
-  return `${STP_START_MARKER}
-## STP Mode
-
-This project has **STP mode** enabled. STP helps maintain programming skills by ensuring
-the human writes a minimum percentage of code themselves.
-
-### Rules for Claude
-
-**Before writing code:**
-1. Check the ratio with \`stp status\`
-2. If ratio is below target, prefer teaching over writing code
-3. Offer guidance first - ask if the human wants to try it themselves
-
-**When asked to write code:**
-- If ratio of human written code is healthy: write code freely
-- If ratio is of human written code is unhealthy: inform the human and offer to guide them instead. Do not allow them to bypass.
-
-### Line Tracking
-
-Lines are tracked via git commit history.
-
-Commits with \`Co-Authored-By: Claude\` are attributed to Claude.
-
-### Commands
-
-\`\`\`bash
-stp status              # Show current ratio
-stp stats               # Show detailed statistics
-stp mode [n]            # Show or change mode
-\`\`\`
-${STP_END_MARKER}`;
-}
-
-/**
- * Update CLAUDE.md with STP instructions
- * Inserts or updates content between STP markers
- */
-function updateClaudeMd(projectPath: string): void {
-  const claudeMdPath = path.join(projectPath, "CLAUDE.local.md");
-  const stpContent = generateStpInstructions();
-
-  if (!fs.existsSync(claudeMdPath)) {
-    // No CLAUDE.md exists - create one with just STP content
-    fs.writeFileSync(claudeMdPath, stpContent + "\n", "utf-8");
-    return;
-  }
-
-  // Read existing content
-  let content = fs.readFileSync(claudeMdPath, "utf-8");
-
-  const startIndex = content.indexOf(STP_START_MARKER);
-  const endIndex = content.indexOf(STP_END_MARKER);
-
-  if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-    // Replace existing STP section
-    const before = content.substring(0, startIndex);
-    const after = content.substring(endIndex + STP_END_MARKER.length);
-    content = before + stpContent + after;
-  } else {
-    // Append STP section
-    content = content.trimEnd() + "\n\n" + stpContent + "\n";
-  }
-
-  fs.writeFileSync(claudeMdPath, content, "utf-8");
-}
-
 /**
  * Add an entry to .gitignore
  * Creates .gitignore if it doesn't exist
@@ -427,12 +353,8 @@ export async function initializeStp(
 
   saveConfig(projectPath, config);
 
-  // Update CLAUDE.local.md with STP instructions
-  updateClaudeMd(projectPath);
-
   // Update .gitignore to exclude STP files
   addToGitignore(projectPath, ".stp/");
-  addToGitignore(projectPath, "CLAUDE.local.md");
 
   // Install git post-commit hook
   installGitHook(projectPath);
