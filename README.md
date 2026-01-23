@@ -87,7 +87,7 @@ stp reset
 
 Don't feel bad, no one is keeping score!
 
-# git hook
+# git post commit hook shows stats
 
 After you commit, a post-commit hook prints out current stats:
 ```bash
