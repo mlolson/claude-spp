@@ -1,4 +1,4 @@
-import { loadConfig } from "../config/loader.js";
+import { loadConfig, isStpInitialized } from "../config/loader.js";
 import { calculateRatio, isRatioHealthy } from "../stats.js";
 import { getEffectiveRatio, getCurrentMode } from "../config/schema.js";
 import { getLineCounts } from "../git/history.js";
@@ -17,6 +17,9 @@ function calculateCatchUp(humanValue, claudeValue, targetRatio) {
  * Generate the STP system prompt injection
  */
 export function generateSystemPrompt(projectPath) {
+    if (!isStpInitialized(projectPath)) {
+        return "";
+    }
     const config = loadConfig(projectPath);
     // If STP is disabled, return empty
     if (!config.enabled) {
