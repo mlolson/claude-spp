@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { runPreResponseHook } from "./hooks/pre-response.js";
-import { runPostResponseHook } from "./hooks/post-response.js";
 import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
 import { initializeStp, isFullyInitialized, promptUser } from "./init.js";
@@ -128,8 +126,8 @@ program
     config.enabled = false;
     config.pausedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     saveConfig(process.cwd(), config);
-    console.log("⏸️  STP paused for 24 hours. Claude may write code freely.");
-    console.log("   Run 'stp resume' to resume tracking immediately.");
+    console.log("⏸️  STP enforcement paused for 24 hours. Claude may write code freely.");
+    console.log("   Run 'stp resume' to resume STP enforcement immediately.");
   });
 
 program
@@ -144,7 +142,7 @@ program
     config.enabled = true;
     delete config.pausedUntil;
     saveConfig(process.cwd(), config);
-    console.log("▶️  STP resumed. Ratio tracking is active.");
+    console.log("▶️  STP resumed. Coding enforcement is active.");
   });
 
 program
@@ -178,20 +176,6 @@ program
 // Hook commands (called by Claude Code)
 
 program
-  .command("hook:pre-response")
-  .description("Pre-response hook (internal)")
-  .action(async () => {
-    await runPreResponseHook();
-  });
-
-program
-  .command("hook:post-response")
-  .description("Post-response hook (internal)")
-  .action(async () => {
-    await runPostResponseHook();
-  });
-
-program
   .command("hook:pre-tool-use")
   .description("Pre-tool-use hook (internal, reads JSON from stdin)")
   .action(async () => {
@@ -203,13 +187,6 @@ program
   .description("Output system prompt injection (internal)")
   .action(() => {
     console.log(generateSystemPrompt(process.cwd()));
-  });
-
-program
-  .command("hook:status")
-  .description("Output compact status line (internal)")
-  .action(() => {
-    console.log(generateStatusLine(process.cwd()));
   });
 
 program.parseAsync();

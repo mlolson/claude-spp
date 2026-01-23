@@ -27,13 +27,3 @@ export { getStats, formatStats, type StatsResult } from "./stats.js";
 
 // Hooks
 export { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
-export {
-  preResponseHook,
-  type PreResponseHookInput,
-  type PreResponseHookOutput,
-} from "./hooks/pre-response.js";
-export {
-  postResponseHook,
-  type PostResponseHookInput,
-  type PostResponseHookOutput,
-} from "./hooks/post-response.js";
