@@ -5,12 +5,11 @@ import {
   getStatsWindowCutoff,
   STATS_WINDOW_LABELS,
   TRACKING_MODE_LABELS,
-  MIN_COMMITS_FOR_TRACKING,
   type Mode,
   type StatsWindow,
   type TrackingMode,
 } from "./config/schema.js";
-import { getLineCountsWithWindow, getNthCommitHash, getCommitInfo } from "./git/history.js";
+import { getLineCountsWithWindow, getCommitInfo } from "./git/history.js";
 
 /**
  * Calculate the current human work ratio from line counts
@@ -40,9 +39,6 @@ export interface StatsResult {
   ratioHealthy?: boolean;
   statsWindow?: StatsWindow;
   trackingMode?: TrackingMode;
-  inGracePeriod?: boolean;
-  totalCommits?: number;
-  commitsUntilTracking?: number;
   lines?: {
     humanLines: number;
     claudeLines: number;
@@ -64,34 +60,11 @@ export function getStats(projectPath: string): StatsResult {
     return { initialized: false };
   }
 
-  let config = loadConfig(projectPath);
+  const config = loadConfig(projectPath);
   const statsWindow = config.statsWindow ?? "oneWeek";
   const trackingMode = config.trackingMode ?? "commits";
   const targetRatio = getEffectiveRatio(config);
   const mode = getCurrentMode(config);
-
-  // First, get ALL commits (no filter) to check if we're in grace period
-  const allTimeCounts = getLineCountsWithWindow(projectPath, { since: null });
-  const totalCommits = allTimeCounts.humanCommits + allTimeCounts.claudeCommits;
-
-  // Check if in grace period (no trackingStartCommit set yet)
-  let inGracePeriod = !config.trackingStartCommit;
-  let commitsUntilTracking = 0;
-
-  if (inGracePeriod) {
-    // Check if we've reached enough commits to start tracking
-    if (totalCommits >= MIN_COMMITS_FOR_TRACKING) {
-      // Grace period is over! Set trackingStartCommit to the Nth commit
-      const nthCommit = getNthCommitHash(projectPath, MIN_COMMITS_FOR_TRACKING);
-      if (nthCommit) {
-        config.trackingStartCommit = nthCommit;
-        saveConfig(projectPath, config);
-        inGracePeriod = false;
-      }
-    } else {
-      commitsUntilTracking = MIN_COMMITS_FOR_TRACKING - totalCommits;
-    }
-  }
 
   // Get counts for ratio calculation
   // Filter by trackingStartCommit (if set) and statsWindow cutoff
@@ -105,9 +78,7 @@ export function getStats(projectPath: string): StatsResult {
   const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
   const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
   const currentRatio = calculateRatio(humanValue, claudeValue);
-
-  // During grace period, ratio is always considered healthy
-  const ratioHealthy = inGracePeriod || isRatioHealthy(humanValue, claudeValue, targetRatio);
+  const ratioHealthy = isRatioHealthy(humanValue, claudeValue, targetRatio);
 
   return {
     initialized: true,
@@ -118,9 +89,6 @@ export function getStats(projectPath: string): StatsResult {
     ratioHealthy,
     statsWindow,
     trackingMode,
-    inGracePeriod,
-    totalCommits,
-    commitsUntilTracking,
     lines: lineCounts,
   };
 }
@@ -150,9 +118,7 @@ export function formatStats(stats: StatsResult): string {
 
   // Build status line
   let statusLine: string;
-  if (stats.inGracePeriod) {
-    statusLine = `🌱 Grace period — ${stats.commitsUntilTracking} commits until tracking starts`;
-  } else if (stats.ratioHealthy) {
+  if (stats.ratioHealthy) {
     statusLine = `✅ 🐒 Human coding on target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Keep up the great work!`;
   } else {
     // Calculate how many more commits/lines needed to catch up
@@ -214,7 +180,7 @@ export function formatStats(stats: StatsResult): string {
     let pauseMsg = "STP is disabled";
     if (config.pausedUntil) {
       const pausedUntilDate = new Date(config.pausedUntil);
-      pauseMsg = `⏸️  STP tracking is paused until ${pausedUntilDate.toLocaleString()}. Run 'stp resume' to unpause.`;
+      pauseMsg = `⏸️  STP enforcement is paused until ${pausedUntilDate.toLocaleString()}. Claude may write code freely. Run 'stp resume' to unpause.`;
     } 
     lines.splice(1, 0, pauseMsg, "");
   }

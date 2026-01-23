@@ -14,7 +14,6 @@ import {
   TRACKING_MODE_LABELS,
   TrackingModeSchema,
   type TrackingMode,
-  MIN_COMMITS_FOR_TRACKING,
 } from "./config/schema.js";
 import { getTotalCommitCount, getHeadCommitHash } from "./git/history.js";
 
@@ -416,10 +415,10 @@ export async function initializeStp(
     statsWindow: selectedStatsWindow,
   };
 
-  // For pre-existing repos with enough commits, set trackingStartCommit to HEAD
+  // For pre-existing repos with commits, set trackingStartCommit to HEAD
   // This gives them a clean slate - only new commits after init will be tracked
   const totalCommits = getTotalCommitCount(projectPath);
-  if (totalCommits >= MIN_COMMITS_FOR_TRACKING) {
+  if (totalCommits > 0) {
     const headCommit = getHeadCommitHash(projectPath);
     if (headCommit) {
       config.trackingStartCommit = headCommit;

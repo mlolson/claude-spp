@@ -57,12 +57,6 @@ export const TRACKING_MODE_LABELS: Record<TrackingMode, string> = {
 };
 
 /**
- * Minimum number of total commits before tracking is enforced
- * This grace period allows Claude to help with initial boilerplate setup
- */
-export const MIN_COMMITS_FOR_TRACKING = 10;
-
-/**
  * Human-readable labels for stats windows
  */
 export const STATS_WINDOW_LABELS: Record<StatsWindow, string> = {
