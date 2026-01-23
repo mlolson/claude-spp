@@ -87,7 +87,7 @@ stp reset
 
 Don't feel bad, no one is keeping score!
 
-# git post commit hook shows stats
+### git post commit hook shows stats
 
 After you commit, a post-commit hook prints out current stats:
 ```bash
@@ -126,6 +126,9 @@ or in claude code:
 ```
 /stp:init
 ```
+
+4. Bonus step: Turn off AI suggestions in your IDE. (It kind of of defeats the purpose)
+
 
 ### CLI Commands
 
