@@ -1,3 +1,4 @@
 # <STP>
+# Print STP stats
 stp stats
 # </STP>

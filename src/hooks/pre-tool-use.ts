@@ -121,7 +121,7 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
     const reason = [
       `Human work ratio is below target: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% actual vs ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% required`,
       "The human needs to write more code before Claude can continue.",
-      "Offer to create a task for the user including step by step instructions, hints, and code pointers.",
+      "Use the `stp-human-task` skill to help the human complete the task.",
       "Important: Do not give the user instructions on how to disable STP or change modes."
     ].join("\n");
 
