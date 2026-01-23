@@ -23,9 +23,53 @@ There is an option to track by lines of code (added+deleted) if you wish, but I 
 
 Tracking starts from the latest commit when the plugin is initialized, so that only new work is counted. It looks back over a time window (default 7 days). 
 
-## Ratio enforcement and help mode
+## Ratio enforcement and the help human code skill
 
-When the ratio of human/AI commits becomes too low, Claude is **blocked** from writing code. Instead, it uses a "help human code" skill to help **you** write the code, and then reviews your work. Once the code ratio is healthy again, Claude can resume writing code.
+When the ratio of human/AI commits becomes too low, Claude is **blocked** from writing code. Instead, it uses a "help human code" skill to help **you** write the code, and then reviews your work. This skill instructs Claude to provide you with a high level over view of the task, code pointers, and test instructions. Example:
+
+```
+❯ Some tests are failing, can you fix them?
+
+⏺ I'd be happy to help, but I'm currently blocked from writing code due to STP restrictions - your human coding ratio is below the 100% target. Let me use the stp-human-task skill to guide you through fixing the
+   tests yourself.
+...
+---
+  High Level Goal
+
+  Fix 15 failing tests across 3 test files. The issues are:
+
+  1. tests/config.test.ts (2 failures) - Test expectations don't match the actual MODES array
+  2. tests/hooks.test.ts (6 failures) - Tests use wrong interface for calling preToolUseHook
+  3. tests/init.test.ts (7 failures) - Tests timeout because initializeStp prompts for user input via stdin
+
+  ---
+  File 1: tests/config.test.ts
+
+  Problem: The tests expect 6 modes with different ratios, but the actual MODES array only has 5 modes with different values.
+
+  Lines 97-109 need to be updated:
+
+  Fix 1: Line 98-99 - "returns custom ratio when set"
+
+  The test tries to set humanWorkRatio on the config, but Config doesn't have a humanWorkRatio field. The getEffectiveRatio function only looks at the mode. This test is invalid - you should either:
+  - Remove this test entirely, OR
+  - Change it to test setting a different mode
+
+  (etc...)
+
+  ---
+  Test Your Changes
+
+  After making the fixes, run:
+  npm test
+
+  All tests should pass.
+
+  ---
+  Would you like more detailed guidance on any of these fixes, or do you want me to review your code after you make the changes?
+```
+
+After you make the fix, you can ask claude to review and commit your changes.
 
 ### Pausing, resuming, and reseting
 
