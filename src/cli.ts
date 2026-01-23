@@ -4,7 +4,8 @@ import { runPreResponseHook } from "./hooks/pre-response.js";
 import { runPostResponseHook } from "./hooks/post-response.js";
 import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
-import { initializeStp, isFullyInitialized } from "./init.js";
+import { initializeStp, isFullyInitialized, promptUser } from "./init.js";
+import { getHeadCommitHash } from "./git/history.js";
 import { loadConfig, saveConfig } from "./config/loader.js";
 import { getCurrentMode, getModeByNumber, getModeByName, MODES } from "./config/schema.js";
 import { getStats, formatStats } from "./stats.js";
@@ -144,6 +145,34 @@ program
     delete config.pausedUntil;
     saveConfig(process.cwd(), config);
     console.log("▶️  STP resumed. Ratio tracking is active.");
+  });
+
+program
+  .command("reset")
+  .description("Reset tracking to start from current commit")
+  .action(async () => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ STP not initialized. Run: stp init");
+      process.exit(1);
+    }
+
+    const answer = await promptUser("This will reset tracking to start from the current commit. All previous stats will be cleared. Are you sure? (y/N): ");
+    if (answer.toLowerCase() !== "y") {
+      console.log("Reset cancelled.");
+      return;
+    }
+
+    const headCommit = getHeadCommitHash(process.cwd());
+    if (!headCommit) {
+      console.error("❌ Could not get current commit hash.");
+      process.exit(1);
+    }
+
+    const config = loadConfig(process.cwd());
+    config.trackingStartCommit = headCommit;
+    saveConfig(process.cwd(), config);
+
+    console.log(`✅ Tracking reset. Stats will now start from commit ${headCommit.substring(0, 7)}.`);
   });
 
 // Hook commands (called by Claude Code)

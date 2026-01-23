@@ -351,7 +351,7 @@ async function promptShouldOverwriteInstall(): Promise<boolean> {
   return answer.toLowerCase() === "y";
 }
 
-async function promptUser(prompt: string): Promise<string> {
+export async function promptUser(prompt: string): Promise<string> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
