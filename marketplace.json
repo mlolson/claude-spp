@@ -1,0 +1,13 @@
+{
+    "name": "claude-stp",
+    "owner": {
+      "name": "Matt Olson"
+    },
+    "plugins": [
+      {
+        "name": "stp",
+        "source": ".",
+        "description": "Simian Training Plugin"
+      }
+    ]
+  }
