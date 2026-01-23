@@ -6,9 +6,7 @@ import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
 import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
 import { initializeStp, isFullyInitialized } from "./init.js";
 import { loadConfig, saveConfig } from "./config/loader.js";
-import { calculateRatio } from "./stats.js";
-import { getLineCounts } from "./git/history.js";
-import { getEffectiveRatio, getCurrentMode, getModeByNumber, getModeByName, MODES } from "./config/schema.js";
+import { getCurrentMode, getModeByNumber, getModeByName, MODES } from "./config/schema.js";
 import { getStats, formatStats } from "./stats.js";
 
 function getModesExplanation(): string {
@@ -111,44 +109,10 @@ program
 
 program
   .command("stats")
-  .description("Show detailed statistics")
+  .description("Show STP status and statistics")
   .action(() => {
-    if (!isFullyInitialized(process.cwd())) {
-      console.error("❌ STP not initialized. Run: stp init");
-      process.exit(1);
-    }
     const stats = getStats(process.cwd());
     console.log(formatStats(stats));
-  });
-
-program
-  .command("status")
-  .description("Show quick status")
-  .action(() => {
-    if (!isFullyInitialized(process.cwd())) {
-      console.log("STP: Not initialized");
-      return;
-    }
-    const config = loadConfig(process.cwd());
-    if (!config.enabled) {
-      if (config.pausedUntil) {
-        const pausedUntilDate = new Date(config.pausedUntil);
-        const pretty = pausedUntilDate.toLocaleString();
-        console.log(`STP is paused until ${pretty}. Claude may write code freely. To resume run 'stp resume'`);
-      } else {
-        console.log("STP is disabled. Claude may write code freely. To resume run 'stp resume'");
-      }
-      return;
-    }
-    const currentMode = getCurrentMode(config);
-    const lineCounts = getLineCounts(process.cwd());
-    const ratio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
-    const target = getEffectiveRatio(config);
-    const healthy = ratio >= target;
-    console.log(`STP: ${healthy ? "✅" : "⚠️"} ${(ratio * 100).toFixed(0)}% human / ${(target * 100).toFixed(0)}% target`);
-    console.log(`  Mode: ${currentMode.number}. ${currentMode.name} (${currentMode.description})`);
-    console.log(`  Human: ${lineCounts.humanLines} lines, ${lineCounts.humanCommits} commits`);
-    console.log(`  Claude: ${lineCounts.claudeLines} lines, ${lineCounts.claudeCommits} commits`);
   });
 
 program

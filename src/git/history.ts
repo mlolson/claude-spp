@@ -80,6 +80,38 @@ export function getTotalCommitCount(projectPath: string): number {
 }
 
 /**
+ * Commit info for display
+ */
+export interface CommitInfo {
+  shortHash: string;
+  title: string;
+  date: Date;
+}
+
+/**
+ * Get info about a specific commit
+ * Returns null if the commit doesn't exist
+ */
+export function getCommitInfo(projectPath: string, commitHash: string): CommitInfo | null {
+  // Format: short hash, subject (title), ISO date
+  const output = execSync(`git log -1 --format="%h%x00%s%x00%cI" ${commitHash}`, {
+    cwd: projectPath,
+    encoding: "utf-8",
+  }).trim();
+
+  if (!output) {
+    return null;
+  }
+
+  const [shortHash, title, dateStr] = output.split("\0");
+  return {
+    shortHash,
+    title,
+    date: new Date(dateStr),
+  };
+}
+
+/**
  * Get the hash of the Nth commit (1-indexed, chronological order)
  * Returns null if there aren't enough commits
  */

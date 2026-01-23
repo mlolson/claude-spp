@@ -10,7 +10,7 @@ import {
   type StatsWindow,
   type TrackingMode,
 } from "./config/schema.js";
-import { getLineCountsWithWindow, getNthCommitHash } from "./git/history.js";
+import { getLineCountsWithWindow, getNthCommitHash, getCommitInfo } from "./git/history.js";
 
 /**
  * Calculate the current human work ratio from line counts
@@ -133,45 +133,90 @@ export function formatStats(stats: StatsResult): string {
     return "STP is not initialized in this project. Run `stp init` to get started.";
   }
 
-  const windowLabel = stats.statsWindow
-    ? STATS_WINDOW_LABELS[stats.statsWindow]
-    : "All time";
+  const trackingMode = stats.trackingMode ?? "commits";
+  const target = stats.targetRatio ?? 0;
+  const ratio = stats.currentRatio ?? 1;
+  const windowLabel = stats.statsWindow ? STATS_WINDOW_LABELS[stats.statsWindow] : "All time";
+  const trackingLabel = TRACKING_MODE_LABELS[trackingMode];
 
-  const trackingLabel = stats.trackingMode
-    ? TRACKING_MODE_LABELS[stats.trackingMode]
-    : "Commits";
+  // Get values based on tracking mode for catch-up calculation
+  const humanValue = trackingMode === "commits"
+    ? (stats.lines?.humanCommits ?? 0)
+    : (stats.lines?.humanLines ?? 0);
+  const claudeValue = trackingMode === "commits"
+    ? (stats.lines?.claudeCommits ?? 0)
+    : (stats.lines?.claudeLines ?? 0);
+  const unit = trackingMode === "commits" ? "commits" : "lines";
 
-  const humanLines = String(stats.lines?.humanLines ?? 0);
-  const claudeLines = String(stats.lines?.claudeLines ?? 0);
-  const humanCommits = String(stats.lines?.humanCommits ?? 0);
-  const claudeCommits = String(stats.lines?.claudeCommits ?? 0);
-  const maxLines = Math.max(humanLines.length, claudeLines.length);
-  const maxCommits = Math.max(humanCommits.length, claudeCommits.length);
-
-  // Build ratio status message
-  let ratioStatus: string;
+  // Build status line
+  let statusLine: string;
   if (stats.inGracePeriod) {
-    ratioStatus = `(grace period - ${stats.commitsUntilTracking} commits until tracking) 🌱`;
+    statusLine = `🌱 Grace period — ${stats.commitsUntilTracking} commits until tracking starts`;
   } else if (stats.ratioHealthy) {
-    ratioStatus = "(on target) 💪🐵";
+    statusLine = `✅ 🐒 Human coding on target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Keep up the great work!`;
   } else {
-    ratioStatus = "(below target) 🙊";
+    // Calculate how many more commits/lines needed to catch up
+    const total = humanValue + claudeValue;
+    if (target >= 1) {
+      statusLine = `⚠️ 🙉 Human coding below target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Claude has written ${claudeValue} ${unit}.`;
+    } else {
+      const needed = Math.ceil((target * total - humanValue) / (1 - target));
+      statusLine = `⚠️ 🙉  Human coding below target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Write ${needed} more ${unit} to catch up. You can do it!`;
+    }
+  }
+
+  // Format counts with alignment
+  const humanLinesStr = String(stats.lines?.humanLines ?? 0);
+  const claudeLinesStr = String(stats.lines?.claudeLines ?? 0);
+  const humanCommitsStr = String(stats.lines?.humanCommits ?? 0);
+  const claudeCommitsStr = String(stats.lines?.claudeCommits ?? 0);
+  const maxLines = Math.max(humanLinesStr.length, claudeLinesStr.length);
+  const maxCommits = Math.max(humanCommitsStr.length, claudeCommitsStr.length);
+
+  // Build aligned table (no borders)
+  const labelWidth = 10;
+  const modeValue = `${stats.mode?.name} (${stats.mode?.description})`;
+
+  // Determine tracking window display
+  // If trackingStartCommit is set and within the stats window, show commit info instead
+  const config = loadConfig(process.cwd());
+  let trackingValue = `${trackingLabel} (${windowLabel})`;
+
+  if (config.trackingStartCommit) {
+    const commitInfo = getCommitInfo(process.cwd(), config.trackingStartCommit);
+    if (commitInfo) {
+      const statsWindowCutoff = getStatsWindowCutoff(stats.statsWindow ?? "oneWeek");
+      // If no cutoff (allTime) or commit is within the window, show commit info
+      if (!statsWindowCutoff || commitInfo.date >= statsWindowCutoff) {
+        const truncatedTitle = commitInfo.title.length > 16
+          ? commitInfo.title.substring(0, 16) + "..."
+          : commitInfo.title;
+        const dateStr = commitInfo.date.toLocaleDateString();
+        trackingValue = `${trackingLabel} (Since ${commitInfo.shortHash} "${truncatedTitle}" ${dateStr})`;
+      }
+    }
   }
 
   const lines: string[] = [
     "",
-    `Current repo stats (${windowLabel}):`,
+    statusLine,
     "",
-    `Tracking:      ${trackingLabel}`,
-    `Target Ratio:  ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% human work`,
-    `Current Ratio: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% human work ${ratioStatus}`,
-    `Human:  ${humanCommits.padStart(maxCommits)} commits, ${humanLines.padStart(maxLines)} lines added/deleted`,
-    `Claude: ${claudeCommits.padStart(maxCommits)} commits, ${claudeLines.padStart(maxLines)} lines added/deleted`,
+    `  ${"Mode".padEnd(labelWidth)} ${modeValue}`,
+    `  ${"Tracking".padEnd(labelWidth)} ${trackingValue}`,
+    "",
+    `  ${"Human".padEnd(labelWidth)} ${humanCommitsStr.padStart(maxCommits)} commits   ${humanLinesStr.padStart(maxLines)} lines`,
+    `  ${"Claude".padEnd(labelWidth)} ${claudeCommitsStr.padStart(maxCommits)} commits   ${claudeLinesStr.padStart(maxLines)} lines`,
     "",
   ];
 
   if (!stats.enabled) {
-    lines.unshift("", "⏸️ STP tracking is paused. Run 'stp resume' to unpause.");
+    const config = loadConfig(process.cwd());
+    let pauseMsg = "STP is disabled";
+    if (config.pausedUntil) {
+      const pausedUntilDate = new Date(config.pausedUntil);
+      pauseMsg = `⏸️  STP tracking is paused until ${pausedUntilDate.toLocaleString()}. Run 'stp resume' to unpause.`;
+    } 
+    lines.splice(1, 0, pauseMsg, "");
   }
 
   return lines.join("\n");
