@@ -30,8 +30,9 @@ When the ratio of human/AI commits becomes too low, Claude is **blocked** from w
 ```
 ❯ Some tests are failing, can you fix them?
 
-⏺ I'd be happy to help, but I'm currently blocked from writing code due to STP restrictions - your human coding ratio is below the 100% target. Let me use the stp-human-task skill to guide you through fixing the
-   tests yourself.
+⏺ I'd be happy to help, but I'm currently blocked from writing code due to STP restrictions -
+your human coding ratio is below the 100% target. Let me use the stp-human-task skill to guide
+you through fixing the tests yourself.
 ...
 ---
   High Level Goal
@@ -66,7 +67,8 @@ When the ratio of human/AI commits becomes too low, Claude is **blocked** from w
   All tests should pass.
 
   ---
-  Would you like more detailed guidance on any of these fixes, or do you want me to review your code after you make the changes?
+  Would you like more detailed guidance on any of these fixes,
+  or do you want me to review your code after you make the changes?
 ```
 
 After you make the fix, you can ask claude to review and commit your changes.
@@ -80,14 +82,15 @@ You may **pause** STP to allow Claude to freely write code (`stp pause`). This p
 If you get way behind on your coding and want to declare bankruptcy, you can reset tracking from the current commit using:
 
 ```bash
-stp reset```
+stp reset
+```
 
 Don't feel bad, no one is keeping score!
 
 # git hook
 
 After you commit, a post-commit hook prints out current stats:
-```
+```bash
 % git commit -m "Adjust some wording"
 
 ✅ 🐒 Human coding on target. Current: 100% Target: 25%. Keep up the great work!
