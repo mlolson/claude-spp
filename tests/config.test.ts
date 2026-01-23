@@ -61,7 +61,7 @@ describe("Configuration", () => {
   });
 
   describe("saveConfig", () => {
-    it("creates .stp directory if needed", () => {
+    it("creates .claude-stp directory if needed", () => {
       saveConfig(TEST_DIR, DEFAULT_CONFIG);
       expect(fs.existsSync(getStpDir(TEST_DIR))).toBe(true);
     });
@@ -78,11 +78,11 @@ describe("Configuration", () => {
   });
 
   describe("isStpInitialized", () => {
-    it("returns false when .stp does not exist", () => {
+    it("returns false when .claude-stp does not exist", () => {
       expect(isStpInitialized(TEST_DIR)).toBe(false);
     });
 
-    it("returns true when .stp exists", () => {
+    it("returns true when .claude-stp exists", () => {
       fs.mkdirSync(getStpDir(TEST_DIR), { recursive: true });
       expect(isStpInitialized(TEST_DIR)).toBe(true);
     });

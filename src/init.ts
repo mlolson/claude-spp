@@ -292,7 +292,7 @@ export async function promptUser(prompt: string): Promise<string> {
 
 /**
  * Initialize STP in a project
- * Creates .stp directory with config
+ * Creates .claude-stp directory with config
  * @param projectPath Path to the project
  * @param modeNumber Optional mode number to skip the mode prompt
  * @param statsWindow Optional stats window to skip the stats window prompt
@@ -309,7 +309,7 @@ export async function initializeStp(
 
   const stpDir = getStpDir(projectPath);
 
-  // Create .stp directory if it doesn't exist
+  // Create .claude-stp directory if it doesn't exist
   if (fs.existsSync(stpDir)) {
     if (await promptShouldOverwriteInstall()) {
       console.log("Removing existing install...");
@@ -354,7 +354,7 @@ export async function initializeStp(
   saveConfig(projectPath, config);
 
   // Update .gitignore to exclude STP files
-  addToGitignore(projectPath, ".stp/");
+  addToGitignore(projectPath, ".claude-stp/");
 
   // Install git post-commit hook
   installGitHook(projectPath);

@@ -104,7 +104,7 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
     return allowResponse();
   }
 
-  // Always allow .stp internal files
+  // Always allow .claude-stp internal files
   if (isStpInternalFile(filePath, cwd)) {
     return allowResponse();
   }

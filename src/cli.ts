@@ -41,7 +41,7 @@ program
     console.log("");
     console.log(`✅ STP initialized with mode ${currentMode.number}: ${currentMode.name}`);
     console.log(`${currentMode.description}`);
-    console.log(`Install directory: .stp/`);
+    console.log(`Install directory: .claude-stp/`);
     console.log(`Git hook: .git/hooks/post-commit\n`);
 
     console.log("Analyzing repo...");

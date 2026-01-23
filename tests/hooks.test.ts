@@ -86,13 +86,13 @@ describe("file-matcher", () => {
   });
 
   describe("isStpInternalFile", () => {
-    it("should return true for files in .stp directory", () => {
-      expect(isStpInternalFile(".stp/config.json", projectPath)).toBe(true);
-      expect(isStpInternalFile(".stp/state.json", projectPath)).toBe(true);
+    it("should return true for files in .claude-stp directory", () => {
+      expect(isStpInternalFile(".claude-stp/config.json", projectPath)).toBe(true);
+      expect(isStpInternalFile(".claude-stp/state.json", projectPath)).toBe(true);
     });
 
-    it("should return true for absolute paths in .stp directory", () => {
-      expect(isStpInternalFile("/Users/test/project/.stp/config.json", projectPath)).toBe(true);
+    it("should return true for absolute paths in .claude-stp directory", () => {
+      expect(isStpInternalFile("/Users/test/project/.claude-stp/config.json", projectPath)).toBe(true);
     });
 
     it("should return false for regular project files", () => {
@@ -107,7 +107,7 @@ describe("preToolUseHook", () => {
 
   beforeEach(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "stp-test-"));
-    stpDir = path.join(tempDir, ".stp");
+    stpDir = path.join(tempDir, ".claude-stp");
     fs.mkdirSync(stpDir, { recursive: true });
 
     // Create config with mode
@@ -156,11 +156,11 @@ describe("preToolUseHook", () => {
     }
   });
 
-  it("should allow writes to .stp directory", () => {
+  it("should allow writes to .claude-stp directory", () => {
     const result = preToolUseHook({
       tool: {
         name: "Write",
-        input: { file_path: path.join(tempDir, ".stp", "config.json"), content: "{}" },
+        input: { file_path: path.join(tempDir, ".claude-stp", "config.json"), content: "{}" },
       },
       cwd: tempDir,
     });
@@ -235,7 +235,7 @@ describe("preToolUseHook", () => {
       expect(result.message).toContain("50%");
     });
 
-    it("should always allow writes to .stp even with unhealthy ratio", () => {
+    it("should always allow writes to .claude-stp even with unhealthy ratio", () => {
       // Initialize git repo
       const { execSync } = require("child_process");
       execSync("git init", { cwd: tempDir, stdio: "ignore" });
@@ -260,7 +260,7 @@ describe("preToolUseHook", () => {
       const result = preToolUseHook({
         tool: {
           name: "Write",
-          input: { file_path: path.join(tempDir, ".stp", "state.json"), content: "{}" },
+          input: { file_path: path.join(tempDir, ".claude-stp", "state.json"), content: "{}" },
         },
         cwd: tempDir,
       });

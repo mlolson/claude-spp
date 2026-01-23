@@ -25,7 +25,7 @@ describe("Initialization", () => {
   });
 
   describe("initializeStp", () => {
-    it("creates .stp directory", async () => {
+    it("creates .claude-stp directory", async () => {
       await initializeStp(TEST_DIR, 4, "oneWeek");
       expect(fs.existsSync(getStpDir(TEST_DIR))).toBe(true);
     });
@@ -52,9 +52,9 @@ describe("Initialization", () => {
       expect(isFullyInitialized(TEST_DIR)).toBe(false);
     });
 
-    it("returns true when .stp directory exists", () => {
+    it("returns true when .claude-stp directory exists", () => {
       fs.mkdirSync(getStpDir(TEST_DIR), { recursive: true });
-      // isFullyInitialized just checks for .stp directory existence
+      // isFullyInitialized just checks for .claude-stp directory existence
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
 
@@ -83,7 +83,7 @@ describe("Initialization", () => {
   });
 
   describe("Component checks", () => {
-    it("isStpInitialized checks .stp directory", () => {
+    it("isStpInitialized checks .claude-stp directory", () => {
       expect(isStpInitialized(TEST_DIR)).toBe(false);
 
       fs.mkdirSync(getStpDir(TEST_DIR), { recursive: true });

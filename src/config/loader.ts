@@ -2,11 +2,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { ConfigSchema, DEFAULT_CONFIG, type Config } from "./schema.js";
 
-const STP_DIR = ".stp";
+const STP_DIR = ".claude-stp";
 const CONFIG_FILE = "config.json";
 
 /**
- * Get the path to the .stp directory for a project
+ * Get the path to the .claude-stp directory for a project
  */
 export function getStpDir(projectPath: string): string {
   return path.join(projectPath, STP_DIR);
@@ -70,7 +70,7 @@ export function saveConfig(projectPath: string, config: Config): void {
   const stpDir = getStpDir(projectPath);
   const configPath = getConfigPath(projectPath);
 
-  // Ensure .stp directory exists
+  // Ensure .claude-stp directory exists
   if (!fs.existsSync(stpDir)) {
     fs.mkdirSync(stpDir, { recursive: true });
   }

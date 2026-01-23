@@ -1,5 +1,5 @@
 dist/
-.stp/
+.claude-stp/
 .vscode/
 .claude/
 node_modules/

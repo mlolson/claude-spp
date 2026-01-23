@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { execSync } from "node:child_process";
 import { z } from "zod";
 
-const CACHE_FILE = ".stp/.git_history_cache.json";
+const CACHE_FILE = ".claude-stp/.git_history_cache.json";
 
 /**
  * Cache schema for git history line counts

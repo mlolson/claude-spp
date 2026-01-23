@@ -4,7 +4,7 @@ description: Initialize STP in the current project
 
 # STP Init Skill
 
-Initialize STP mode in the current project. This creates the `.stp/` directory with configuration and state tracking.
+Initialize STP mode in the current project. This creates the `.claude-stp/` directory with configuration and state tracking.
 
 ## Steps
 

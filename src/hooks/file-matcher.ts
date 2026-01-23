@@ -102,9 +102,9 @@ export function fileMatchesPatterns(
 }
 
 /**
- * Check if a file path is within the .stp directory
+ * Check if a file path is within the .claude-stp directory
  */
 export function isStpInternalFile(filePath: string, projectPath: string): boolean {
   const normalizedFile = normalizeFilePath(filePath, projectPath);
-  return normalizedFile.startsWith(".stp/") || normalizedFile === ".stp";
+  return normalizedFile.startsWith(".claude-stp/") || normalizedFile === ".claude-stp";
 }
