@@ -118,7 +118,9 @@ export function formatStats(stats: StatsResult): string {
 
   // Build status line
   let statusLine: string;
-  if (stats.ratioHealthy) {
+  if (claudeValue + humanValue === 0) {
+    statusLine = `✅ 🐒 No ${trackingMode} tracked yet. Go commit some code and check again.`;
+  } else if (stats.ratioHealthy) {
     statusLine = `✅ 🐒 Human coding on target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Keep up the great work!`;
   } else {
     // Calculate how many more commits/lines needed to catch up
@@ -158,7 +160,7 @@ export function formatStats(stats: StatsResult): string {
           ? commitInfo.title.substring(0, 16) + "..."
           : commitInfo.title;
         const dateStr = commitInfo.date.toLocaleDateString();
-        trackingValue = `${trackingLabel} (Since ${commitInfo.shortHash} "${truncatedTitle}" ${dateStr})`;
+        trackingValue = `${trackingLabel} since: ${commitInfo.shortHash} "${truncatedTitle}" ${dateStr}`;
       }
     }
   }

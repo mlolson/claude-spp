@@ -199,7 +199,7 @@ async function promptForMode(): Promise<number> {
   let modeNumber = undefined;
 
   while (modeNumber === undefined) {
-    const userResponse = await promptUser(`Select a mode [1-${MODES.length}, or press Enter for 50-50]: `);
+    const userResponse = await promptUser(`Select a mode [1-${MODES.length}, or press Enter for ${MODES[DEFAULT_CONFIG.mode-1].description}]: `);
     if (userResponse === "") {
       modeNumber = DEFAULT_CONFIG.mode;
     } else {

@@ -112,7 +112,7 @@ export type Config = z.infer<typeof ConfigSchema>;
  */
 export const DEFAULT_CONFIG: Config = {
   enabled: true,
-  mode: 4, // 50-50
+  mode: 3, 
   statsWindow: "oneWeek",
   trackingMode: "commits",
 };
