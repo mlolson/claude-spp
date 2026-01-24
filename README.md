@@ -114,7 +114,7 @@ After you commit, a post-commit hook prints out current stats:
 
 2. Install the CLI globally
 ```bash
-npm i -g git+https://github.com/mlolson/claude-spp.git
+npm i -g claude-spp
 ```
 
 3. Initialize SPP in your project:
