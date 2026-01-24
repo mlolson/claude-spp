@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as readline from "node:readline";
 import { execSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { loadConfig, saveConfig, isSppInitialized, getSppDir } from "./config/loader.js";
 import {
   DEFAULT_CONFIG,
@@ -91,7 +92,10 @@ export function installGitHook(projectPath: string): void {
 
   const gitHooksDir = path.join(projectPath, ".git", "hooks");
   const hookPath = path.join(gitHooksDir, "post-commit");
-  const sourceHook = path.join(projectPath, "src", "git", "hooks", "post-commit");
+
+  // Resolve hook source relative to this module (in the installed package)
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const sourceHook = path.join(__dirname, "git", "hooks", "post-commit");
 
   // Check if source hook exists
   if (!fs.existsSync(sourceHook)) {
