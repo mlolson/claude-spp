@@ -221,7 +221,7 @@ async function promptForMode(): Promise<number> {
   let modeNumber = undefined;
 
   while (modeNumber === undefined) {
-    const userResponse = await promptUser(`Select a mode [1-${MODES.length}, or press Enter for ${MODES[DEFAULT_CONFIG.mode-1].description}]: `);
+    const userResponse = await promptUser(`Select a mode [1-${MODES.length}, or press Enter for ${MODES[DEFAULT_CONFIG.mode - 1].description}]: `);
     if (userResponse === "") {
       modeNumber = DEFAULT_CONFIG.mode;
     } else {
@@ -302,7 +302,7 @@ async function promptShouldOverwriteInstall(): Promise<boolean> {
  * Prompt user to select VCS type
  */
 async function promptForVcsType(): Promise<VcsType> {
-  console.log("\nVersion control system:\n");
+  console.log("\nVersion control system for this repo:\n");
   console.log("  1. Git (default)");
   console.log("  2. Mercurial (hg)");
   console.log("");
@@ -349,6 +349,17 @@ export async function initializeSpp(
   trackingMode?: TrackingMode,
   vcsType?: VcsType
 ): Promise<Config> {
+  console.log([
+    "",
+    "                _____ ____  ____",
+    "      _        / ___// __ \\/ __ \\",
+    "     c -.      \\__ \\/ /_/ / /_/ /",
+    "\\_   / \\      ___/ / ____/ ____/ ",
+    "  \\_| ||     /____/_/   /_/      ",
+    "",
+    "Simian Programmer Plugin for Claude AI: For monkeys who like to code",
+    ""
+  ].join("\n"));
   // Prompt for VCS type if not provided
   const selectedVcsType = vcsType ?? await promptForVcsType();
 

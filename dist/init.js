@@ -250,7 +250,7 @@ async function promptShouldOverwriteInstall() {
  * Prompt user to select VCS type
  */
 async function promptForVcsType() {
-    console.log("\nVersion control system:\n");
+    console.log("\nVersion control system for this repo:\n");
     console.log("  1. Git (default)");
     console.log("  2. Mercurial (hg)");
     console.log("");
@@ -287,6 +287,17 @@ export async function promptUser(prompt) {
  * @param vcsType Optional VCS type to skip the VCS prompt
  */
 export async function initializeSpp(projectPath, modeNumber, statsWindow, trackingMode, vcsType) {
+    console.log([
+        "",
+        "                _____ ____  ____",
+        "      _        / ___// __ \\/ __ \\",
+        "     c -.      \\__ \\/ /_/ / /_/ /",
+        "\\_   / \\      ___/ / ____/ ____/ ",
+        "  \\_| ||     /____/_/   /_/      ",
+        "",
+        "Simian Programmer Plugin for Claude AI: For monkeys who like to code",
+        ""
+    ].join("\n"));
     // Prompt for VCS type if not provided
     const selectedVcsType = vcsType ?? await promptForVcsType();
     // Ensure spp command is installed globally (required for hooks)
