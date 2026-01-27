@@ -216,7 +216,15 @@ export class GitProvider {
         }
         const head = this.getHeadCommitHash(projectPath);
         if (!head) {
-            throw new Error("Head commit not found");
+            // Empty repo with no commits - return zero counts
+            return {
+                humanLines: 0,
+                claudeLines: 0,
+                humanCommits: 0,
+                claudeCommits: 0,
+                fromCache: false,
+                commitsScanned: 0,
+            };
         }
         const currentGitUser = this.getCurrentUserEmail(projectPath);
         const cache = this.loadCache(projectPath);
@@ -280,7 +288,15 @@ export class GitProvider {
         }
         const head = this.getHeadCommitHash(projectPath);
         if (!head) {
-            throw new Error("Head commit not found");
+            // Empty repo with no commits - return zero counts
+            return {
+                humanLines: 0,
+                claudeLines: 0,
+                humanCommits: 0,
+                claudeCommits: 0,
+                fromCache: false,
+                commitsScanned: 0,
+            };
         }
         const startCommit = options.afterCommit ?? null;
         const commits = this.getCommitRange(projectPath, startCommit, head, options.since ?? undefined);

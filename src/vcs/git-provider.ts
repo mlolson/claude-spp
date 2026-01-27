@@ -261,7 +261,15 @@ export class GitProvider implements VcsProvider {
 
     const head = this.getHeadCommitHash(projectPath);
     if (!head) {
-      throw new Error("Head commit not found");
+      // Empty repo with no commits - return zero counts
+      return {
+        humanLines: 0,
+        claudeLines: 0,
+        humanCommits: 0,
+        claudeCommits: 0,
+        fromCache: false,
+        commitsScanned: 0,
+      };
     }
 
     const currentGitUser = this.getCurrentUserEmail(projectPath);
@@ -339,7 +347,15 @@ export class GitProvider implements VcsProvider {
 
     const head = this.getHeadCommitHash(projectPath);
     if (!head) {
-      throw new Error("Head commit not found");
+      // Empty repo with no commits - return zero counts
+      return {
+        humanLines: 0,
+        claudeLines: 0,
+        humanCommits: 0,
+        claudeCommits: 0,
+        fromCache: false,
+        commitsScanned: 0,
+      };
     }
 
     const startCommit = options.afterCommit ?? null;

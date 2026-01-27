@@ -304,7 +304,14 @@ export class HgProvider implements VcsProvider {
 
     const head = this.getHeadCommitHash(projectPath);
     if (!head) {
-      throw new Error("Head commit not found");
+      return {
+        humanLines: 0,
+        claudeLines: 0,
+        humanCommits: 0,
+        claudeCommits: 0,
+        fromCache: false,
+        commitsScanned: 0,
+      };
     }
 
     const currentUser = this.getCurrentUserEmail(projectPath);
@@ -382,7 +389,14 @@ export class HgProvider implements VcsProvider {
 
     const head = this.getHeadCommitHash(projectPath);
     if (!head) {
-      throw new Error("Head commit not found");
+      return {
+        humanLines: 0,
+        claudeLines: 0,
+        humanCommits: 0,
+        claudeCommits: 0,
+        fromCache: false,
+        commitsScanned: 0,
+      };
     }
 
     const startCommit = options.afterCommit ?? null;
