@@ -145,3 +145,41 @@ spp init
 |---------|-------------|
 | `/spp:stats` | Show current coding stats |
 | `/spp:help` | Get help with the CLI interface |
+
+## Configuration
+
+### Config file location
+
+SPP stores its configuration in a `.claude-spp/` directory. The location is determined as follows:
+
+1. **Local** (default): `.claude-spp/` in your project root
+2. **Fallback**: `~/.claude-spp-configs/<project-name>/.claude-spp/`
+
+The fallback location is useful for ephemeral environments (like cloud VMs) where the project directory may not persist between sessions, but your home directory does.
+
+### Config options
+
+The config is stored in `.claude-spp/config.json`:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Whether SPP enforcement is active. Set to `false` when paused. |
+| `mode` | number | `3` | The coding mode (1-5). See modes table above. |
+| `statsWindow` | string | `"oneWeek"` | Time window for tracking. Options: `"oneDay"`, `"oneWeek"`, `"allTime"` |
+| `trackingMode` | string | `"commits"` | What to count for ratio. Options: `"commits"`, `"lines"` |
+| `pausedUntil` | string | _(none)_ | ISO timestamp when pause expires. Set by `spp pause`. |
+| `trackingStartCommit` | string | _(none)_ | Commit hash to start tracking from. Commits before this are ignored. |
+| `vcsType` | string | _(none)_ | Version control system. Options: `"git"`, `"hg"` |
+
+### Example config
+
+```json
+{
+  "enabled": true,
+  "mode": 3,
+  "statsWindow": "oneWeek",
+  "trackingMode": "commits",
+  "trackingStartCommit": "a1b2c3d4e5f6...",
+  "vcsType": "git"
+}
+```
