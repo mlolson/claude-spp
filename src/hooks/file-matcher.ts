@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import { getSppDir } from "../config/loader.js";
 
 /**
  * Normalize a file path to be relative to the project root
@@ -103,8 +104,13 @@ export function fileMatchesPatterns(
 
 /**
  * Check if a file path is within the .claude-spp directory
+ * Handles both local and external (fallback) SPP directories
  */
 export function isSppInternalFile(filePath: string, projectPath: string): boolean {
-  const normalizedFile = normalizeFilePath(filePath, projectPath);
-  return normalizedFile.startsWith(".claude-spp/") || normalizedFile === ".claude-spp";
+  const sppDir = getSppDir(projectPath);
+  const absoluteFilePath = path.isAbsolute(filePath) ? filePath : path.join(projectPath, filePath);
+  const resolvedFilePath = path.resolve(absoluteFilePath);
+  const resolvedSppDir = path.resolve(sppDir);
+
+  return resolvedFilePath.startsWith(resolvedSppDir + path.sep) || resolvedFilePath === resolvedSppDir;
 }

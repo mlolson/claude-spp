@@ -5,12 +5,8 @@ import { type Config, type StatsWindow, type TrackingMode, type VcsType } from "
  */
 export declare function installGitHook(projectPath: string): void;
 /**
- * Install mercurial post-commit hook for tracking human lines
- * Mercurial hooks are configured in .hg/hgrc
- */
-export declare function installHgHook(projectPath: string): void;
-/**
  * Install VCS hook based on detected VCS type
+ * Note: Only Git hooks are supported currently
  */
 export declare function installVcsHook(projectPath: string, vcsType: VcsType): void;
 export declare function promptUser(prompt: string): Promise<string>;

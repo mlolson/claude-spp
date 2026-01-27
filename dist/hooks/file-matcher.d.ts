@@ -17,6 +17,7 @@ export declare function fileMatchesPattern(filePath: string, pattern: string, pr
 export declare function fileMatchesPatterns(filePath: string, patterns: string[], projectPath: string): boolean;
 /**
  * Check if a file path is within the .claude-spp directory
+ * Handles both local and external (fallback) SPP directories
  */
 export declare function isSppInternalFile(filePath: string, projectPath: string): boolean;
 //# sourceMappingURL=file-matcher.d.ts.map

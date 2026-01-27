@@ -2,7 +2,8 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
 import { VcsHistoryCacheSchema, } from "./types.js";
-const CACHE_FILE = ".claude-spp/.vcs_history_cache.json";
+import { getSppDir } from "../config/loader.js";
+const CACHE_FILENAME = ".vcs_history_cache.json";
 /**
  * Mercurial VCS Provider implementation
  */
@@ -204,7 +205,7 @@ export class HgProvider {
         return { added, removed };
     }
     getCachePath(projectPath) {
-        return path.join(projectPath, CACHE_FILE);
+        return path.join(getSppDir(projectPath), CACHE_FILENAME);
     }
     loadCache(projectPath) {
         const cachePath = this.getCachePath(projectPath);

@@ -12,7 +12,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && cp -r src/git/hooks dist/git/ && mkdir -p dist/vcs/hooks && cp -r src/vcs/hooks/* dist/vcs/hooks/",
+    "build": "tsc && cp -r src/git/hooks dist/git/",
     "dev": "tsc --watch",
     "lint": "eslint src",
     "test": "vitest run",

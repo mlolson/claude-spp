@@ -9,8 +9,9 @@ import {
   type CommitWithParent,
   VcsHistoryCacheSchema,
 } from "./types.js";
+import { getSppDir } from "../config/loader.js";
 
-const CACHE_FILE = ".claude-spp/.vcs_history_cache.json";
+const CACHE_FILENAME = ".vcs_history_cache.json";
 
 /**
  * Git VCS Provider implementation
@@ -198,7 +199,7 @@ export class GitProvider implements VcsProvider {
   }
 
   private getCachePath(projectPath: string): string {
-    return path.join(projectPath, CACHE_FILE);
+    return path.join(getSppDir(projectPath), CACHE_FILENAME);
   }
 
   private loadCache(projectPath: string): VcsHistoryCache | null {

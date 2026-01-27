@@ -126,83 +126,14 @@ export function installGitHook(projectPath: string): void {
 }
 
 /**
- * Install mercurial post-commit hook for tracking human lines
- * Mercurial hooks are configured in .hg/hgrc
- */
-export function installHgHook(projectPath: string): void {
-  const hgrcPath = path.join(projectPath, ".hg", "hgrc");
-
-  // Resolve hook source relative to this module (in the installed package)
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const sourceHook = path.join(__dirname, "vcs", "hooks", "hg-post-commit");
-
-  // Check if source hook exists
-  if (!fs.existsSync(sourceHook)) {
-    throw new Error(`Source hook not found at: ${sourceHook}`);
-  }
-
-  // Read source hook content
-  const hookContent = fs.readFileSync(sourceHook, "utf-8");
-
-  // Create hook script in .claude-spp directory
-  const sppHookPath = path.join(projectPath, ".claude-spp", "hg-post-commit");
-  const hookScript = "#!/bin/bash\n" + hookContent;
-  fs.writeFileSync(sppHookPath, hookScript, "utf-8");
-  fs.chmodSync(sppHookPath, 0o755);
-
-  // Update .hg/hgrc to include the hook
-  let hgrcContent = "";
-  if (fs.existsSync(hgrcPath)) {
-    hgrcContent = fs.readFileSync(hgrcPath, "utf-8");
-  }
-
-  // Check if hook is already configured
-  if (hgrcContent.includes(".claude-spp/hg-post-commit")) {
-    console.log("Mercurial hook already configured in .hg/hgrc");
-    return;
-  }
-
-  // Add hooks section if not present
-  if (!hgrcContent.includes("[hooks]")) {
-    hgrcContent = hgrcContent.trimEnd() + "\n\n[hooks]\n";
-  }
-
-  // Add post-commit hook
-  // Find the [hooks] section and add our hook
-  const hooksIndex = hgrcContent.indexOf("[hooks]");
-  const afterHooksSection = hgrcContent.indexOf("\n[", hooksIndex + 1);
-  const insertPosition = afterHooksSection === -1 ? hgrcContent.length : afterHooksSection;
-
-  const hookLine = `post-commit.spp = ${sppHookPath}\n`;
-
-  // Check if there's already content after [hooks]
-  const hooksContent = hgrcContent.slice(hooksIndex + "[hooks]".length, insertPosition);
-  if (hooksContent.trim()) {
-    // There's existing content, just append
-    hgrcContent = hgrcContent.slice(0, insertPosition) + hookLine + hgrcContent.slice(insertPosition);
-  } else {
-    // No existing content after [hooks], add with newline
-    hgrcContent = hgrcContent.slice(0, hooksIndex + "[hooks]".length) + "\n" + hookLine + hgrcContent.slice(insertPosition);
-  }
-
-  fs.writeFileSync(hgrcPath, hgrcContent, "utf-8");
-  console.log("Mercurial post-commit hook installed in .hg/hgrc");
-}
-
-/**
  * Install VCS hook based on detected VCS type
+ * Note: Only Git hooks are supported currently
  */
 export function installVcsHook(projectPath: string, vcsType: VcsType): void {
-  switch (vcsType) {
-    case "git":
-      installGitHook(projectPath);
-      break;
-    case "hg":
-      installHgHook(projectPath);
-      break;
-    default:
-      throw new Error(`Unsupported VCS type: ${vcsType}`);
+  if (vcsType === "git") {
+    installGitHook(projectPath);
   }
+  // Mercurial does not use a post-commit hook
 }
 
 /**
