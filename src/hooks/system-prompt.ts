@@ -1,7 +1,7 @@
 import { loadConfig, isSppInitialized } from "../config/loader.js";
 import { calculateRatio, isRatioHealthy } from "../stats.js";
 import { getEffectiveRatio, getCurrentMode, type TrackingMode } from "../config/schema.js";
-import { getLineCounts } from "../git/history.js";
+import { getLineCounts } from "../vcs/index.js";
 
 /**
  * Calculate how many more commits/lines the human needs to reach the target ratio
@@ -57,7 +57,7 @@ export function generateSystemPrompt(projectPath: string): string {
     `- **Status:** ${isHealthy ? "✅ Healthy" : "⚠️ Below target"}`,
     "",
     "A note on SPP tracking:",
-    "SPP tracks commits in git history, within a window and/or after a starting commit.",
+    "SPP tracks commits in VCS history (git or mercurial), within a window and/or after a starting commit.",
     "Commits that include 'Co-authored by: Claude...' in the message are counted as Claude commits.",
     "Commits without that phrase are counted as human commits.",
     "Therefore, if asked to commit human authored code, don't include the 'Co-authored by: Claude...' phrase",

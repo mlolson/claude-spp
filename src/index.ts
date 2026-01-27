@@ -12,12 +12,15 @@ export {
   isRatioHealthy,
 } from "./stats.js";
 
-// Git History
+// VCS History (Git and Mercurial)
 export {
   getLineCounts,
   clearCache,
+  getProvider,
   type LineCounts,
-} from "./git/history.js";
+  type VcsType,
+  type VcsProvider,
+} from "./vcs/index.js";
 
 // Initialization
 export { initializeSpp, isFullyInitialized, ensureInitialized } from "./init.js";

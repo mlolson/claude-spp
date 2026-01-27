@@ -31,6 +31,11 @@ export type StatsWindow = z.infer<typeof StatsWindowSchema>;
 export declare const TrackingModeSchema: z.ZodEnum<["commits", "lines"]>;
 export type TrackingMode = z.infer<typeof TrackingModeSchema>;
 /**
+ * VCS type options
+ */
+export declare const VcsTypeSchema: z.ZodEnum<["git", "hg"]>;
+export type VcsType = z.infer<typeof VcsTypeSchema>;
+/**
  * Human-readable labels for tracking modes
  */
 export declare const TRACKING_MODE_LABELS: Record<TrackingMode, string>;
@@ -53,6 +58,7 @@ export declare const ConfigSchema: z.ZodObject<{
     trackingMode: z.ZodDefault<z.ZodEnum<["commits", "lines"]>>;
     pausedUntil: z.ZodOptional<z.ZodString>;
     trackingStartCommit: z.ZodOptional<z.ZodString>;
+    vcsType: z.ZodOptional<z.ZodEnum<["git", "hg"]>>;
 }, "strip", z.ZodTypeAny, {
     enabled: boolean;
     mode: number;
@@ -60,6 +66,7 @@ export declare const ConfigSchema: z.ZodObject<{
     trackingMode: "commits" | "lines";
     pausedUntil?: string | undefined;
     trackingStartCommit?: string | undefined;
+    vcsType?: "git" | "hg" | undefined;
 }, {
     enabled?: boolean | undefined;
     mode?: number | undefined;
@@ -67,6 +74,7 @@ export declare const ConfigSchema: z.ZodObject<{
     trackingMode?: "commits" | "lines" | undefined;
     pausedUntil?: string | undefined;
     trackingStartCommit?: string | undefined;
+    vcsType?: "git" | "hg" | undefined;
 }>;
 export type Config = z.infer<typeof ConfigSchema>;
 /**

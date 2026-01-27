@@ -1,6 +1,6 @@
 import { loadConfig, isSppInitialized } from "./config/loader.js";
 import { getEffectiveRatio, getCurrentMode, getStatsWindowCutoff, STATS_WINDOW_LABELS, TRACKING_MODE_LABELS, } from "./config/schema.js";
-import { getLineCountsWithWindow, getCommitInfo } from "./git/history.js";
+import { getLineCountsWithWindow, getCommitInfo } from "./vcs/index.js";
 /**
  * Calculate the current human work ratio from line counts
  * Returns 1.0 if no work has been done yet (human is at 100% until Claude does something)

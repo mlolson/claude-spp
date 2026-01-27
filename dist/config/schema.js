@@ -30,6 +30,10 @@ export const StatsWindowSchema = z.enum(["oneDay", "oneWeek", "allTime"]);
  */
 export const TrackingModeSchema = z.enum(["commits", "lines"]);
 /**
+ * VCS type options
+ */
+export const VcsTypeSchema = z.enum(["git", "hg"]);
+/**
  * Human-readable labels for tracking modes
  */
 export const TRACKING_MODE_LABELS = {
@@ -73,10 +77,12 @@ export const ConfigSchema = z.object({
     trackingMode: TrackingModeSchema.default("commits"),
     // ISO timestamp when SPP pause expires (set by pause command)
     pausedUntil: z.string().optional(),
-    // Git commit hash of the last commit to exclude from tracking
+    // VCS commit hash of the last commit to exclude from tracking
     // Set to the 10th commit hash once we reach MIN_COMMITS_FOR_TRACKING
     // Stats only include commits after this one
     trackingStartCommit: z.string().optional(),
+    // VCS type (git or hg) - auto-detected if not set
+    vcsType: VcsTypeSchema.optional(),
 });
 /**
  * Default configuration values

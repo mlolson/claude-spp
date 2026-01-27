@@ -9,7 +9,7 @@ import {
   type StatsWindow,
   type TrackingMode,
 } from "./config/schema.js";
-import { getLineCountsWithWindow, getCommitInfo } from "./git/history.js";
+import { getLineCountsWithWindow, getCommitInfo } from "./vcs/index.js";
 
 /**
  * Calculate the current human work ratio from line counts

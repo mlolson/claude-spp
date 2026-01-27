@@ -2,8 +2,8 @@
 export { loadConfig, saveConfig, isSppInitialized, getSppDir } from "./config/loader.js";
 export { ConfigSchema, DEFAULT_CONFIG, getEffectiveRatio, } from "./config/schema.js";
 export { calculateRatio, isRatioHealthy, } from "./stats.js";
-// Git History
-export { getLineCounts, clearCache, } from "./git/history.js";
+// VCS History (Git and Mercurial)
+export { getLineCounts, clearCache, getProvider, } from "./vcs/index.js";
 // Initialization
 export { initializeSpp, isFullyInitialized, ensureInitialized } from "./init.js";
 // Commands

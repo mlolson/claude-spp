@@ -48,6 +48,12 @@ export const TrackingModeSchema = z.enum(["commits", "lines"]);
 export type TrackingMode = z.infer<typeof TrackingModeSchema>;
 
 /**
+ * VCS type options
+ */
+export const VcsTypeSchema = z.enum(["git", "hg"]);
+export type VcsType = z.infer<typeof VcsTypeSchema>;
+
+/**
  * Human-readable labels for tracking modes
  */
 export const TRACKING_MODE_LABELS: Record<TrackingMode, string> = {
@@ -99,10 +105,13 @@ export const ConfigSchema = z.object({
   // ISO timestamp when SPP pause expires (set by pause command)
   pausedUntil: z.string().optional(),
 
-  // Git commit hash of the last commit to exclude from tracking
+  // VCS commit hash of the last commit to exclude from tracking
   // Set to the 10th commit hash once we reach MIN_COMMITS_FOR_TRACKING
   // Stats only include commits after this one
   trackingStartCommit: z.string().optional(),
+
+  // VCS type (git or hg) - auto-detected if not set
+  vcsType: VcsTypeSchema.optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

@@ -5,41 +5,32 @@ import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { loadConfig, saveConfig, isSppInitialized, getSppDir } from "./config/loader.js";
 import { DEFAULT_CONFIG, MODES, STATS_WINDOW_LABELS, StatsWindowSchema, TRACKING_MODE_LABELS, TrackingModeSchema, } from "./config/schema.js";
-import { getTotalCommitCount, getHeadCommitHash } from "./git/history.js";
+import { getTotalCommitCount, getHeadCommitHash, } from "./vcs/index.js";
 /**
- * Add an entry to .gitignore
- * Creates .gitignore if it doesn't exist
+ * Add an entry to .gitignore or .hgignore
+ * Creates the ignore file if it doesn't exist
  */
-function addToGitignore(projectPath, entry) {
-    const gitignorePath = path.join(projectPath, ".gitignore");
-    if (!fs.existsSync(gitignorePath)) {
-        console.log("Creating .gitignore...");
-        fs.writeFileSync(gitignorePath, entry + "\n", "utf-8");
-        console.log(`Added "${entry}" to .gitignore`);
+function addToIgnoreFile(projectPath, entry, vcsType) {
+    const ignoreFileName = vcsType === "git" ? ".gitignore" : ".hgignore";
+    const ignorePath = path.join(projectPath, ignoreFileName);
+    if (!fs.existsSync(ignorePath)) {
+        console.log(`Creating ${ignoreFileName}...`);
+        // For .hgignore, we need to specify syntax
+        const content = vcsType === "hg" ? `syntax: glob\n${entry}\n` : `${entry}\n`;
+        fs.writeFileSync(ignorePath, content, "utf-8");
+        console.log(`Added "${entry}" to ${ignoreFileName}`);
         return;
     }
-    const content = fs.readFileSync(gitignorePath, "utf-8");
+    const content = fs.readFileSync(ignorePath, "utf-8");
     const lines = content.split("\n").map(line => line.trim());
     if (lines.includes(entry)) {
-        console.log(`"${entry}" already in .gitignore`);
+        console.log(`"${entry}" already in ${ignoreFileName}`);
         return;
     }
-    console.log(`Adding "${entry}" to .gitignore...`);
+    console.log(`Adding "${entry}" to ${ignoreFileName}...`);
     const newContent = content.trimEnd() + "\n" + entry + "\n";
-    fs.writeFileSync(gitignorePath, newContent, "utf-8");
-    console.log(`Added "${entry}" to .gitignore`);
-}
-/**
- * Check if we're in a git repository
- */
-function isGitRepo(projectPath) {
-    try {
-        execSync("git rev-parse --git-dir", { cwd: projectPath, stdio: "ignore" });
-        return true;
-    }
-    catch {
-        return false;
-    }
+    fs.writeFileSync(ignorePath, newContent, "utf-8");
+    console.log(`Added "${entry}" to ${ignoreFileName}`);
 }
 /**
  * Check if the spp command is available globally
@@ -67,10 +58,6 @@ function ensureGlobalInstall() {
  * @throws Error if not in a git repository
  */
 export function installGitHook(projectPath) {
-    // Verify this is a git repo
-    if (!isGitRepo(projectPath)) {
-        throw new Error("Not a git repository. Initialize git first with: git init");
-    }
     const gitHooksDir = path.join(projectPath, ".git", "hooks");
     const hookPath = path.join(gitHooksDir, "post-commit");
     // Resolve hook source relative to this module (in the installed package)
@@ -110,6 +97,74 @@ export function installGitHook(projectPath) {
     }
     // Ensure the file is executable
     fs.chmodSync(hookPath, 0o755);
+}
+/**
+ * Install mercurial post-commit hook for tracking human lines
+ * Mercurial hooks are configured in .hg/hgrc
+ */
+export function installHgHook(projectPath) {
+    const hgrcPath = path.join(projectPath, ".hg", "hgrc");
+    // Resolve hook source relative to this module (in the installed package)
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const sourceHook = path.join(__dirname, "vcs", "hooks", "hg-post-commit");
+    // Check if source hook exists
+    if (!fs.existsSync(sourceHook)) {
+        throw new Error(`Source hook not found at: ${sourceHook}`);
+    }
+    // Read source hook content
+    const hookContent = fs.readFileSync(sourceHook, "utf-8");
+    // Create hook script in .claude-spp directory
+    const sppHookPath = path.join(projectPath, ".claude-spp", "hg-post-commit");
+    const hookScript = "#!/bin/bash\n" + hookContent;
+    fs.writeFileSync(sppHookPath, hookScript, "utf-8");
+    fs.chmodSync(sppHookPath, 0o755);
+    // Update .hg/hgrc to include the hook
+    let hgrcContent = "";
+    if (fs.existsSync(hgrcPath)) {
+        hgrcContent = fs.readFileSync(hgrcPath, "utf-8");
+    }
+    // Check if hook is already configured
+    if (hgrcContent.includes(".claude-spp/hg-post-commit")) {
+        console.log("Mercurial hook already configured in .hg/hgrc");
+        return;
+    }
+    // Add hooks section if not present
+    if (!hgrcContent.includes("[hooks]")) {
+        hgrcContent = hgrcContent.trimEnd() + "\n\n[hooks]\n";
+    }
+    // Add post-commit hook
+    // Find the [hooks] section and add our hook
+    const hooksIndex = hgrcContent.indexOf("[hooks]");
+    const afterHooksSection = hgrcContent.indexOf("\n[", hooksIndex + 1);
+    const insertPosition = afterHooksSection === -1 ? hgrcContent.length : afterHooksSection;
+    const hookLine = `post-commit.spp = ${sppHookPath}\n`;
+    // Check if there's already content after [hooks]
+    const hooksContent = hgrcContent.slice(hooksIndex + "[hooks]".length, insertPosition);
+    if (hooksContent.trim()) {
+        // There's existing content, just append
+        hgrcContent = hgrcContent.slice(0, insertPosition) + hookLine + hgrcContent.slice(insertPosition);
+    }
+    else {
+        // No existing content after [hooks], add with newline
+        hgrcContent = hgrcContent.slice(0, hooksIndex + "[hooks]".length) + "\n" + hookLine + hgrcContent.slice(insertPosition);
+    }
+    fs.writeFileSync(hgrcPath, hgrcContent, "utf-8");
+    console.log("Mercurial post-commit hook installed in .hg/hgrc");
+}
+/**
+ * Install VCS hook based on detected VCS type
+ */
+export function installVcsHook(projectPath, vcsType) {
+    switch (vcsType) {
+        case "git":
+            installGitHook(projectPath);
+            break;
+        case "hg":
+            installHgHook(projectPath);
+            break;
+        default:
+            throw new Error(`Unsupported VCS type: ${vcsType}`);
+    }
 }
 /**
  * Prompt user to select a mode interactively
@@ -191,6 +246,25 @@ async function promptShouldOverwriteInstall() {
     const answer = await promptUser("An SPP installation already exists. Overwrite it? N/Y\n");
     return answer.toLowerCase() === "y";
 }
+/**
+ * Prompt user to select VCS type
+ */
+async function promptForVcsType() {
+    console.log("\nVersion control system:\n");
+    console.log("  1. Git (default)");
+    console.log("  2. Mercurial (hg)");
+    console.log("");
+    while (true) {
+        const userResponse = await promptUser("Select VCS type [1-2, or press Enter for Git]: ");
+        if (userResponse === "" || userResponse === "1") {
+            return "git";
+        }
+        if (userResponse === "2") {
+            return "hg";
+        }
+        console.log(`Invalid choice: ${userResponse}. Must be 1 or 2.`);
+    }
+}
 export async function promptUser(prompt) {
     const rl = readline.createInterface({
         input: process.stdin,
@@ -210,8 +284,11 @@ export async function promptUser(prompt) {
  * @param modeNumber Optional mode number to skip the mode prompt
  * @param statsWindow Optional stats window to skip the stats window prompt
  * @param trackingMode Optional tracking mode to skip the tracking mode prompt
+ * @param vcsType Optional VCS type to skip the VCS prompt
  */
-export async function initializeSpp(projectPath, modeNumber, statsWindow, trackingMode) {
+export async function initializeSpp(projectPath, modeNumber, statsWindow, trackingMode, vcsType) {
+    // Prompt for VCS type if not provided
+    const selectedVcsType = vcsType ?? await promptForVcsType();
     // Ensure spp command is installed globally (required for hooks)
     await ensureGlobalInstall();
     const sppDir = getSppDir(projectPath);
@@ -236,27 +313,28 @@ export async function initializeSpp(projectPath, modeNumber, statsWindow, tracki
     const selectedTrackingMode = trackingMode ?? await promptForTrackingMode();
     // Prompt for stats window if not provided
     const selectedStatsWindow = statsWindow ?? await promptForStatsWindow();
-    // Initialize config
+    // Initialize config with selected VCS type
     const config = {
         ...DEFAULT_CONFIG,
         mode: selectedMode,
         trackingMode: selectedTrackingMode,
         statsWindow: selectedStatsWindow,
+        vcsType: selectedVcsType,
     };
     // For pre-existing repos with commits, set trackingStartCommit to HEAD
     // This gives them a clean slate - only new commits after init will be tracked
-    const totalCommits = getTotalCommitCount(projectPath);
+    const totalCommits = getTotalCommitCount(projectPath, selectedVcsType);
     if (totalCommits > 0) {
-        const headCommit = getHeadCommitHash(projectPath);
+        const headCommit = getHeadCommitHash(projectPath, selectedVcsType);
         if (headCommit) {
             config.trackingStartCommit = headCommit;
         }
     }
     saveConfig(projectPath, config);
-    // Update .gitignore to exclude SPP files
-    addToGitignore(projectPath, ".claude-spp/");
-    // Install git post-commit hook
-    installGitHook(projectPath);
+    // Update ignore file to exclude SPP files
+    addToIgnoreFile(projectPath, ".claude-spp/", selectedVcsType);
+    // Install VCS post-commit hook
+    installVcsHook(projectPath, selectedVcsType);
     return config;
 }
 /**
@@ -268,9 +346,9 @@ export function isFullyInitialized(projectPath) {
 /**
  * Ensure SPP is initialized, initializing if needed
  */
-export async function ensureInitialized(projectPath, modeNumber, statsWindow, trackingMode) {
+export async function ensureInitialized(projectPath, modeNumber, statsWindow, trackingMode, vcsType) {
     if (!isFullyInitialized(projectPath)) {
-        return initializeSpp(projectPath, modeNumber, statsWindow, trackingMode);
+        return initializeSpp(projectPath, modeNumber, statsWindow, trackingMode, vcsType);
     }
     return loadConfig(projectPath);
 }

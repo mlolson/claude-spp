@@ -1,0 +1,7 @@
+# <SPP>
+# Print Claude SPP plugin stats after commit
+if command -v spp &> /dev/null && [ -d "$(hg root)/.claude-spp" ]; then
+  cd "$(hg root)"
+  spp stats
+fi
+# </SPP>

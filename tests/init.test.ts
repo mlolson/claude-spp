@@ -37,23 +37,23 @@ describe("Initialization", () => {
 
   describe("initializeSpp", () => {
     it("creates .claude-spp directory", async () => {
-      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits");
+      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits", "git");
       expect(fs.existsSync(getSppDir(TEST_DIR))).toBe(true);
     });
 
     it("creates config.json", async () => {
-      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits");
+      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits", "git");
       const configPath = path.join(getSppDir(TEST_DIR), "config.json");
       expect(fs.existsSync(configPath)).toBe(true);
     });
 
     it("uses specified mode", async () => {
-      const config = await initializeSpp(TEST_DIR, 3, "oneWeek", "commits");
+      const config = await initializeSpp(TEST_DIR, 3, "oneWeek", "commits", "git");
       expect(config.mode).toBe(3);
     });
 
     it("uses specified statsWindow", async () => {
-      const config = await initializeSpp(TEST_DIR, 4, "oneDay", "commits");
+      const config = await initializeSpp(TEST_DIR, 4, "oneDay", "commits", "git");
       expect(config.statsWindow).toBe("oneDay");
     });
   });
@@ -70,21 +70,21 @@ describe("Initialization", () => {
     });
 
     it("returns true after full initialization", async () => {
-      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits");
+      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits", "git");
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
   });
 
   describe("ensureInitialized", () => {
     it("initializes if not already done", async () => {
-      const config = await ensureInitialized(TEST_DIR, 4, "oneWeek", "commits");
+      const config = await ensureInitialized(TEST_DIR, 4, "oneWeek", "commits", "git");
 
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
       expect(config.enabled).toBe(true);
     });
 
     it("returns existing config if already initialized", async () => {
-      await initializeSpp(TEST_DIR, 5, "allTime", "commits");
+      await initializeSpp(TEST_DIR, 5, "allTime", "commits", "git");
 
       const config = await ensureInitialized(TEST_DIR);
 
