@@ -71,18 +71,66 @@ export function generateSystemPrompt(projectPath) {
     return lines.join("\n");
 }
 /**
+ * Calculate how many commits/lines ahead or behind the human is from the target
+ * Positive = ahead, negative = behind
+ */
+function calculateAheadBehind(humanValue, claudeValue, targetRatio) {
+    const total = humanValue + claudeValue;
+    if (total === 0)
+        return 0;
+    // Target human value = targetRatio * total
+    const targetHumanValue = targetRatio * total;
+    // How many ahead/behind
+    return Math.round(humanValue - targetHumanValue);
+}
+/**
+ * Get the current git user's name
+ */
+function getGitUserName(projectPath) {
+    try {
+        const { execSync } = require("node:child_process");
+        const name = execSync("git config user.name", {
+            cwd: projectPath,
+            encoding: "utf-8",
+        }).trim();
+        // Get first name only
+        return name.split(" ")[0] || "You";
+    }
+    catch {
+        return "You";
+    }
+}
+/**
  * Generate a compact status line for the prompt
+ * Format: 🟢 Matt is 11 commits ahead of goal
+ *         🔴 Matt is 2 commits behind goal
  */
 export function generateStatusLine(projectPath) {
+    if (!isSppInitialized(projectPath)) {
+        return "";
+    }
     const config = loadConfig(projectPath);
     if (!config.enabled) {
         return "";
     }
     const lineCounts = getLineCounts(projectPath);
-    const currentRatio = calculateRatio(lineCounts.humanLines, lineCounts.claudeLines);
+    const trackingMode = config.trackingMode ?? "commits";
+    const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
+    const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
+    const unit = trackingMode === "commits" ? "commits" : "lines";
     const targetRatio = getEffectiveRatio(config);
-    const isHealthy = isRatioHealthy(lineCounts.humanLines, lineCounts.claudeLines, targetRatio);
-    const status = isHealthy ? "✅" : "⚠️";
-    return `[SPP ${status} ${(currentRatio * 100).toFixed(0)}%/${(targetRatio * 100).toFixed(0)}% human]`;
+    const total = humanValue + claudeValue;
+    if (total === 0) {
+        return "⚪ SPP: no commits yet";
+    }
+    const username = getGitUserName(projectPath);
+    const verb = username === "You" ? "are" : "is";
+    const aheadBehind = calculateAheadBehind(humanValue, claudeValue, targetRatio);
+    if (aheadBehind >= 0) {
+        return `🟢 ${username} ${verb} ${aheadBehind} ${unit} ahead of goal`;
+    }
+    else {
+        return `🔴 ${username} ${verb} ${Math.abs(aheadBehind)} ${unit} behind goal`;
+    }
 }
 //# sourceMappingURL=system-prompt.js.map

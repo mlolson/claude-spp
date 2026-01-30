@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { runPreToolUseHook } from "./hooks/pre-tool-use.js";
-import { generateSystemPrompt } from "./hooks/system-prompt.js";
+import { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
 import { initializeSpp, isFullyInitialized, promptUser } from "./init.js";
 import { getHeadCommitHash } from "./vcs/index.js";
 import { loadConfig, saveConfig } from "./config/loader.js";
@@ -162,6 +162,12 @@ program
     .description("Output system prompt injection (internal)")
     .action(() => {
     console.log(generateSystemPrompt(process.cwd()));
+});
+program
+    .command("hook:status-line")
+    .description("Output status line for Claude Code (internal)")
+    .action(() => {
+    console.log(generateStatusLine(process.cwd()));
 });
 program.parseAsync();
 //# sourceMappingURL=cli.js.map

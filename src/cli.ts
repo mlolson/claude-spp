@@ -193,4 +193,11 @@ program
     console.log(generateSystemPrompt(process.cwd()));
   });
 
+program
+  .command("hook:status-line")
+  .description("Output status line for Claude Code (internal)")
+  .action(() => {
+    console.log(generateStatusLine(process.cwd()));
+  });
+
 program.parseAsync();

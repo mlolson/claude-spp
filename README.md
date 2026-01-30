@@ -152,6 +152,23 @@ spp init
 | `/spp:stats` | Show current coding stats |
 | `/spp:help` | Get help with the CLI interface |
 
+### Status line (optional)
+
+You can add SPP status to Claude Code's status line, showing how many commits you are ahead or behind your goal:
+
+```
+🟢 Matt is 11 commits ahead of goal
+🔴 Matt is 2 commits behind goal
+```
+
+To enable, add to `~/.claude/settings.json`:
+
+```json
+{
+  "statusLine": "spp hook:status-line"
+}
+```
+
 ## Configuration
 
 ### Config file location
