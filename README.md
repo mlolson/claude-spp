@@ -1,8 +1,14 @@
+# Over reliance on AI coding tools leads to a decline in programming skills
+
+We've all noticed it, and here's [a study](https://www.anthropic.com/research/AI-assistance-coding-skills) from Anthropic that proves it:
+
+> We find that AI use impairs conceptual understanding, code reading, and debugging abilities, without
+delivering significant efficiency gains on average. Participants who fully delegated coding tasks showed
+some productivity improvements, but at the cost of learning the library.
+
 # Simian Programmer Plugin (SPP) for Claude
 
->  If you’re learning how to play the guitar, you can watch as many YouTube videos as you want, you’re not going to learn the guitar. You have to put your fingers on the strings to actually learn the motions. I think there is a parallel here to programming, where programming has to be learned in part by the actual typing.
-
--[DHH on Lex Friedman](youtube.com/watch?v=vagyIcmIGOQ&t=5408)
+This plugin is designed for humans who want to keep coding and keep their skills sharp, but who don't want to stop using AI tools entirely. The solution is balance. AI can be a crutch doing all the work, or it can be a collaborator that helps you improve. The right level of balance is up to you.
 
 ## How it works
 
