@@ -12,7 +12,7 @@ This plugin is designed for humans who want to keep coding and keep their skills
 
 ## How it works
 
-SPP is a Claude plugin that encourages you to keep writing code. It is configured per-project, and provides 5 modes:
+SPP is a Claude plugin that encourages you to keep writing code. It is configured per-project, and provides 6 modes:
 
 | Mode | Description |
 |------|-------------|
@@ -21,6 +21,7 @@ SPP is a Claude plugin that encourages you to keep writing code. It is configure
 | Clever monkey |  25% human / 75% AI |
 | Wise monkey | 50% human / 50% AI |
 | Crazy monkey | 100% human coding |
+| **Pair monkey** | Collaborative pair programming |
 
 ### Code ratio tracking 
 The human/AI coding ratio is calculated by looking at commits that you have authored. Commits with "**Co-Authored-By: Claude**" in the message are counted as Claude commits, those without  are counted as human commits. 
@@ -78,6 +79,83 @@ you through fixing the tests yourself.
 ```
 
 After you make the fix, you can ask claude to review and commit your changes.
+
+## 🤝 Pair Programming Mode
+
+Pair programming mode takes a different approach: instead of blocking Claude when you need to code more, you work **together** in real-time, taking turns being the "driver" (who writes code) and "navigator" (who guides and reviews).
+
+### How it works
+
+1. **Start a session**: `spp pair start "Adding user authentication"`
+2. **One of you drives**: Either Claude writes code while you guide, or you write while Claude guides
+3. **Switch roles**: Run `spp pair rotate` to swap driver/navigator
+4. **End session**: `spp pair end` shows a summary of contributions
+
+### Driver vs Navigator
+
+**When Claude is driving:**
+- Writes code in small, focused chunks
+- Explains thinking as it goes
+- Pauses for feedback after each piece
+- Invites your input on decisions
+
+**When you're driving:**
+- Claude provides high-level guidance
+- Points to relevant files and patterns
+- Reviews your code as you write
+- Helps with syntax and approach questions
+- Won't write code for you (that's your job!)
+
+### Example workflow
+
+```bash
+❯ spp pair start "Fix the failing auth tests"
+
+🤝 Pair programming session started!
+
+   Task: Fix the failing auth tests
+   First driver: 🤖 Claude
+
+   Commands:
+     spp pair          - Show session status
+     spp pair rotate   - Switch driver
+     spp pair end      - End session
+
+# Claude writes a few functions, explains the approach...
+# You want to try the next part yourself:
+
+❯ spp pair rotate
+
+🔄 Roles rotated!
+
+   Driver:    👤 Human
+   Navigator: 🤖 Claude
+
+# Now Claude guides you through writing the next piece
+# When you're done:
+
+❯ spp pair end
+
+🎉 Pair Programming Session Complete!
+
+   Task: Fix the failing auth tests
+   Duration: 45m
+
+   Contributions:
+     👤 Human:  3 (43%)
+     🤖 Claude: 4 (57%)
+
+   Rotations: 2
+
+   Great pairing session! 🙌
+```
+
+### Why pair programming?
+
+- **Learn by doing**: When you drive, Claude helps you grow
+- **Stay engaged**: Active collaboration beats passive watching
+- **Better code**: Two perspectives catch more issues
+- **It's fun**: Coding together is more enjoyable!
 
 ### Pausing, resuming, and reseting
 
@@ -140,10 +218,14 @@ spp init
 | `spp init` | Initialize SPP in the current project |
 | `spp stats` | Show current ratio and statistics |
 | `spp modes` | List all available modes |
-| `spp mode [n]` | Show or change the current mode (1-5) |
+| `spp mode [n]` | Show or change the current mode (1-6) |
 | `spp pause` | Pause enforcement for 24 hours |
 | `spp resume` | Resume enforcement immediately |
 | `spp reset` | Reset tracking to start from current commit |
+| `spp pair` | Show current pair programming session status |
+| `spp pair start <task>` | Start a pair programming session |
+| `spp pair rotate` | Switch driver/navigator roles |
+| `spp pair end` | End the pair programming session |
 
 ### Claude slash commands
 

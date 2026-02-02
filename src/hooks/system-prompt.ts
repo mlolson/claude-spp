@@ -2,6 +2,7 @@ import { loadConfig, isSppInitialized } from "../config/loader.js";
 import { calculateRatio, isRatioHealthy } from "../stats.js";
 import { getEffectiveRatio, getCurrentMode, type TrackingMode } from "../config/schema.js";
 import { getLineCounts } from "../vcs/index.js";
+import { loadPairSession, shouldSuggestRotation } from "../pair-session.js";
 
 /**
  * Calculate how many more commits/lines the human needs to reach the target ratio
@@ -65,6 +66,45 @@ export function generateSystemPrompt(projectPath: string): string {
     "This way, SPP tracking will work properly",
   ];
 
+  // Check for active pair programming session
+  const pairSession = loadPairSession(projectPath);
+  if (pairSession) {
+    const driverLabel = pairSession.driver === "claude" ? "Claude (you)" : "Human";
+    const navigatorLabel = pairSession.driver === "claude" ? "Human" : "Claude (you)";
+    
+    lines.push("");
+    lines.push("## 🤝 Pair Programming Session Active");
+    lines.push("");
+    lines.push(`**Task:** ${pairSession.task}`);
+    lines.push(`**Current Driver:** ${driverLabel}`);
+    lines.push(`**Navigator:** ${navigatorLabel}`);
+    lines.push(`**Contributions:** Human: ${pairSession.humanContributions}, Claude: ${pairSession.claudeContributions}`);
+    lines.push("");
+    
+    if (pairSession.driver === "claude") {
+      lines.push("### You are DRIVING");
+      lines.push("- Write code in small, focused chunks");
+      lines.push("- Explain your thinking as you go");
+      lines.push("- Pause after each piece and ask for feedback");
+      lines.push("- Invite the human to contribute ideas");
+    } else {
+      lines.push("### You are NAVIGATING");
+      lines.push("- Guide the human through the task");
+      lines.push("- Provide high-level direction, not complete code");
+      lines.push("- Review their code as they write");
+      lines.push("- Answer questions and suggest improvements");
+      lines.push("- DO NOT write code for them - help them write it themselves");
+    }
+    
+    if (shouldSuggestRotation(pairSession)) {
+      lines.push("");
+      lines.push(`💡 **Consider rotating!** ${pairSession.contributionsSinceRotation} contributions since last rotation.`);
+      lines.push("Suggest: \"Want to switch roles? Run 'spp pair rotate'\"");
+    }
+    
+    lines.push("");
+    lines.push("Use the spp-pair-programming skill for detailed guidance on pair programming behavior.");
+  }
 
   // Add rules based on ratio health
   if (!isHealthy) {
