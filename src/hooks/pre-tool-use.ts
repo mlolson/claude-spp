@@ -1,6 +1,7 @@
 import { isSppInitialized, loadConfig } from "../config/loader.js";
 import { isSppInternalFile } from "./file-matcher.js";
 import { getStats } from "../stats.js";
+import { loadPairSession, recordContribution } from "../pair-session.js";
 
 /**
  * Hook input from Claude Code (actual format)
@@ -111,6 +112,30 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
   // Always allow markdown files (documentation, not code)
   if (filePath.endsWith(".md")) {
     return allowResponse();
+  }
+
+  // Check for active pair programming session
+  const pairSession = loadPairSession(cwd);
+  if (pairSession) {
+    if (pairSession.driver === "human") {
+      // Human is driving - Claude should navigate, not write code
+      const reason = [
+        "🤝 Pair programming: Human is currently driving!",
+        "",
+        "As the navigator, you should:",
+        "- Guide the human through writing this code",
+        "- Explain what they need to write and where",
+        "- Answer questions about syntax or approach",
+        "- Review their code after they write it",
+        "",
+        "To write code yourself, ask the human to run: spp pair rotate",
+        "",
+        "Use the spp-pair-programming skill for navigation guidance."
+      ].join("\n");
+      return denyResponse(reason);
+    }
+    // Claude is driving - allow but note this is a contribution
+    // (Contribution tracking happens at commit time via the post-commit hook)
   }
 
   // Check the work ratio - block if below target (respects grace period and tracking mode)
