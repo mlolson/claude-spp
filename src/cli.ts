@@ -7,6 +7,16 @@ import { getHeadCommitHash } from "./vcs/index.js";
 import { loadConfig, saveConfig } from "./config/loader.js";
 import { getCurrentMode, getModeByNumber, getModeByName, MODES } from "./config/schema.js";
 import { getStats, formatStats } from "./stats.js";
+import {
+  hasPairSession,
+  loadPairSession,
+  startPairSession,
+  endPairSession,
+  rotateDriver,
+  formatPairSession,
+  formatSessionSummary,
+  type Driver,
+} from "./pair-session.js";
 
 function getModesExplanation(): string {
   const config = loadConfig(process.cwd());
@@ -175,6 +185,127 @@ program
     saveConfig(process.cwd(), config);
 
     console.log(`✅ Tracking reset. Stats will now start from commit ${headCommit.substring(0, 7)}.`);
+  });
+
+// Pair programming commands
+
+const pairCmd = program
+  .command("pair")
+  .description("Pair programming mode - collaborate with Claude");
+
+pairCmd
+  .command("start")
+  .argument("<task>", "Description of what you're working on")
+  .option("-d, --driver <driver>", "Starting driver: claude or human", "claude")
+  .description("Start a pair programming session")
+  .action((task: string, options: { driver: string }) => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ SPP not initialized. Run: spp init");
+      process.exit(1);
+    }
+
+    if (hasPairSession(process.cwd())) {
+      console.error("❌ A pair session is already active. Run 'spp pair end' first.");
+      process.exit(1);
+    }
+
+    const driver = options.driver as Driver;
+    if (driver !== "claude" && driver !== "human") {
+      console.error("❌ Driver must be 'claude' or 'human'");
+      process.exit(1);
+    }
+
+    // Auto-switch to pair mode if not already
+    const config = loadConfig(process.cwd());
+    if (config.mode !== 6) {
+      config.mode = 6;
+      saveConfig(process.cwd(), config);
+      console.log("📝 Switched to Pair monkey mode (6)");
+    }
+
+    const session = startPairSession(process.cwd(), task, driver);
+    const driverEmoji = driver === "claude" ? "🤖" : "👤";
+    const driverLabel = driver === "claude" ? "Claude" : "You";
+
+    console.log("");
+    console.log("🤝 Pair programming session started!");
+    console.log("");
+    console.log(`   Task: ${task}`);
+    console.log(`   First driver: ${driverEmoji} ${driverLabel}`);
+    console.log("");
+    console.log("   Commands:");
+    console.log("     spp pair          - Show session status");
+    console.log("     spp pair rotate   - Switch driver");
+    console.log("     spp pair end      - End session");
+    console.log("");
+  });
+
+pairCmd
+  .command("status", { isDefault: true })
+  .description("Show current pair session status")
+  .action(() => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ SPP not initialized. Run: spp init");
+      process.exit(1);
+    }
+
+    const session = loadPairSession(process.cwd());
+    if (!session) {
+      console.log("");
+      console.log("No active pair programming session.");
+      console.log("");
+      console.log("Start one with: spp pair start \"<task description>\"");
+      console.log("");
+      return;
+    }
+
+    console.log(formatPairSession(session));
+  });
+
+pairCmd
+  .command("rotate")
+  .description("Switch driver/navigator roles")
+  .action(() => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ SPP not initialized. Run: spp init");
+      process.exit(1);
+    }
+
+    const session = rotateDriver(process.cwd());
+    if (!session) {
+      console.error("❌ No active pair session. Start one with: spp pair start \"<task>\"");
+      process.exit(1);
+    }
+
+    const driverEmoji = session.driver === "claude" ? "🤖" : "👤";
+    const driverLabel = session.driver === "claude" ? "Claude" : "Human";
+    const navigatorEmoji = session.driver === "claude" ? "👤" : "🤖";
+    const navigatorLabel = session.driver === "claude" ? "Human" : "Claude";
+
+    console.log("");
+    console.log("🔄 Roles rotated!");
+    console.log("");
+    console.log(`   Driver:    ${driverEmoji} ${driverLabel}`);
+    console.log(`   Navigator: ${navigatorEmoji} ${navigatorLabel}`);
+    console.log("");
+  });
+
+pairCmd
+  .command("end")
+  .description("End the current pair programming session")
+  .action(() => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ SPP not initialized. Run: spp init");
+      process.exit(1);
+    }
+
+    const session = endPairSession(process.cwd());
+    if (!session) {
+      console.error("❌ No active pair session.");
+      process.exit(1);
+    }
+
+    console.log(formatSessionSummary(session));
   });
 
 // Hook commands (called by Claude Code)

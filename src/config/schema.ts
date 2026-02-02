@@ -19,6 +19,7 @@ export const MODES: Mode[] = [
   { number: 3, name: "Clever monkey", humanRatio: 0.25, description: "75% AI / 25% human" },
   { number: 4, name: "Wise monkey", humanRatio: 0.5, description: "50% AI / 50% human" },
   { number: 5, name: "Crazy monkey", humanRatio: 1, description: "100% human coding" },
+  { number: 6, name: "Pair monkey", humanRatio: 0.5, description: "Collaborative pair programming" },
 ];
 
 /**

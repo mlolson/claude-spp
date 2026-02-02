@@ -46,8 +46,12 @@ function isSppCommandAvailable() {
 }
 /**
  * Prompt user to install claude-spp globally
+ * Skipped when SPP_SKIP_GLOBAL_CHECK=1 (for testing)
  */
 function ensureGlobalInstall() {
+    if (process.env.SPP_SKIP_GLOBAL_CHECK === "1") {
+        return;
+    }
     if (!isSppCommandAvailable()) {
         const packageName = "git+https://github.com/mlolson/claude-spp.git";
         throw new Error(`spp command not found. Please install:\n  npm install -g ${packageName}`);
