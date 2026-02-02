@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { execSync } from "node:child_process";
@@ -10,6 +10,11 @@ import {
 import { getSppDir, isSppInitialized } from "../src/config/loader.js";
 
 const TEST_DIR = path.join(process.cwd(), ".test-init");
+
+// Skip global install check in tests
+beforeAll(() => {
+  process.env.SPP_SKIP_GLOBAL_CHECK = "1";
+});
 
 describe("Initialization", () => {
   beforeEach(() => {
