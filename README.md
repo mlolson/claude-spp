@@ -154,11 +154,11 @@ spp init
 
 ### Status line (optional)
 
-You can add SPP status to Claude Code's status line, showing how many commits you are ahead or behind your goal:
+You can add SPP status to Claude Code's status line, showing how many more commits Claude can write before reaching the target ratio:
 
 ```
-🟢 Matt is 11 commits ahead of goal
-🔴 Matt is 2 commits behind goal
+🟢 Claude can write 11 more commits
+🔴 Human needs to write 2 more commits
 ```
 
 To enable, add to `~/.claude/settings.json`:

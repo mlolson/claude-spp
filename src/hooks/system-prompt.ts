@@ -105,26 +105,10 @@ function calculateAheadBehind(humanValue: number, claudeValue: number, targetRat
 }
 
 /**
- * Get the current git user's name
- */
-function getGitUserName(projectPath: string): string {
-  try {
-    const { execSync } = require("node:child_process");
-    const name = execSync("git config user.name", {
-      cwd: projectPath,
-      encoding: "utf-8",
-    }).trim();
-    // Get first name only
-    return name.split(" ")[0] || "You";
-  } catch {
-    return "You";
-  }
-}
-
-/**
  * Generate a compact status line for the prompt
- * Format: 🟢 Matt is 11 commits ahead of goal
- *         🔴 Matt is 2 commits behind goal
+ * Format: 🟢 Claude can write 11 more commits (4+)
+ *         ⚠️ Claude can write 3 more commits (1-3)
+ *         🔴 Human needs to write 2 more commits (0 or less)
  */
 export function generateStatusLine(projectPath: string): string {
   if (!isSppInitialized(projectPath)) {
@@ -155,9 +139,7 @@ export function generateStatusLine(projectPath: string): string {
     return "⚪ SPP: no commits yet";
   }
 
-  const username = getGitUserName(projectPath);
-  const verb = username === "You" ? "are" : "is";
-  const aheadBehind = calculateAheadBehind(humanValue, claudeValue, targetRatio);
+  const claudeRemaining = calculateAheadBehind(humanValue, claudeValue, targetRatio);
 
   // Generate emoji history for recent commits (newest on left)
   const recentCommits = getRecentCommitsClassified(projectPath, {
@@ -169,10 +151,10 @@ export function generateStatusLine(projectPath: string): string {
     .map((c) => (c.isClaude ? "🤖" : "🐵"))
     .join(" < ");
 
-  const statusEmoji = aheadBehind >= 0 ? "🟢" : "🔴";
-  const aheadBehindText = aheadBehind >= 0
-    ? `${aheadBehind} ${unit} ahead of goal`
-    : `${Math.abs(aheadBehind)} ${unit} behind goal`;
+  const statusEmoji = claudeRemaining <= 0 ? "🔴" : claudeRemaining < 4 ? "⚠️" : "🟢";
+  const statusText = claudeRemaining > 0
+    ? `Claude can write ${claudeRemaining} more ${unit}`
+    : `Human needs to write ${Math.abs(claudeRemaining)} more ${unit}`;
 
-  return `${statusEmoji} ${username} ${verb} ${aheadBehindText} ${emojiHistory} ...`;
+  return `${statusEmoji} ${statusText} ${emojiHistory} ...`;
 }
