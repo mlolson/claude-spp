@@ -2,7 +2,7 @@ import { GitProvider } from "./git-provider.js";
 import { HgProvider } from "./hg-provider.js";
 import type { VcsProvider, VcsType, LineCounts, CommitInfo } from "./types.js";
 
-export type { VcsProvider, VcsType, LineCounts, CommitInfo } from "./types.js";
+export type { VcsProvider, VcsType, LineCounts, CommitInfo, CommitWithParent } from "./types.js";
 
 // Singleton instances
 let gitProvider: GitProvider | null = null;
@@ -89,4 +89,36 @@ export function clearCache(projectPath: string, vcsType?: VcsType): void {
   } catch {
     // Ignore errors if VCS not detected
   }
+}
+
+/**
+ * Get recent commits within window, newest first, with Claude/human classification
+ */
+export function getRecentCommitsClassified(
+  projectPath: string,
+  options: { since: Date | null; afterCommit?: string | null; limit?: number },
+  vcsType?: VcsType
+): Array<{ hash: string; isClaude: boolean }> {
+  const provider = getProvider(projectPath, vcsType);
+  const head = provider.getHeadCommitHash(projectPath);
+  if (!head) return [];
+
+  const commits = provider.getCommitRange(
+    projectPath,
+    options.afterCommit ?? null,
+    head,
+    options.since ?? undefined
+  );
+
+  // Commits are returned oldest-first, reverse to get newest-first
+  const result: Array<{ hash: string; isClaude: boolean }> = [];
+  for (let i = commits.length - 1; i >= 0; i--) {
+    const commit = commits[i];
+    const message = provider.getFullCommitMessage(projectPath, commit.hash);
+    const isClaude = /Co-Authored-By:.*Claude/i.test(message);
+    result.push({ hash: commit.hash, isClaude });
+    if (options.limit && result.length >= options.limit) break;
+  }
+
+  return result;
 }

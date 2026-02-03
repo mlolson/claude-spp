@@ -1,7 +1,7 @@
 import { loadConfig, isSppInitialized } from "../config/loader.js";
 import { calculateRatio, isRatioHealthy } from "../stats.js";
 import { getEffectiveRatio, getCurrentMode, getStatsWindowCutoff, type TrackingMode } from "../config/schema.js";
-import { getLineCounts, getLineCountsWithWindow } from "../vcs/index.js";
+import { getLineCounts, getLineCountsWithWindow, getRecentCommitsClassified } from "../vcs/index.js";
 
 /**
  * Calculate how many more commits/lines the human needs to reach the target ratio
@@ -159,9 +159,20 @@ export function generateStatusLine(projectPath: string): string {
   const verb = username === "You" ? "are" : "is";
   const aheadBehind = calculateAheadBehind(humanValue, claudeValue, targetRatio);
 
-  if (aheadBehind >= 0) {
-    return `🟢 ${username} ${verb} ${aheadBehind} ${unit} ahead of goal`;
-  } else {
-    return `🔴 ${username} ${verb} ${Math.abs(aheadBehind)} ${unit} behind goal`;
-  }
+  // Generate emoji history for recent commits (newest on left)
+  const recentCommits = getRecentCommitsClassified(projectPath, {
+    since: statsWindowCutoff,
+    afterCommit: config.trackingStartCommit,
+    limit: 15,
+  });
+  const emojiHistory = recentCommits
+    .map((c) => (c.isClaude ? "🤖" : "🐵"))
+    .join(" < ");
+
+  const statusEmoji = aheadBehind >= 0 ? "🟢" : "🔴";
+  const aheadBehindText = aheadBehind >= 0
+    ? `${aheadBehind} ${unit} ahead of goal`
+    : `${Math.abs(aheadBehind)} ${unit} behind goal`;
+
+  return `${statusEmoji} ${username} ${verb} ${aheadBehindText} ${emojiHistory}...`;
 }
