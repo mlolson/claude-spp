@@ -1,7 +1,7 @@
 import { loadConfig, isSppInitialized } from "../config/loader.js";
 import { calculateRatio, isRatioHealthy } from "../stats.js";
-import { getEffectiveRatio, getCurrentMode, type TrackingMode } from "../config/schema.js";
-import { getLineCounts } from "../vcs/index.js";
+import { getEffectiveRatio, getCurrentMode, getStatsWindowCutoff, type TrackingMode } from "../config/schema.js";
+import { getLineCounts, getLineCountsWithWindow } from "../vcs/index.js";
 
 /**
  * Calculate how many more commits/lines the human needs to reach the target ratio
@@ -129,7 +129,12 @@ export function generateStatusLine(projectPath: string): string {
     return "";
   }
 
-  const lineCounts = getLineCounts(projectPath);
+  const statsWindow = config.statsWindow ?? "oneWeek";
+  const statsWindowCutoff = getStatsWindowCutoff(statsWindow);
+  const lineCounts = getLineCountsWithWindow(projectPath, {
+    since: statsWindowCutoff,
+    afterCommit: config.trackingStartCommit,
+  });
   const trackingMode: TrackingMode = config.trackingMode ?? "commits";
   const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
   const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
