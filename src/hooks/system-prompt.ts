@@ -83,17 +83,25 @@ export function generateSystemPrompt(projectPath: string): string {
 }
 
 /**
- * Calculate how many commits/lines ahead or behind the human is from the target
- * Positive = ahead, negative = behind
+ * Calculate how many Claude commits/lines can be added before hitting the target ratio.
+ * Positive = ahead (Claude commits remaining), negative = behind (human commits needed).
+ *
+ * Formula derivation for "ahead" case:
+ *   humanValue / (humanValue + claudeValue + x) = targetRatio
+ *   Solving for x: x = humanValue * (1 - targetRatio) / targetRatio - claudeValue
  */
 function calculateAheadBehind(humanValue: number, claudeValue: number, targetRatio: number): number {
   const total = humanValue + claudeValue;
   if (total === 0) return 0;
 
-  // Target human value = targetRatio * total
-  const targetHumanValue = targetRatio * total;
-  // How many ahead/behind
-  return Math.round(humanValue - targetHumanValue);
+  // Avoid division by zero for 100% human target
+  if (targetRatio >= 1) {
+    return -claudeValue; // Need to remove all Claude commits
+  }
+
+  // How many more Claude commits until we hit exactly the target ratio
+  const claudeCommitsRemaining = humanValue * (1 - targetRatio) / targetRatio - claudeValue;
+  return Math.floor(claudeCommitsRemaining);
 }
 
 /**
