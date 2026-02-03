@@ -174,5 +174,5 @@ export function generateStatusLine(projectPath: string): string {
     ? `${aheadBehind} ${unit} ahead of goal`
     : `${Math.abs(aheadBehind)} ${unit} behind goal`;
 
-  return `${statusEmoji} ${username} ${verb} ${aheadBehindText} ${emojiHistory}...`;
+  return `${statusEmoji} ${username} ${verb} ${aheadBehindText} ${emojiHistory} ...`;
 }
