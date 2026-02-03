@@ -7,3 +7,4 @@ old_prompts/
 CLAUDE.local.md
 .DS_Store
 todos.mddist/
+dist/

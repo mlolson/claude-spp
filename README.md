@@ -165,7 +165,10 @@ To enable, add to `~/.claude/settings.json`:
 
 ```json
 {
-  "statusLine": "spp hook:status-line"
+  "statusLine": {
+    "type": "command",
+    "command": "spp hook:status-line",
+  }
 }
 ```
 
