@@ -86,7 +86,7 @@ program
     }
 
     if (!selectedMode) {
-      throw Error(`❌ Unknown mode: ${value}  Use a number 1-6 or a mode name`);
+      throw Error(`❌ Unknown mode: ${value}  Use a number 1-${MODES.length} or a mode name`);
     }
 
     // Update config
