@@ -2,9 +2,8 @@
 
 We've all noticed it, and here's [a study](https://www.anthropic.com/research/AI-assistance-coding-skills) from Anthropic that proves it:
 
-> We find that AI use impairs conceptual understanding, code reading, and debugging abilities, without
-delivering significant efficiency gains on average. Participants who fully delegated coding tasks showed
-some productivity improvements, but at the cost of learning the library.
+> We find that AI use impairs conceptual understanding, code reading, and debugging abilities... Participants who fully delegated coding tasks showed
+some productivity improvements, but at the cost of learning
 
 # Simian Programmer Plugin (SPP) for Claude
 
