@@ -149,7 +149,7 @@ export function generateStatusLine(projectPath: string): string {
   });
   const emojiHistory = recentCommits
     .map((c) => (c.isClaude ? "🤖" : "🐵"))
-    .join(" < ");
+    .join(" > ");
 
   const statusEmoji = claudeRemaining <= 0 ? "🔴" : claudeRemaining < 4 ? "⚠️" : "🟢";
   const statusText = claudeRemaining > 0
