@@ -157,8 +157,9 @@ spp init
 You can add SPP status to Claude Code's status line, showing how many more commits Claude can write before reaching the target ratio:
 
 ```
-🟢 Claude can write 11 more commits
-🔴 Human needs to write 2 more commits
+🟢 Claude can write 9 more commits 🤖 > 🤖 > 🐵 > 🐵 > 🤖 > 🤖 > 🤖 > 🤖 > 🐵 > 🐵 > 🐵 > 🐵 > 🐵 > 🤖 > 🐵 ...
+
+🔴 Human needs to write 2 more commits 🤖 > 🤖 > 🤖 > 🤖 > 🤖 > 🤖 > 🤖 > 🤖 > 🐵 > 🤖 > 🐵 > 🤖 > 🤖 > 🤖 > 🐵 ...
 ```
 
 To enable, add to `~/.claude/settings.json`:
