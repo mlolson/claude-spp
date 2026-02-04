@@ -177,6 +177,26 @@ program
     console.log(`✅ Tracking reset. Stats will now start from commit ${headCommit.substring(0, 7)}.`);
   });
 
+program
+  .command("drive")
+  .description("Toggle drive mode (human writes code, Claude assists)")
+  .action(() => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("❌ SPP not initialized. Run: spp init");
+      process.exit(1);
+    }
+    const config = loadConfig(process.cwd());
+    config.driveMode = !config.driveMode;
+    saveConfig(process.cwd(), config);
+    if (config.driveMode) {
+      console.log("🚙 Drive mode enabled. Claude cannot write code.");
+      console.log("   You're in the driver's seat - Claude will assist but not code.");
+      console.log("   Run 'spp drive' again to toggle off.");
+    } else {
+      console.log("🚙 Drive mode disabled. Normal SPP enforcement resumed.");
+    }
+  });
+
 // Hook commands (called by Claude Code)
 
 program

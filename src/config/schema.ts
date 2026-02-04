@@ -112,6 +112,9 @@ export const ConfigSchema = z.object({
 
   // VCS type (git or hg) - auto-detected if not set
   vcsType: VcsTypeSchema.optional(),
+
+  // Drive mode - blocks Claude from writing code without affecting ratio targets
+  driveMode: z.boolean().default(false),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -121,9 +124,10 @@ export type Config = z.infer<typeof ConfigSchema>;
  */
 export const DEFAULT_CONFIG: Config = {
   enabled: true,
-  mode: 3, 
+  mode: 3,
   statsWindow: "oneWeek",
   trackingMode: "commits",
+  driveMode: false,
 };
 
 /**

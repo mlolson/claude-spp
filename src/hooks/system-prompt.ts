@@ -156,5 +156,10 @@ export function generateStatusLine(projectPath: string): string {
     ? `Claude can write ${claudeRemaining} more ${unit}`
     : `Human needs to write ${Math.abs(claudeRemaining)} more ${unit}`;
 
+  // If drive mode is active, only show drive mode message
+  if (config.driveMode) {
+    return `🚙 Drive mode active. Claude cannot write code. Toggle with \`spp drive\``;
+  }
+
   return `${statusEmoji} ${statusText} ${emojiHistory} ...`;
 }

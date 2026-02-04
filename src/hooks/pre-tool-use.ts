@@ -113,6 +113,18 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
     return allowResponse();
   }
 
+  // Check for drive mode - block Claude from writing code when human wants to drive
+  if (config.driveMode) {
+    const reason = [
+      "Drive mode is active. Claude cannot write code.",
+      "The human is in the driver's seat - assist them but do not write code.",
+      "Use the `spp-help-human-code` skill to help the human complete the task.",
+      "Toggle drive mode off with `spp drive` when ready."
+    ].join("\n");
+
+    return denyResponse(reason);
+  }
+
   // Check the work ratio - block if below target (respects grace period and tracking mode)
   const stats = getStats(cwd);
 

@@ -78,6 +78,21 @@ you through fixing the tests yourself.
 
 After you make the fix, you can ask claude to review and commit your changes.
 
+### Drive mode
+
+Sometimes you want to write code yourself without changing your overall mode or ratio targets. **Drive mode** lets you take the wheel temporarily - Claude is blocked from writing code but will assist you through the `help human code` skill.
+
+```bash
+spp drive    # Toggle drive mode on/off
+```
+
+When drive mode is active, the status line shows:
+```
+🚙 Drive mode active. Claude cannot write code. Toggle with `spp drive`
+```
+
+This is useful when you want to practice coding on a specific task while keeping Claude available for guidance, code review, and answering questions.
+
 ### Pausing, resuming, and reseting
 
 Sometimes you gotta do what you gotta do.
@@ -140,6 +155,7 @@ spp init
 | `spp stats` | Show current ratio and statistics |
 | `spp modes` | List all available modes |
 | `spp mode [n]` | Show or change the current mode (1-5) |
+| `spp drive` | Toggle drive mode (human codes, Claude assists) |
 | `spp pause` | Pause enforcement for 24 hours |
 | `spp resume` | Resume enforcement immediately |
 | `spp reset` | Reset tracking to start from current commit |
@@ -193,6 +209,7 @@ The config is stored in `.claude-spp/config.json`:
 | `mode` | number | `3` | The coding mode (1-5). See modes table above. |
 | `statsWindow` | string | `"oneWeek"` | Time window for tracking. Options: `"oneDay"`, `"oneWeek"`, `"allTime"` |
 | `trackingMode` | string | `"commits"` | What to count for ratio. Options: `"commits"`, `"lines"` |
+| `driveMode` | boolean | `false` | When `true`, Claude cannot write code regardless of ratio. Toggle with `spp drive`. |
 | `pausedUntil` | string | _(none)_ | ISO timestamp when pause expires. Set by `spp pause`. |
 | `trackingStartCommit` | string | _(none)_ | Commit hash to start tracking from. Commits before this are ignored. |
 | `vcsType` | string | _(none)_ | Version control system. Options: `"git"`, `"hg"` |
@@ -205,6 +222,7 @@ The config is stored in `.claude-spp/config.json`:
   "mode": 3,
   "statsWindow": "oneWeek",
   "trackingMode": "commits",
+  "driveMode": false,
   "trackingStartCommit": "a1b2c3d4e5f6...",
   "vcsType": "git"
 }
