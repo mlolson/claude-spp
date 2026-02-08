@@ -330,15 +330,8 @@ export async function initializeSpp(
     ""
   ].join("\n"));
 
-  // Prompt for VCS type if not provided
-  const selectedVcsType = options?.vcsType ?? await promptForVcsType();
-
-  // Ensure spp command is installed globally (required for hooks)
-  await ensureGlobalInstall();
-
+  // Check for existing installation before asking any config questions
   const sppDir = getSppDir(projectPath);
-
-  // Create .claude-spp directory if it doesn't exist
   if (fs.existsSync(sppDir)) {
     if (await promptShouldOverwriteInstall()) {
       console.log("Removing existing install...");
@@ -348,6 +341,13 @@ export async function initializeSpp(
       return await loadConfig(projectPath);
     }
   }
+
+  // Prompt for VCS type if not provided
+  const selectedVcsType = options?.vcsType ?? await promptForVcsType();
+
+  // Ensure spp command is installed globally (required for hooks)
+  await ensureGlobalInstall();
+
   fs.mkdirSync(sppDir, { recursive: true });
 
   // Prompt for mode type if not provided
