@@ -1,39 +1,36 @@
 import { z } from "zod";
 
 /**
- * Mode definition
+ * Mode types for SPP
  */
-export interface Mode {
-  number: number;
-  name: string;
-  humanRatio: number;
-  description: string;
-}
+export const ModeTypeSchema = z.enum(["weeklyGoal", "pairProgramming", "learningProject"]);
+export type ModeType = z.infer<typeof ModeTypeSchema>;
 
 /**
- * Available modes for work distribution
+ * Goal types for weekly goal mode
  */
-export const MODES: Mode[] = [
-  { number: 1, name: "Lazy monkey", humanRatio: 0, description: "100% AI coding" },
-  { number: 2, name: "Curious monkey", humanRatio: 0.1, description: "90% AI / 10% human" },
-  { number: 3, name: "Clever monkey", humanRatio: 0.25, description: "75% AI / 25% human" },
-  { number: 4, name: "Wise monkey", humanRatio: 0.5, description: "50% AI / 50% human" },
-  { number: 5, name: "Crazy monkey", humanRatio: 1, description: "100% human coding" },
-];
+export const GoalTypeSchema = z.enum(["commits", "percentage"]);
+export type GoalType = z.infer<typeof GoalTypeSchema>;
 
 /**
- * Get mode by number
+ * Allowed percentage targets for weekly goal percentage mode
  */
-export function getModeByNumber(num: number): Mode | undefined {
-  return MODES.find((m) => m.number === num);
-}
+export const PercentageOptionSchema = z.union([
+  z.literal(10), z.literal(25), z.literal(50), z.literal(100)
+]);
 
 /**
- * Get mode by name (case-insensitive)
+ * Pair programming session state
  */
-export function getModeByName(name: string): Mode | undefined {
-  return MODES.find((m) => m.name.toLowerCase() === name.toLowerCase());
-}
+export const PairSessionSchema = z.object({
+  active: z.boolean(),
+  currentDriver: z.enum(["human", "claude"]),
+  task: z.string().optional(),
+  humanTurns: z.number().default(0),
+  claudeTurns: z.number().default(0),
+  startedAt: z.string().optional(),
+});
+export type PairSession = z.infer<typeof PairSessionSchema>;
 
 /**
  * Stats window options for filtering commit history
@@ -87,27 +84,29 @@ export function getStatsWindowCutoff(window: StatsWindow): Date | null {
 }
 
 /**
- * Main configuration schema for .dojo/config.json
+ * Main configuration schema for .claude-spp/config.json
  */
 export const ConfigSchema = z.object({
-  // Whether Dojo is enabled for this project
+  // Whether SPP is enabled for this project
   enabled: z.boolean().default(true),
 
-  // Mode number (1-6)
-  mode: z.number().int().min(1).max(6).default(4),
+  // Mode type
+  modeType: ModeTypeSchema.default("weeklyGoal"),
 
-  // Stats window for filtering commit history
+  // Weekly goal settings
+  goalType: GoalTypeSchema.default("commits"),
+  weeklyCommitGoal: z.number().int().min(1).default(5),
+  targetPercentage: PercentageOptionSchema.default(25),
+  trackingMode: TrackingModeSchema.default("commits"),
   statsWindow: StatsWindowSchema.default("oneWeek"),
 
-  // Tracking mode - what to count for ratio calculation
-  trackingMode: TrackingModeSchema.default("commits"),
+  // Pair programming session
+  pairSession: PairSessionSchema.optional(),
 
   // ISO timestamp when SPP pause expires (set by pause command)
   pausedUntil: z.string().optional(),
 
   // VCS commit hash of the last commit to exclude from tracking
-  // Set to the 10th commit hash once we reach MIN_COMMITS_FOR_TRACKING
-  // Stats only include commits after this one
   trackingStartCommit: z.string().optional(),
 
   // VCS type (git or hg) - auto-detected if not set
@@ -124,24 +123,64 @@ export type Config = z.infer<typeof ConfigSchema>;
  */
 export const DEFAULT_CONFIG: Config = {
   enabled: true,
-  mode: 3,
-  statsWindow: "oneWeek",
+  modeType: "weeklyGoal",
+  goalType: "commits",
+  weeklyCommitGoal: 5,
+  targetPercentage: 25,
   trackingMode: "commits",
+  statsWindow: "oneWeek",
   driveMode: false,
 };
 
 /**
- * Get the current mode from config
+ * Human-readable labels for mode types
  */
-export function getCurrentMode(config: Config): Mode {
-  return getModeByNumber(config.mode) ?? MODES[3]; // Default to 50-50
+export const MODE_TYPE_LABELS: Record<ModeType, string> = {
+  weeklyGoal: "Weekly Goal",
+  pairProgramming: "Pair Programming",
+  learningProject: "Learning Project",
+};
+
+/**
+ * Descriptions for mode types
+ */
+export const MODE_TYPE_DESCRIPTIONS: Record<ModeType, string> = {
+  weeklyGoal: "Set a weekly human coding target (commits/week or % of code)",
+  pairProgramming: "Claude and human trade off driving/navigating",
+  learningProject: "Coming soon - placeholder for future learning features",
+};
+
+/**
+ * Get display name for a mode type
+ */
+export function getModeTypeName(modeType: ModeType): string {
+  return MODE_TYPE_LABELS[modeType];
 }
 
 /**
- * Get the effective human work ratio from config
+ * Get a description of the current mode including goal type and target
  */
-export function getEffectiveRatio(config: Config): number {
-  // Use mode
-  const mode = getCurrentMode(config);
-  return mode.humanRatio;
+export function getModeTypeDescription(config: Config): string {
+  switch (config.modeType) {
+    case "weeklyGoal":
+      if (config.goalType === "commits") {
+        return `Weekly Goal (${config.weeklyCommitGoal} commits/week)`;
+      }
+      return `Weekly Goal (${config.targetPercentage}% human, ${config.trackingMode})`;
+    case "pairProgramming":
+      return "Pair Programming";
+    case "learningProject":
+      return "Learning Project (coming soon)";
+  }
+}
+
+/**
+ * Get the target human ratio for percentage-based goal type
+ * Returns the ratio (0-1) for percentage mode, or 0 for other modes
+ */
+export function getTargetRatio(config: Config): number {
+  if (config.modeType === "weeklyGoal" && config.goalType === "percentage") {
+    return config.targetPercentage / 100;
+  }
+  return 0;
 }

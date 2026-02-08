@@ -3,8 +3,13 @@ export { loadConfig, saveConfig, isSppInitialized, getSppDir } from "./config/lo
 export {
   ConfigSchema,
   DEFAULT_CONFIG,
-  getEffectiveRatio,
+  getTargetRatio,
+  getModeTypeName,
+  getModeTypeDescription,
   type Config,
+  type ModeType,
+  type GoalType,
+  type PairSession,
 } from "./config/schema.js";
 
 export {

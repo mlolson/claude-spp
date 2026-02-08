@@ -109,33 +109,28 @@ describe("preToolUseHook", () => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "spp-test-"));
     stpDir = path.join(tempDir, ".claude-spp");
     fs.mkdirSync(stpDir, { recursive: true });
-
-    // Create config with mode
-    fs.writeFileSync(
-      path.join(stpDir, "config.json"),
-      JSON.stringify({
-        mode: 4,
-        enabled: true,
-        difficulty: "medium",
-      })
-    );
-
-    // Create state
-    fs.writeFileSync(
-      path.join(stpDir, "state.json"),
-      JSON.stringify({
-        session: {
-          startedAt: new Date().toISOString(),
-        },
-      })
-    );
   });
 
   afterEach(() => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
+  function writeConfig(config: Record<string, unknown>): void {
+    fs.writeFileSync(
+      path.join(stpDir, "config.json"),
+      JSON.stringify(config)
+    );
+  }
+
+  function initGitRepo(): void {
+    const { execSync } = require("child_process");
+    execSync("git init", { cwd: tempDir, stdio: "ignore" });
+    execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
+    execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
+  }
+
   it("should allow non-write tools", () => {
+    writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, enabled: true });
     const result = preToolUseHook({
       tool_name: "Read",
       tool_input: { file_path: "src/test.ts" },
@@ -159,6 +154,7 @@ describe("preToolUseHook", () => {
   });
 
   it("should allow writes to .claude-spp directory", () => {
+    writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, enabled: true });
     const result = preToolUseHook({
       tool_name: "Write",
       tool_input: { file_path: path.join(tempDir, ".claude-spp", "config.json"), content: "{}" },
@@ -167,51 +163,65 @@ describe("preToolUseHook", () => {
     expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
   });
 
-  it("should allow writes when ratio is healthy", () => {
-    // Initialize git repo
-    const { execSync } = require("child_process");
-    execSync("git init", { cwd: tempDir, stdio: "ignore" });
-    execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
-    execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
-
-    // Create commits with healthy ratio (mode 4 = 50% target)
-    // More human commits than Claude commits
-    for (let i = 0; i < 6; i++) {
-      fs.writeFileSync(path.join(tempDir, `human${i}.txt`), `human code ${i}`);
-      execSync(`git add . && git commit -m "human commit ${i}"`, { cwd: tempDir, stdio: "ignore" });
-    }
-
-    // Add fewer Claude commits
-    for (let i = 0; i < 4; i++) {
-      fs.writeFileSync(path.join(tempDir, `claude${i}.txt`), `claude code ${i}`);
-      execSync(`git add . && git commit -m "Add claude${i}\n\nCo-Authored-By: Claude <claude@anthropic.com>"`, { cwd: tempDir, stdio: "ignore" });
-    }
-
-    const result = preToolUseHook({
-      tool_name: "Write",
-      tool_input: { file_path: "src/test.ts", content: "test" },
-      cwd: tempDir,
+  describe("drive mode", () => {
+    it("should block writes in drive mode", () => {
+      writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, enabled: true, driveMode: true });
+      const result = preToolUseHook({
+        tool_name: "Write",
+        tool_input: { file_path: "src/test.ts", content: "test" },
+        cwd: tempDir,
+      });
+      expect(result.hookSpecificOutput.permissionDecision).toBe("deny");
+      expect(result.hookSpecificOutput.permissionDecisionReason).toContain("Drive mode");
     });
-
-    expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
   });
 
-  describe("ratio enforcement", () => {
-    it("should block writes when ratio is below target", () => {
-      // Initialize git repo so getLineCounts works
-      const { execSync } = require("child_process");
-      execSync("git init", { cwd: tempDir, stdio: "ignore" });
-      execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
-      execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
+  describe("weekly goal commits enforcement", () => {
+    it("should block writes when weekly commit goal not met", () => {
+      initGitRepo();
+      writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, enabled: true });
 
-      // Create multiple Claude commits to get an unhealthy ratio (mode 4 = 50% target)
-      // We need more Claude commits than human commits
+      // No human commits = goal not met
+      const result = preToolUseHook({
+        tool_name: "Write",
+        tool_input: { file_path: "src/test.ts", content: "test" },
+        cwd: tempDir,
+      });
+      expect(result.hookSpecificOutput.permissionDecision).toBe("deny");
+      expect(result.hookSpecificOutput.permissionDecisionReason).toContain("weekly commit goal not met");
+    });
+
+    it("should allow writes when weekly commit goal is met", () => {
+      initGitRepo();
+      writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 3, enabled: true });
+
+      // Create 3 human commits
+      const { execSync } = require("child_process");
+      for (let i = 0; i < 3; i++) {
+        fs.writeFileSync(path.join(tempDir, `human${i}.txt`), `human code ${i}`);
+        execSync(`git add . && git commit -m "human commit ${i}"`, { cwd: tempDir, stdio: "ignore" });
+      }
+
+      const result = preToolUseHook({
+        tool_name: "Write",
+        tool_input: { file_path: "src/test.ts", content: "test" },
+        cwd: tempDir,
+      });
+      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+    });
+  });
+
+  describe("weekly goal percentage enforcement", () => {
+    it("should block writes when ratio is below target", () => {
+      initGitRepo();
+      writeConfig({ modeType: "weeklyGoal", goalType: "percentage", targetPercentage: 50, trackingMode: "commits", enabled: true });
+
+      // Create many Claude commits, few human commits
+      const { execSync } = require("child_process");
       for (let i = 0; i < 10; i++) {
         fs.writeFileSync(path.join(tempDir, `claude${i}.txt`), `claude code ${i}`);
         execSync(`git add . && git commit -m "Add claude${i}\n\nCo-Authored-By: Claude <claude@anthropic.com>"`, { cwd: tempDir, stdio: "ignore" });
       }
-
-      // Add 1 human commit (no Co-Authored-By)
       fs.writeFileSync(path.join(tempDir, "human.txt"), "human code");
       execSync("git add . && git commit -m 'human commit'", { cwd: tempDir, stdio: "ignore" });
 
@@ -220,20 +230,115 @@ describe("preToolUseHook", () => {
         tool_input: { file_path: "src/test.ts", content: "test" },
         cwd: tempDir,
       });
-
       expect(result.hookSpecificOutput.permissionDecision).toBe("deny");
       expect(result.hookSpecificOutput.permissionDecisionReason).toContain("below target");
-      expect(result.hookSpecificOutput.permissionDecisionReason).toContain("50%");
     });
 
-    it("should always allow writes to .claude-spp even with unhealthy ratio", () => {
-      // Initialize git repo
-      const { execSync } = require("child_process");
-      execSync("git init", { cwd: tempDir, stdio: "ignore" });
-      execSync("git config user.email 'test@test.com'", { cwd: tempDir, stdio: "ignore" });
-      execSync("git config user.name 'Test'", { cwd: tempDir, stdio: "ignore" });
+    it("should allow writes when ratio is healthy", () => {
+      initGitRepo();
+      writeConfig({ modeType: "weeklyGoal", goalType: "percentage", targetPercentage: 50, trackingMode: "commits", enabled: true });
 
-      // Create unhealthy ratio with only Claude commits
+      // Create healthy ratio: more human commits than Claude
+      const { execSync } = require("child_process");
+      for (let i = 0; i < 6; i++) {
+        fs.writeFileSync(path.join(tempDir, `human${i}.txt`), `human code ${i}`);
+        execSync(`git add . && git commit -m "human commit ${i}"`, { cwd: tempDir, stdio: "ignore" });
+      }
+      for (let i = 0; i < 4; i++) {
+        fs.writeFileSync(path.join(tempDir, `claude${i}.txt`), `claude code ${i}`);
+        execSync(`git add . && git commit -m "Add claude${i}\n\nCo-Authored-By: Claude <claude@anthropic.com>"`, { cwd: tempDir, stdio: "ignore" });
+      }
+
+      const result = preToolUseHook({
+        tool_name: "Write",
+        tool_input: { file_path: "src/test.ts", content: "test" },
+        cwd: tempDir,
+      });
+      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+    });
+  });
+
+  describe("pair programming enforcement", () => {
+    it("should block writes when human is driving", () => {
+      writeConfig({
+        modeType: "pairProgramming",
+        enabled: true,
+        pairSession: {
+          active: true,
+          currentDriver: "human",
+          task: "test task",
+          humanTurns: 0,
+          claudeTurns: 0,
+        },
+      });
+
+      const result = preToolUseHook({
+        tool_name: "Write",
+        tool_input: { file_path: "src/test.ts", content: "test" },
+        cwd: tempDir,
+      });
+      expect(result.hookSpecificOutput.permissionDecision).toBe("deny");
+      expect(result.hookSpecificOutput.permissionDecisionReason).toContain("human is currently driving");
+    });
+
+    it("should allow writes when Claude is driving", () => {
+      writeConfig({
+        modeType: "pairProgramming",
+        enabled: true,
+        pairSession: {
+          active: true,
+          currentDriver: "claude",
+          task: "test task",
+          humanTurns: 0,
+          claudeTurns: 0,
+        },
+      });
+
+      const result = preToolUseHook({
+        tool_name: "Write",
+        tool_input: { file_path: "src/test.ts", content: "test" },
+        cwd: tempDir,
+      });
+      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+    });
+
+    it("should allow writes when no active pair session", () => {
+      writeConfig({
+        modeType: "pairProgramming",
+        enabled: true,
+      });
+
+      const result = preToolUseHook({
+        tool_name: "Write",
+        tool_input: { file_path: "src/test.ts", content: "test" },
+        cwd: tempDir,
+      });
+      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+    });
+  });
+
+  describe("learning project enforcement", () => {
+    it("should always allow writes in learning project mode", () => {
+      writeConfig({
+        modeType: "learningProject",
+        enabled: true,
+      });
+
+      const result = preToolUseHook({
+        tool_name: "Write",
+        tool_input: { file_path: "src/test.ts", content: "test" },
+        cwd: tempDir,
+      });
+      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+    });
+  });
+
+  describe("common bypasses", () => {
+    it("should always allow .claude-spp writes even with unhealthy ratio", () => {
+      initGitRepo();
+      writeConfig({ modeType: "weeklyGoal", goalType: "percentage", targetPercentage: 50, trackingMode: "commits", enabled: true });
+
+      const { execSync } = require("child_process");
       for (let i = 0; i < 10; i++) {
         fs.writeFileSync(path.join(tempDir, `claude${i}.txt`), `claude code ${i}`);
         execSync(`git add . && git commit -m "Add claude${i}\n\nCo-Authored-By: Claude <claude@anthropic.com>"`, { cwd: tempDir, stdio: "ignore" });
@@ -244,7 +349,18 @@ describe("preToolUseHook", () => {
         tool_input: { file_path: path.join(tempDir, ".claude-spp", "state.json"), content: "{}" },
         cwd: tempDir,
       });
+      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
+    });
 
+    it("should always allow markdown files", () => {
+      writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, enabled: true });
+      initGitRepo();
+
+      const result = preToolUseHook({
+        tool_name: "Write",
+        tool_input: { file_path: "README.md", content: "# Test" },
+        cwd: tempDir,
+      });
       expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
     });
   });

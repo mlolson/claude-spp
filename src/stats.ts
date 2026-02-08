@@ -1,13 +1,15 @@
 import { loadConfig, isSppInitialized, saveConfig } from "./config/loader.js";
 import {
-  getEffectiveRatio,
-  getCurrentMode,
+  getTargetRatio,
+  getModeTypeDescription,
   getStatsWindowCutoff,
   STATS_WINDOW_LABELS,
   TRACKING_MODE_LABELS,
-  type Mode,
+  type ModeType,
+  type GoalType,
   type StatsWindow,
   type TrackingMode,
+  type PairSession,
 } from "./config/schema.js";
 import { getLineCountsWithWindow, getCommitInfo } from "./vcs/index.js";
 
@@ -33,12 +35,17 @@ export function isRatioHealthy(humanLines: number, claudeLines: number, targetRa
 export interface StatsResult {
   initialized: boolean;
   enabled?: boolean;
-  mode?: Mode;
+  modeType?: ModeType;
+  goalType?: GoalType;
   targetRatio?: number;
   currentRatio?: number;
   ratioHealthy?: boolean;
   statsWindow?: StatsWindow;
   trackingMode?: TrackingMode;
+  weeklyCommitGoal?: number;
+  weeklyCommitsCompleted?: number;
+  weeklyCommitGoalMet?: boolean;
+  pairSession?: PairSession;
   lines?: {
     humanLines: number;
     claudeLines: number;
@@ -63,34 +70,55 @@ export function getStats(projectPath: string): StatsResult {
   const config = loadConfig(projectPath);
   const statsWindow = config.statsWindow ?? "oneWeek";
   const trackingMode = config.trackingMode ?? "commits";
-  const targetRatio = getEffectiveRatio(config);
-  const mode = getCurrentMode(config);
+  const modeType = config.modeType;
+  const goalType = config.goalType;
 
   // Get counts for ratio calculation
-  // Filter by trackingStartCommit (if set) and statsWindow cutoff
   const statsWindowCutoff = getStatsWindowCutoff(statsWindow);
   const lineCounts = getLineCountsWithWindow(projectPath, {
     since: statsWindowCutoff,
     afterCommit: config.trackingStartCommit,
   });
 
-  // Calculate ratio based on tracking mode
-  const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
-  const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
-  const currentRatio = calculateRatio(humanValue, claudeValue);
-  const ratioHealthy = isRatioHealthy(humanValue, claudeValue, targetRatio);
-
-  return {
+  const result: StatsResult = {
     initialized: true,
     enabled: config.enabled,
-    mode,
-    targetRatio,
-    currentRatio,
-    ratioHealthy,
+    modeType,
+    goalType,
     statsWindow,
     trackingMode,
     lines: lineCounts,
   };
+
+  if (modeType === "weeklyGoal") {
+    if (goalType === "commits") {
+      // Count human commits in last 7 days
+      const weekCutoff = getStatsWindowCutoff("oneWeek");
+      const weekCounts = getLineCountsWithWindow(projectPath, {
+        since: weekCutoff,
+        afterCommit: config.trackingStartCommit,
+      });
+      result.weeklyCommitGoal = config.weeklyCommitGoal;
+      result.weeklyCommitsCompleted = weekCounts.humanCommits;
+      result.weeklyCommitGoalMet = weekCounts.humanCommits >= config.weeklyCommitGoal;
+    } else {
+      // Percentage-based
+      const targetRatio = getTargetRatio(config);
+      const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
+      const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
+      const currentRatio = calculateRatio(humanValue, claudeValue);
+      const ratioHealthy = isRatioHealthy(humanValue, claudeValue, targetRatio);
+
+      result.targetRatio = targetRatio;
+      result.currentRatio = currentRatio;
+      result.ratioHealthy = ratioHealthy;
+    }
+  } else if (modeType === "pairProgramming") {
+    result.pairSession = config.pairSession;
+  }
+  // learningProject: minimal stats
+
+  return result;
 }
 
 /**
@@ -101,36 +129,59 @@ export function formatStats(stats: StatsResult): string {
     return "SPP is not initialized in this project. Run `spp init` to get started.";
   }
 
-  const trackingMode = stats.trackingMode ?? "commits";
-  const target = stats.targetRatio ?? 0;
-  const ratio = stats.currentRatio ?? 1;
-  const windowLabel = stats.statsWindow ? STATS_WINDOW_LABELS[stats.statsWindow] : "All time";
-  const trackingLabel = TRACKING_MODE_LABELS[trackingMode];
+  const modeType = stats.modeType ?? "weeklyGoal";
+  const goalType = stats.goalType ?? "commits";
 
-  // Get values based on tracking mode for catch-up calculation
-  const humanValue = trackingMode === "commits"
-    ? (stats.lines?.humanCommits ?? 0)
-    : (stats.lines?.humanLines ?? 0);
-  const claudeValue = trackingMode === "commits"
-    ? (stats.lines?.claudeCommits ?? 0)
-    : (stats.lines?.claudeLines ?? 0);
-  const unit = trackingMode === "commits" ? "commits" : "lines";
-
-  // Build status line
+  // Build status line based on mode type
   let statusLine: string;
-  if (claudeValue + humanValue === 0) {
-    statusLine = `✅ 🐒 No ${trackingMode} tracked yet. Go commit some code and check again.`;
-  } else if (stats.ratioHealthy) {
-    statusLine = `✅ 🐒 Human coding on target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Keep up the great work!`;
-  } else {
-    // Calculate how many more commits/lines needed to catch up
-    const total = humanValue + claudeValue;
-    if (target >= 1) {
-      statusLine = `⚠️ 🙉 Human coding below target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Claude has written ${claudeValue} ${unit}.`;
+
+  if (modeType === "weeklyGoal" && goalType === "commits") {
+    const goal = stats.weeklyCommitGoal ?? 5;
+    const completed = stats.weeklyCommitsCompleted ?? 0;
+    if (completed >= goal) {
+      statusLine = `✅ 🐒 Weekly goal met! ${completed}/${goal} commits this week. Keep up the great work!`;
     } else {
-      const needed = Math.ceil((target * total - humanValue) / (1 - target));
-      statusLine = `⚠️ 🙉  Human coding below target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Write ${needed} more ${unit} to catch up. You can do it!`;
+      statusLine = `⚠️ 🙉 Weekly goal: ${completed}/${goal} commits this week. Write ${goal - completed} more to meet your goal!`;
     }
+  } else if (modeType === "weeklyGoal" && goalType === "percentage") {
+    const trackingMode = stats.trackingMode ?? "commits";
+    const target = stats.targetRatio ?? 0;
+    const ratio = stats.currentRatio ?? 1;
+    const humanValue = trackingMode === "commits"
+      ? (stats.lines?.humanCommits ?? 0)
+      : (stats.lines?.humanLines ?? 0);
+    const claudeValue = trackingMode === "commits"
+      ? (stats.lines?.claudeCommits ?? 0)
+      : (stats.lines?.claudeLines ?? 0);
+    const unit = trackingMode === "commits" ? "commits" : "lines";
+
+    if (claudeValue + humanValue === 0) {
+      statusLine = `✅ 🐒 No ${trackingMode} tracked yet. Go commit some code and check again.`;
+    } else if (stats.ratioHealthy) {
+      statusLine = `✅ 🐒 Human coding on target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Keep up the great work!`;
+    } else {
+      const total = humanValue + claudeValue;
+      if (target >= 1) {
+        statusLine = `⚠️ 🙉 Human coding below target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Claude has written ${claudeValue} ${unit}.`;
+      } else {
+        const needed = Math.ceil((target * total - humanValue) / (1 - target));
+        statusLine = `⚠️ 🙉  Human coding below target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Write ${needed} more ${unit} to catch up. You can do it!`;
+      }
+    }
+  } else if (modeType === "pairProgramming") {
+    const session = stats.pairSession;
+    if (session?.active) {
+      const driver = session.currentDriver === "human" ? "Human" : "Claude";
+      statusLine = `🤝 Pair Programming: ${driver} is driving. Human turns: ${session.humanTurns}, Claude turns: ${session.claudeTurns}`;
+      if (session.task) {
+        statusLine += `\n   Task: ${session.task}`;
+      }
+    } else {
+      statusLine = `🤝 Pair Programming mode. No active session. Run \`spp pair start <task>\` to begin.`;
+    }
+  } else {
+    // learningProject
+    statusLine = `📚 Learning Project mode (coming soon)`;
   }
 
   // Format counts with alignment
@@ -141,20 +192,20 @@ export function formatStats(stats: StatsResult): string {
   const maxLines = Math.max(humanLinesStr.length, claudeLinesStr.length);
   const maxCommits = Math.max(humanCommitsStr.length, claudeCommitsStr.length);
 
-  // Build aligned table (no borders)
+  // Build aligned table
   const labelWidth = 10;
-  const modeValue = `${stats.mode?.name} (${stats.mode?.description})`;
+  const config = loadConfig(process.cwd());
+  const modeValue = getModeTypeDescription(config);
 
   // Determine tracking window display
-  // If trackingStartCommit is set and within the stats window, show commit info instead
-  const config = loadConfig(process.cwd());
+  const trackingLabel = TRACKING_MODE_LABELS[stats.trackingMode ?? "commits"];
+  const windowLabel = stats.statsWindow ? STATS_WINDOW_LABELS[stats.statsWindow] : "All time";
   let trackingValue = `${trackingLabel} (${windowLabel})`;
 
   if (config.trackingStartCommit) {
     const commitInfo = getCommitInfo(process.cwd(), config.trackingStartCommit);
     if (commitInfo) {
       const statsWindowCutoff = getStatsWindowCutoff(stats.statsWindow ?? "oneWeek");
-      // If no cutoff (allTime) or commit is within the window, show commit info
       if (!statsWindowCutoff || commitInfo.date >= statsWindowCutoff) {
         const truncatedTitle = commitInfo.title.length > 16
           ? commitInfo.title.substring(0, 16) + "..."
@@ -178,10 +229,10 @@ export function formatStats(stats: StatsResult): string {
   ];
 
   if (!stats.enabled) {
-    const config = loadConfig(process.cwd());
+    const loadedConfig = loadConfig(process.cwd());
     let pauseMsg = "SPP is disabled";
-    if (config.pausedUntil) {
-      const pausedUntilDate = new Date(config.pausedUntil);
+    if (loadedConfig.pausedUntil) {
+      const pausedUntilDate = new Date(loadedConfig.pausedUntil);
       pauseMsg = `⏸️  SPP enforcement is paused until ${pausedUntilDate.toLocaleString()}. Claude may write code freely. Run 'spp resume' to unpause.`;
     }
     lines.splice(1, 0, pauseMsg, "");

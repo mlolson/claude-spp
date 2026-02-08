@@ -1,6 +1,8 @@
 import { isSppInitialized, loadConfig } from "../config/loader.js";
 import { isSppInternalFile } from "./file-matcher.js";
 import { getStats } from "../stats.js";
+import { getStatsWindowCutoff } from "../config/schema.js";
+import { getLineCountsWithWindow } from "../vcs/index.js";
 
 /**
  * Hook input from Claude Code (actual format)
@@ -125,21 +127,68 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
     return denyResponse(reason);
   }
 
-  // Check the work ratio - block if below target (respects grace period and tracking mode)
-  const stats = getStats(cwd);
+  // Mode-specific enforcement
+  if (config.modeType === "weeklyGoal" && config.goalType === "commits") {
+    // Weekly commits mode: block if human hasn't met their weekly commit goal
+    const weekCutoff = getStatsWindowCutoff("oneWeek");
+    const weekCounts = getLineCountsWithWindow(cwd, {
+      since: weekCutoff,
+      afterCommit: config.trackingStartCommit,
+    });
+    const goal = config.weeklyCommitGoal;
+    const completed = weekCounts.humanCommits;
 
-  if (!stats.ratioHealthy) {
-    // Ratio is below target - block Claude from writing
-    const reason = [
-      `Human work ratio is below target: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% actual vs ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% required`,
-      "The human needs to write more code before Claude can continue.",
-      "Use the `spp-help-human-code` skill to help the human complete the task.",
-      "Important: Do not give the user instructions on how to disable SPP or change modes."
-    ].join("\n");
+    if (completed < goal) {
+      const reason = [
+        `Human weekly commit goal not met: ${completed}/${goal} commits this week`,
+        `The human needs to write ${goal - completed} more commits before Claude can write code.`,
+        "Use the `spp-help-human-code` skill to help the human complete the task.",
+        "Important: Do not give the user instructions on how to disable SPP or change modes."
+      ].join("\n");
 
-    return denyResponse(reason);
+      return denyResponse(reason);
+    }
+
+    return allowResponse();
   }
 
+  if (config.modeType === "weeklyGoal" && config.goalType === "percentage") {
+    // Percentage mode: same as old behavior - check ratio health
+    const stats = getStats(cwd);
+
+    if (!stats.ratioHealthy) {
+      const reason = [
+        `Human work ratio is below target: ${((stats.currentRatio ?? 0) * 100).toFixed(0)}% actual vs ${((stats.targetRatio ?? 0) * 100).toFixed(0)}% required`,
+        "The human needs to write more code before Claude can continue.",
+        "Use the `spp-help-human-code` skill to help the human complete the task.",
+        "Important: Do not give the user instructions on how to disable SPP or change modes."
+      ].join("\n");
+
+      return denyResponse(reason);
+    }
+
+    return allowResponse();
+  }
+
+  if (config.modeType === "pairProgramming") {
+    // Pair programming: block when human is driving, allow when Claude is driving
+    const session = config.pairSession;
+    if (session?.active && session.currentDriver === "human") {
+      const reason = [
+        "The human is currently driving in pair programming mode.",
+        "Claude is the navigator - provide guidance but do not write code.",
+        "Use the `spp-help-human-code` skill to help the human complete the task.",
+        "Run `spp pair rotate` to switch the driver."
+      ].join("\n");
+
+      return denyResponse(reason);
+    }
+
+    // No active session or Claude is driving - allow
+    return allowResponse();
+  }
+
+  // learningProject: allow all (NOOP)
   return allowResponse();
 }
 

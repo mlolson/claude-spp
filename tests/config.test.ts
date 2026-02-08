@@ -9,9 +9,9 @@ import {
 } from "../src/config/loader.js";
 import {
   DEFAULT_CONFIG,
-  MODES,
-  getEffectiveRatio,
-  getCurrentMode,
+  getTargetRatio,
+  getModeTypeName,
+  getModeTypeDescription,
   type Config,
   type StatsWindow,
 } from "../src/config/schema.js";
@@ -43,12 +43,12 @@ describe("Configuration", () => {
       fs.mkdirSync(stpDir, { recursive: true });
       fs.writeFileSync(
         path.join(stpDir, "config.json"),
-        JSON.stringify({ enabled: false, mode: 3 })
+        JSON.stringify({ enabled: false, modeType: "weeklyGoal", goalType: "commits" })
       );
 
       const config = loadConfig(TEST_DIR);
       expect(config.enabled).toBe(false);
-      expect(config.mode).toBe(3);
+      expect(config.modeType).toBe("weeklyGoal");
     });
 
     it("throws on invalid JSON", () => {
@@ -67,13 +67,13 @@ describe("Configuration", () => {
     });
 
     it("writes valid JSON", () => {
-      saveConfig(TEST_DIR, { ...DEFAULT_CONFIG, mode: 5 });
+      saveConfig(TEST_DIR, { ...DEFAULT_CONFIG, modeType: "pairProgramming" });
       const content = fs.readFileSync(
         path.join(getSppDir(TEST_DIR), "config.json"),
         "utf-8"
       );
       const parsed = JSON.parse(content);
-      expect(parsed.mode).toBe(5);
+      expect(parsed.modeType).toBe("pairProgramming");
     });
   });
 
@@ -88,25 +88,138 @@ describe("Configuration", () => {
     });
   });
 
-  describe("Modes", () => {
-    it("returns mode ratio", () => {
-      const config: Config = { ...DEFAULT_CONFIG, mode: 4 };
-      expect(getEffectiveRatio(config)).toBe(0.5); // Wise monkey mode
+  describe("Mode types", () => {
+    it("has correct default config values", () => {
+      expect(DEFAULT_CONFIG.modeType).toBe("weeklyGoal");
+      expect(DEFAULT_CONFIG.goalType).toBe("commits");
+      expect(DEFAULT_CONFIG.weeklyCommitGoal).toBe(5);
+      expect(DEFAULT_CONFIG.targetPercentage).toBe(25);
     });
 
-    it("has correct mode values", () => {
-      expect(MODES[0].humanRatio).toBe(0);     // Lazy monkey
-      expect(MODES[1].humanRatio).toBe(0.1);   // Curious monkey
-      expect(MODES[2].humanRatio).toBe(0.25);  // Clever monkey
-      expect(MODES[3].humanRatio).toBe(0.5);   // Wise monkey
-      expect(MODES[4].humanRatio).toBe(1);     // Crazy monkey
+    it("getModeTypeName returns correct names", () => {
+      expect(getModeTypeName("weeklyGoal")).toBe("Weekly Goal");
+      expect(getModeTypeName("pairProgramming")).toBe("Pair Programming");
+      expect(getModeTypeName("learningProject")).toBe("Learning Project");
     });
 
-    it("getCurrentMode returns correct mode", () => {
-      const config: Config = { ...DEFAULT_CONFIG, mode: 3 };
-      const mode = getCurrentMode(config);
-      expect(mode.name).toBe("Clever monkey");
-      expect(mode.humanRatio).toBe(0.25);
+    it("getModeTypeDescription for weekly goal commits", () => {
+      const config: Config = { ...DEFAULT_CONFIG, modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5 };
+      expect(getModeTypeDescription(config)).toBe("Weekly Goal (5 commits/week)");
+    });
+
+    it("getModeTypeDescription for weekly goal percentage", () => {
+      const config: Config = { ...DEFAULT_CONFIG, modeType: "weeklyGoal", goalType: "percentage", targetPercentage: 25, trackingMode: "commits" };
+      expect(getModeTypeDescription(config)).toBe("Weekly Goal (25% human, commits)");
+    });
+
+    it("getModeTypeDescription for pair programming", () => {
+      const config: Config = { ...DEFAULT_CONFIG, modeType: "pairProgramming" };
+      expect(getModeTypeDescription(config)).toBe("Pair Programming");
+    });
+
+    it("getModeTypeDescription for learning project", () => {
+      const config: Config = { ...DEFAULT_CONFIG, modeType: "learningProject" };
+      expect(getModeTypeDescription(config)).toBe("Learning Project (coming soon)");
+    });
+
+    it("getTargetRatio for percentage mode", () => {
+      const config: Config = { ...DEFAULT_CONFIG, modeType: "weeklyGoal", goalType: "percentage", targetPercentage: 50 };
+      expect(getTargetRatio(config)).toBe(0.5);
+    });
+
+    it("getTargetRatio returns 0 for non-percentage modes", () => {
+      expect(getTargetRatio({ ...DEFAULT_CONFIG, modeType: "weeklyGoal", goalType: "commits" })).toBe(0);
+      expect(getTargetRatio({ ...DEFAULT_CONFIG, modeType: "pairProgramming" })).toBe(0);
+      expect(getTargetRatio({ ...DEFAULT_CONFIG, modeType: "learningProject" })).toBe(0);
+    });
+  });
+
+  describe("Config migration", () => {
+    it("migrates old mode 3 (Clever monkey 25%) to weeklyGoal percentage 25%", () => {
+      const stpDir = getSppDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(stpDir, "config.json"),
+        JSON.stringify({ enabled: true, mode: 3 })
+      );
+
+      const config = loadConfig(TEST_DIR);
+      expect(config.modeType).toBe("weeklyGoal");
+      expect(config.goalType).toBe("percentage");
+      expect(config.targetPercentage).toBe(25);
+      // Old mode field should be gone
+      expect((config as Record<string, unknown>).mode).toBeUndefined();
+    });
+
+    it("migrates old mode 4 (Wise monkey 50%) to weeklyGoal percentage 50%", () => {
+      const stpDir = getSppDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(stpDir, "config.json"),
+        JSON.stringify({ enabled: true, mode: 4 })
+      );
+
+      const config = loadConfig(TEST_DIR);
+      expect(config.modeType).toBe("weeklyGoal");
+      expect(config.goalType).toBe("percentage");
+      expect(config.targetPercentage).toBe(50);
+    });
+
+    it("migrates old mode 1 (Lazy monkey 0%) to weeklyGoal percentage 10%", () => {
+      const stpDir = getSppDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(stpDir, "config.json"),
+        JSON.stringify({ enabled: true, mode: 1 })
+      );
+
+      const config = loadConfig(TEST_DIR);
+      expect(config.modeType).toBe("weeklyGoal");
+      expect(config.goalType).toBe("percentage");
+      expect(config.targetPercentage).toBe(10);
+    });
+
+    it("migrates old mode 5 (Crazy monkey 100%) to weeklyGoal percentage 100%", () => {
+      const stpDir = getSppDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(stpDir, "config.json"),
+        JSON.stringify({ enabled: true, mode: 5 })
+      );
+
+      const config = loadConfig(TEST_DIR);
+      expect(config.modeType).toBe("weeklyGoal");
+      expect(config.goalType).toBe("percentage");
+      expect(config.targetPercentage).toBe(100);
+    });
+
+    it("writes migrated config back to disk", () => {
+      const stpDir = getSppDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(stpDir, "config.json"),
+        JSON.stringify({ enabled: true, mode: 3 })
+      );
+
+      loadConfig(TEST_DIR);
+
+      // Read again - should load new format without triggering migration
+      const raw = fs.readFileSync(path.join(stpDir, "config.json"), "utf-8");
+      const json = JSON.parse(raw);
+      expect(json.modeType).toBe("weeklyGoal");
+      expect(json.mode).toBeUndefined();
+    });
+
+    it("does not migrate if modeType already exists", () => {
+      const stpDir = getSppDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(stpDir, "config.json"),
+        JSON.stringify({ enabled: true, modeType: "pairProgramming" })
+      );
+
+      const config = loadConfig(TEST_DIR);
+      expect(config.modeType).toBe("pairProgramming");
     });
   });
 

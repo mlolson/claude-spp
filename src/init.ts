@@ -7,15 +7,16 @@ import { loadConfig, saveConfig, isSppInitialized, getSppDir } from "./config/lo
 import {
   DEFAULT_CONFIG,
   type Config,
-  MODES,
-  getCurrentMode,
-  STATS_WINDOW_LABELS,
-  StatsWindowSchema,
+  type ModeType,
+  type GoalType,
   type StatsWindow,
-  TRACKING_MODE_LABELS,
-  TrackingModeSchema,
   type TrackingMode,
   type VcsType,
+  MODE_TYPE_LABELS,
+  MODE_TYPE_DESCRIPTIONS,
+  ModeTypeSchema,
+  TRACKING_MODE_LABELS,
+  TrackingModeSchema,
 } from "./config/schema.js";
 import {
   getTotalCommitCount,
@@ -141,61 +142,94 @@ export function installVcsHook(projectPath: string, vcsType: VcsType): void {
 }
 
 /**
- * Prompt user to select a mode interactively
+ * Prompt user to select a mode type interactively
  */
-async function promptForMode(): Promise<number> {
-  console.log("\nAvailable modes:\n");
-  const maxNameLen = Math.max(...MODES.map(m => m.name.length));
-  for (const mode of MODES) {
-    const paddedName = mode.name.padEnd(maxNameLen);
-    const defaultMarker = mode.number === 4 ? " (default)" : "";
-    console.log(`  ${mode.number}. ${paddedName}   ${mode.description}${defaultMarker}`);
-  }
-  console.log("");
+async function promptForModeType(): Promise<ModeType> {
+  const modeTypes = ModeTypeSchema.options;
+  console.log("\nAvailable mode types:\n");
 
-  let modeNumber = undefined;
-
-  while (modeNumber === undefined) {
-    const userResponse = await promptUser(`Select a mode [1-${MODES.length}, or press Enter for ${MODES[DEFAULT_CONFIG.mode - 1].description}]: `);
-    if (userResponse === "") {
-      modeNumber = DEFAULT_CONFIG.mode;
-    } else {
-      modeNumber = parseInt(userResponse, 10);
-      if (modeNumber < 1 || modeNumber > MODES.length) {
-        console.log(`Invalid mode: ${modeNumber}. Must be in range [1, ${MODES.length}]`);
-        modeNumber = undefined;
-      }
-    }
-  }
-  return modeNumber;
-}
-
-/**
- * Prompt user to select a stats window interactively
- */
-async function promptForStatsWindow(): Promise<StatsWindow> {
-  const options = StatsWindowSchema.options;
-  console.log("\nStats window (time period for tracking commits):\n");
-
-  options.forEach((option, index) => {
-    const label = STATS_WINDOW_LABELS[option];
-    const defaultMarker = option === "oneWeek" ? " (default)" : "";
-    console.log(`  ${index + 1}. ${label}${defaultMarker}`);
+  modeTypes.forEach((modeType, index) => {
+    const label = MODE_TYPE_LABELS[modeType];
+    const desc = MODE_TYPE_DESCRIPTIONS[modeType];
+    const defaultMarker = index === 0 ? " (default)" : "";
+    console.log(`  ${index + 1}. ${label} - ${desc}${defaultMarker}`);
   });
   console.log("");
 
   while (true) {
-    const userResponse = await promptUser(`Select a stats window [1-${options.length}, or press Enter for Last 7 days]: `);
+    const userResponse = await promptUser(`Select a mode type [1-${modeTypes.length}, or press Enter for Weekly Goal]: `);
     if (userResponse === "") {
-      return "oneWeek";
+      return "weeklyGoal";
     }
-
     const choice = parseInt(userResponse, 10);
-    if (choice >= 1 && choice <= options.length) {
-      return options[choice - 1];
+    if (choice >= 1 && choice <= modeTypes.length) {
+      return modeTypes[choice - 1];
     }
+    console.log(`Invalid choice: ${userResponse}. Must be in range [1, ${modeTypes.length}]`);
+  }
+}
 
-    console.log(`Invalid choice: ${userResponse}. Must be in range [1, ${options.length}]`);
+/**
+ * Prompt user to select a goal type for weekly goal mode
+ */
+async function promptForGoalType(): Promise<GoalType> {
+  console.log("\nGoal type:\n");
+  console.log("  1. Commits per week (default) - Human must write N commits per week");
+  console.log("  2. Percentage - Human must write N% of code");
+  console.log("");
+
+  while (true) {
+    const userResponse = await promptUser("Select a goal type [1-2, or press Enter for Commits per week]: ");
+    if (userResponse === "" || userResponse === "1") {
+      return "commits";
+    }
+    if (userResponse === "2") {
+      return "percentage";
+    }
+    console.log(`Invalid choice: ${userResponse}. Must be 1 or 2.`);
+  }
+}
+
+/**
+ * Prompt user for weekly commit goal
+ */
+async function promptForWeeklyCommitGoal(): Promise<number> {
+  while (true) {
+    const userResponse = await promptUser("How many commits per week? [default: 5]: ");
+    if (userResponse === "") {
+      return 5;
+    }
+    const num = parseInt(userResponse, 10);
+    if (num >= 1) {
+      return num;
+    }
+    console.log(`Invalid value: ${userResponse}. Must be a positive integer.`);
+  }
+}
+
+/**
+ * Prompt user for target percentage
+ */
+async function promptForTargetPercentage(): Promise<10 | 25 | 50 | 100> {
+  console.log("\nTarget percentage of human-written code:\n");
+  console.log("  1. 10%");
+  console.log("  2. 25% (default)");
+  console.log("  3. 50%");
+  console.log("  4. 100%");
+  console.log("");
+
+  const percentages: (10 | 25 | 50 | 100)[] = [10, 25, 50, 100];
+
+  while (true) {
+    const userResponse = await promptUser("Select a percentage [1-4, or press Enter for 25%]: ");
+    if (userResponse === "") {
+      return 25;
+    }
+    const choice = parseInt(userResponse, 10);
+    if (choice >= 1 && choice <= 4) {
+      return percentages[choice - 1];
+    }
+    console.log(`Invalid choice: ${userResponse}. Must be in range [1, 4]`);
   }
 }
 
@@ -271,18 +305,18 @@ export async function promptUser(prompt: string): Promise<string> {
 /**
  * Initialize SPP in a project
  * Creates .claude-spp directory with config
- * @param projectPath Path to the project
- * @param modeNumber Optional mode number to skip the mode prompt
- * @param statsWindow Optional stats window to skip the stats window prompt
- * @param trackingMode Optional tracking mode to skip the tracking mode prompt
- * @param vcsType Optional VCS type to skip the VCS prompt
  */
 export async function initializeSpp(
   projectPath: string,
-  modeNumber?: number,
-  statsWindow?: StatsWindow,
-  trackingMode?: TrackingMode,
-  vcsType?: VcsType
+  options?: {
+    modeType?: ModeType;
+    goalType?: GoalType;
+    weeklyCommitGoal?: number;
+    targetPercentage?: 10 | 25 | 50 | 100;
+    trackingMode?: TrackingMode;
+    statsWindow?: StatsWindow;
+    vcsType?: VcsType;
+  }
 ): Promise<Config> {
   console.log([
     "",
@@ -295,8 +329,9 @@ export async function initializeSpp(
     "Simian Programmer Plugin for Claude AI: For monkeys who like to code",
     ""
   ].join("\n"));
+
   // Prompt for VCS type if not provided
-  const selectedVcsType = vcsType ?? await promptForVcsType();
+  const selectedVcsType = options?.vcsType ?? await promptForVcsType();
 
   // Ensure spp command is installed globally (required for hooks)
   await ensureGlobalInstall();
@@ -315,29 +350,37 @@ export async function initializeSpp(
   }
   fs.mkdirSync(sppDir, { recursive: true });
 
-  // Prompt for mode if not provided
-  const selectedMode = modeNumber ?? await promptForMode();
-  if (selectedMode < 1 || selectedMode > MODES.length) {
-    throw new Error(`Invalid mode: ${selectedMode}. Must be in range [1, ${MODES.length}]`);
-  }
+  // Prompt for mode type if not provided
+  const selectedModeType = options?.modeType ?? await promptForModeType();
 
-  // Prompt for tracking mode if not provided
-  const selectedTrackingMode = trackingMode ?? await promptForTrackingMode();
-
-  // Prompt for stats window if not provided
-  const selectedStatsWindow = statsWindow ?? await promptForStatsWindow();
-
-  // Initialize config with selected VCS type
+  // Build config based on mode type
   const config: Config = {
     ...DEFAULT_CONFIG,
-    mode: selectedMode,
-    trackingMode: selectedTrackingMode,
-    statsWindow: selectedStatsWindow,
+    modeType: selectedModeType,
     vcsType: selectedVcsType,
   };
 
+  if (selectedModeType === "weeklyGoal") {
+    const selectedGoalType = options?.goalType ?? await promptForGoalType();
+    config.goalType = selectedGoalType;
+
+    if (selectedGoalType === "commits") {
+      config.weeklyCommitGoal = options?.weeklyCommitGoal ?? await promptForWeeklyCommitGoal();
+    } else {
+      // Percentage mode
+      config.targetPercentage = options?.targetPercentage ?? await promptForTargetPercentage();
+      config.trackingMode = options?.trackingMode ?? await promptForTrackingMode();
+    }
+  } else if (selectedModeType === "pairProgramming") {
+    // No additional config at init
+  } else if (selectedModeType === "learningProject") {
+    console.log("\n📚 Learning Project mode is coming soon! Using Weekly Goal as fallback.\n");
+    config.modeType = "weeklyGoal";
+  }
+
+  config.statsWindow = options?.statsWindow ?? config.statsWindow;
+
   // For pre-existing repos with commits, set trackingStartCommit to HEAD
-  // This gives them a clean slate - only new commits after init will be tracked
   const totalCommits = getTotalCommitCount(projectPath, selectedVcsType);
   if (totalCommits > 0) {
     const headCommit = getHeadCommitHash(projectPath, selectedVcsType);
@@ -369,13 +412,18 @@ export function isFullyInitialized(projectPath: string): boolean {
  */
 export async function ensureInitialized(
   projectPath: string,
-  modeNumber?: number,
-  statsWindow?: StatsWindow,
-  trackingMode?: TrackingMode,
-  vcsType?: VcsType
+  options?: {
+    modeType?: ModeType;
+    goalType?: GoalType;
+    weeklyCommitGoal?: number;
+    targetPercentage?: 10 | 25 | 50 | 100;
+    trackingMode?: TrackingMode;
+    statsWindow?: StatsWindow;
+    vcsType?: VcsType;
+  }
 ): Promise<Config> {
   if (!isFullyInitialized(projectPath)) {
-    return initializeSpp(projectPath, modeNumber, statsWindow, trackingMode, vcsType);
+    return initializeSpp(projectPath, options);
   }
   return loadConfig(projectPath);
 }

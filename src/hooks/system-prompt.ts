@@ -1,6 +1,6 @@
 import { loadConfig, isSppInitialized } from "../config/loader.js";
 import { calculateRatio, isRatioHealthy } from "../stats.js";
-import { getEffectiveRatio, getCurrentMode, getStatsWindowCutoff, type TrackingMode } from "../config/schema.js";
+import { getTargetRatio, getModeTypeDescription, getStatsWindowCutoff, type TrackingMode } from "../config/schema.js";
 import { getLineCounts, getLineCountsWithWindow, getRecentCommitsClassified } from "../vcs/index.js";
 
 /**
@@ -30,16 +30,7 @@ export function generateSystemPrompt(projectPath: string): string {
     return "";
   }
 
-  const lineCounts = getLineCounts(projectPath);
-  const trackingMode: TrackingMode = config.trackingMode ?? "commits";
-  const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
-  const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
-  const unit = trackingMode === "commits" ? "commits" : "lines";
-
-  const currentRatio = calculateRatio(humanValue, claudeValue);
-  const targetRatio = getEffectiveRatio(config);
-  const isHealthy = isRatioHealthy(humanValue, claudeValue, targetRatio);
-  const currentMode = getCurrentMode(config);
+  const modeDescription = getModeTypeDescription(config);
 
   const lines: string[] = [
     "<spp>",
@@ -51,31 +42,103 @@ export function generateSystemPrompt(projectPath: string): string {
     "",
     "## Current Status",
     "",
-    `- **Mode:** ${currentMode.number}. ${currentMode.name} (${currentMode.description})`,
-    `- **Target ratio:** ${(targetRatio * 100).toFixed(0)}% human-written code`,
-    `- **Current ratio:** ${(currentRatio * 100).toFixed(0)}% human (${humanValue} ${unit}) / ${(100 - currentRatio * 100).toFixed(0)}% Claude (${claudeValue} ${unit})`,
-    `- **Status:** ${isHealthy ? "✅ Healthy" : "⚠️ Below target"}`,
-    "",
-    "A note on SPP tracking:",
-    "SPP tracks commits in VCS history (git or mercurial), within a window and/or after a starting commit.",
-    "Commits that include 'Co-authored by: Claude...' in the message are counted as Claude commits.",
-    "Commits without that phrase are counted as human commits.",
-    "Therefore, if asked to commit human authored code, don't include the 'Co-authored by: Claude...' phrase",
-    "Also, if you write code, ask the user if they would like to commit it and DO include the 'Co-authored by: Claude' phrase",
-    "This way, SPP tracking will work properly",
+    `- **Mode:** ${modeDescription}`,
   ];
 
+  if (config.modeType === "weeklyGoal" && config.goalType === "commits") {
+    // Weekly commits mode
+    const weekCutoff = getStatsWindowCutoff("oneWeek");
+    const weekCounts = getLineCountsWithWindow(projectPath, {
+      since: weekCutoff,
+      afterCommit: config.trackingStartCommit,
+    });
+    const goal = config.weeklyCommitGoal;
+    const completed = weekCounts.humanCommits;
+    const goalMet = completed >= goal;
 
-  // Add rules based on ratio health
-  if (!isHealthy) {
-    const needed = calculateCatchUp(humanValue, claudeValue, targetRatio);
-    lines.push("## ⚠️ NOTICE");
-    lines.push("");
-    lines.push("The human coding ratio is below the target.");
-    lines.push(`The human needs to write **${needed} more ${unit}** to get back to a healthy ratio.`);
-    lines.push("You will be hard blocked from writing code (except .md files).");
-    lines.push("Instead of writing code, use the spp-human-task skill to help the human complete the coding task.");
+    lines.push(`- **Weekly goal:** ${completed}/${goal} human commits this week`);
+    lines.push(`- **Status:** ${goalMet ? "✅ Goal met" : "⚠️ Below goal"}`);
+
+    if (!goalMet) {
+      lines.push("");
+      lines.push("## ⚠️ NOTICE");
+      lines.push("");
+      lines.push("The human has not met their weekly commit goal.");
+      lines.push(`The human needs to write **${goal - completed} more commits** this week.`);
+      lines.push("You will be hard blocked from writing code (except .md files).");
+      lines.push("Instead of writing code, use the spp-human-task skill to help the human complete the coding task.");
+    }
+  } else if (config.modeType === "weeklyGoal" && config.goalType === "percentage") {
+    // Percentage mode - same as old behavior
+    const lineCounts = getLineCounts(projectPath);
+    const trackingMode: TrackingMode = config.trackingMode ?? "commits";
+    const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
+    const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
+    const unit = trackingMode === "commits" ? "commits" : "lines";
+
+    const currentRatio = calculateRatio(humanValue, claudeValue);
+    const targetRatio = getTargetRatio(config);
+    const isHealthy = isRatioHealthy(humanValue, claudeValue, targetRatio);
+
+    lines.push(`- **Target ratio:** ${(targetRatio * 100).toFixed(0)}% human-written code`);
+    lines.push(`- **Current ratio:** ${(currentRatio * 100).toFixed(0)}% human (${humanValue} ${unit}) / ${(100 - currentRatio * 100).toFixed(0)}% Claude (${claudeValue} ${unit})`);
+    lines.push(`- **Status:** ${isHealthy ? "✅ Healthy" : "⚠️ Below target"}`);
+
+    if (!isHealthy) {
+      const needed = calculateCatchUp(humanValue, claudeValue, targetRatio);
+      lines.push("");
+      lines.push("## ⚠️ NOTICE");
+      lines.push("");
+      lines.push("The human coding ratio is below the target.");
+      lines.push(`The human needs to write **${needed} more ${unit}** to get back to a healthy ratio.`);
+      lines.push("You will be hard blocked from writing code (except .md files).");
+      lines.push("Instead of writing code, use the spp-human-task skill to help the human complete the coding task.");
+    }
+  } else if (config.modeType === "pairProgramming") {
+    const session = config.pairSession;
+    if (session?.active) {
+      const driver = session.currentDriver === "human" ? "Human" : "Claude";
+      const navigator = session.currentDriver === "human" ? "Claude" : "Human";
+      lines.push(`- **Current driver:** ${driver}`);
+      lines.push(`- **Current navigator:** ${navigator}`);
+      if (session.task) {
+        lines.push(`- **Task:** ${session.task}`);
+      }
+      lines.push(`- **Turns:** Human: ${session.humanTurns}, Claude: ${session.claudeTurns}`);
+
+      if (session.currentDriver === "human") {
+        lines.push("");
+        lines.push("## 🐵 Human is driving");
+        lines.push("");
+        lines.push("The human is currently driving. You are the navigator.");
+        lines.push("You will be hard blocked from writing code (except .md files).");
+        lines.push("Provide guidance, suggestions, and code reviews but do not write code directly.");
+        lines.push("Use the spp-human-task skill to help the human complete the coding task.");
+      } else {
+        lines.push("");
+        lines.push("## 🤖 Claude is driving");
+        lines.push("");
+        lines.push("You are currently driving. The human is navigating.");
+        lines.push("Write code as directed by the human navigator.");
+      }
+    } else {
+      lines.push(`- **Session:** No active pair session`);
+      lines.push("");
+      lines.push("Run `spp pair start <task>` to begin a pair programming session.");
+    }
+  } else {
+    // learningProject
+    lines.push(`- **Status:** Coming soon`);
   }
+
+  lines.push("");
+  lines.push("A note on SPP tracking:");
+  lines.push("SPP tracks commits in VCS history (git or mercurial), within a window and/or after a starting commit.");
+  lines.push("Commits that include 'Co-authored by: Claude...' in the message are counted as Claude commits.");
+  lines.push("Commits without that phrase are counted as human commits.");
+  lines.push("Therefore, if asked to commit human authored code, don't include the 'Co-authored by: Claude...' phrase");
+  lines.push("Also, if you write code, ask the user if they would like to commit it and DO include the 'Co-authored by: Claude' phrase");
+  lines.push("This way, SPP tracking will work properly");
 
   lines.push("</spp>");
 
@@ -85,30 +148,21 @@ export function generateSystemPrompt(projectPath: string): string {
 /**
  * Calculate how many Claude commits/lines can be added before hitting the target ratio.
  * Positive = ahead (Claude commits remaining), negative = behind (human commits needed).
- *
- * Formula derivation for "ahead" case:
- *   humanValue / (humanValue + claudeValue + x) = targetRatio
- *   Solving for x: x = humanValue * (1 - targetRatio) / targetRatio - claudeValue
  */
 function calculateAheadBehind(humanValue: number, claudeValue: number, targetRatio: number): number {
   const total = humanValue + claudeValue;
   if (total === 0) return 0;
 
-  // Avoid division by zero for 100% human target
   if (targetRatio >= 1) {
-    return -claudeValue; // Need to remove all Claude commits
+    return -claudeValue;
   }
 
-  // How many more Claude commits until we hit exactly the target ratio
   const claudeCommitsRemaining = humanValue * (1 - targetRatio) / targetRatio - claudeValue;
   return Math.floor(claudeCommitsRemaining);
 }
 
 /**
  * Generate a compact status line for the prompt
- * Format: 🟢 Claude can write 11 more commits (4+)
- *         ⚠️ Claude can write 3 more commits (1-3)
- *         🔴 Human needs to write 2 more commits (0 or less)
  */
 export function generateStatusLine(projectPath: string): string {
   if (!isSppInitialized(projectPath)) {
@@ -121,27 +175,14 @@ export function generateStatusLine(projectPath: string): string {
     return "";
   }
 
-  const statsWindow = config.statsWindow ?? "oneWeek";
-  const statsWindowCutoff = getStatsWindowCutoff(statsWindow);
-  const lineCounts = getLineCountsWithWindow(projectPath, {
-    since: statsWindowCutoff,
-    afterCommit: config.trackingStartCommit,
-  });
-  const trackingMode: TrackingMode = config.trackingMode ?? "commits";
-  const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
-  const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
-  const unit = trackingMode === "commits" ? "commits" : "lines";
-
-  const targetRatio = getEffectiveRatio(config);
-  const total = humanValue + claudeValue;
-
-  if (total === 0) {
-    return "⚪ SPP: no commits yet";
+  // If drive mode is active, show drive mode message
+  if (config.driveMode) {
+    return `🚙 Drive mode active. Claude cannot write code. Toggle with \`spp drive\``;
   }
 
-  const claudeRemaining = calculateAheadBehind(humanValue, claudeValue, targetRatio);
-
-  // Generate emoji history for recent commits (newest on left)
+  // Get emoji history for recent commits (shared across all modes)
+  const statsWindow = config.statsWindow ?? "oneWeek";
+  const statsWindowCutoff = getStatsWindowCutoff(statsWindow);
   const recentCommits = getRecentCommitsClassified(projectPath, {
     since: statsWindowCutoff,
     afterCommit: config.trackingStartCommit,
@@ -151,15 +192,67 @@ export function generateStatusLine(projectPath: string): string {
     .map((c) => (c.isClaude ? "🤖" : "🐵"))
     .join(" > ");
 
-  const statusEmoji = claudeRemaining <= 0 ? "🔴" : claudeRemaining < 4 ? "⚠️" : "🟢";
-  const statusText = claudeRemaining > 0
-    ? `Claude can write ${claudeRemaining} more ${unit}`
-    : `Human needs to write ${Math.abs(claudeRemaining)} more ${unit}`;
+  if (config.modeType === "weeklyGoal" && config.goalType === "commits") {
+    // Weekly commits mode
+    const weekCutoff = getStatsWindowCutoff("oneWeek");
+    const weekCounts = getLineCountsWithWindow(projectPath, {
+      since: weekCutoff,
+      afterCommit: config.trackingStartCommit,
+    });
+    const goal = config.weeklyCommitGoal;
+    const completed = weekCounts.humanCommits;
+    const ratio = completed / goal;
 
-  // If drive mode is active, only show drive mode message
-  if (config.driveMode) {
-    return `🚙 Drive mode active. Claude cannot write code. Toggle with \`spp drive\``;
+    let statusEmoji: string;
+    if (completed >= goal) {
+      statusEmoji = "🟢";
+    } else if (ratio >= 0.8) {
+      statusEmoji = "⚠️";
+    } else {
+      statusEmoji = "🔴";
+    }
+
+    const statusText = `Human: ${completed}/${goal} commits this week`;
+    return `${statusEmoji} ${statusText} ${emojiHistory} ...`;
   }
 
-  return `${statusEmoji} ${statusText} ${emojiHistory} ...`;
+  if (config.modeType === "weeklyGoal" && config.goalType === "percentage") {
+    // Percentage mode - same as old behavior
+    const lineCounts = getLineCountsWithWindow(projectPath, {
+      since: statsWindowCutoff,
+      afterCommit: config.trackingStartCommit,
+    });
+    const trackingMode: TrackingMode = config.trackingMode ?? "commits";
+    const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
+    const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
+    const unit = trackingMode === "commits" ? "commits" : "lines";
+    const total = humanValue + claudeValue;
+
+    if (total === 0) {
+      return "⚪ SPP: no commits yet";
+    }
+
+    const targetRatio = getTargetRatio(config);
+    const claudeRemaining = calculateAheadBehind(humanValue, claudeValue, targetRatio);
+
+    const statusEmoji = claudeRemaining <= 0 ? "🔴" : claudeRemaining < 4 ? "⚠️" : "🟢";
+    const statusText = claudeRemaining > 0
+      ? `Claude can write ${claudeRemaining} more ${unit}`
+      : `Human needs to write ${Math.abs(claudeRemaining)} more ${unit}`;
+
+    return `${statusEmoji} ${statusText} ${emojiHistory} ...`;
+  }
+
+  if (config.modeType === "pairProgramming") {
+    const session = config.pairSession;
+    if (session?.active) {
+      const driverEmoji = session.currentDriver === "human" ? "🐵" : "🤖";
+      const driverLabel = session.currentDriver === "human" ? "Human" : "Claude";
+      return `${driverEmoji} ${driverLabel} is driving ${emojiHistory} ...`;
+    }
+    return `🤝 Pair Programming (no active session) ${emojiHistory} ...`;
+  }
+
+  // learningProject
+  return `📚 Learning project (coming soon)`;
 }

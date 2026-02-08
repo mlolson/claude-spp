@@ -42,23 +42,52 @@ describe("Initialization", () => {
 
   describe("initializeSpp", () => {
     it("creates .claude-spp directory", async () => {
-      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits", "git");
+      await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, vcsType: "git" });
       expect(fs.existsSync(getSppDir(TEST_DIR))).toBe(true);
     });
 
     it("creates config.json", async () => {
-      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits", "git");
+      await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, vcsType: "git" });
       const configPath = path.join(getSppDir(TEST_DIR), "config.json");
       expect(fs.existsSync(configPath)).toBe(true);
     });
 
-    it("uses specified mode", async () => {
-      const config = await initializeSpp(TEST_DIR, 3, "oneWeek", "commits", "git");
-      expect(config.mode).toBe(3);
+    it("uses weekly goal commits mode by default", async () => {
+      const config = await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, vcsType: "git" });
+      expect(config.modeType).toBe("weeklyGoal");
+      expect(config.goalType).toBe("commits");
+      expect(config.weeklyCommitGoal).toBe(5);
+    });
+
+    it("supports weekly goal percentage mode", async () => {
+      const config = await initializeSpp(TEST_DIR, {
+        modeType: "weeklyGoal",
+        goalType: "percentage",
+        targetPercentage: 50,
+        trackingMode: "commits",
+        vcsType: "git",
+      });
+      expect(config.modeType).toBe("weeklyGoal");
+      expect(config.goalType).toBe("percentage");
+      expect(config.targetPercentage).toBe(50);
+    });
+
+    it("supports pair programming mode", async () => {
+      const config = await initializeSpp(TEST_DIR, {
+        modeType: "pairProgramming",
+        vcsType: "git",
+      });
+      expect(config.modeType).toBe("pairProgramming");
     });
 
     it("uses specified statsWindow", async () => {
-      const config = await initializeSpp(TEST_DIR, 4, "oneDay", "commits", "git");
+      const config = await initializeSpp(TEST_DIR, {
+        modeType: "weeklyGoal",
+        goalType: "commits",
+        weeklyCommitGoal: 5,
+        statsWindow: "oneDay",
+        vcsType: "git",
+      });
       expect(config.statsWindow).toBe("oneDay");
     });
   });
@@ -70,30 +99,38 @@ describe("Initialization", () => {
 
     it("returns true when .claude-spp directory exists", () => {
       fs.mkdirSync(getSppDir(TEST_DIR), { recursive: true });
-      // isFullyInitialized just checks for .claude-spp directory existence
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
 
     it("returns true after full initialization", async () => {
-      await initializeSpp(TEST_DIR, 4, "oneWeek", "commits", "git");
+      await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, vcsType: "git" });
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
   });
 
   describe("ensureInitialized", () => {
     it("initializes if not already done", async () => {
-      const config = await ensureInitialized(TEST_DIR, 4, "oneWeek", "commits", "git");
+      const config = await ensureInitialized(TEST_DIR, { modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, vcsType: "git" });
 
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
       expect(config.enabled).toBe(true);
     });
 
     it("returns existing config if already initialized", async () => {
-      await initializeSpp(TEST_DIR, 5, "allTime", "commits", "git");
+      await initializeSpp(TEST_DIR, {
+        modeType: "weeklyGoal",
+        goalType: "percentage",
+        targetPercentage: 50,
+        trackingMode: "commits",
+        statsWindow: "allTime",
+        vcsType: "git",
+      });
 
       const config = await ensureInitialized(TEST_DIR);
 
-      expect(config.mode).toBe(5);
+      expect(config.modeType).toBe("weeklyGoal");
+      expect(config.goalType).toBe("percentage");
+      expect(config.targetPercentage).toBe(50);
       expect(config.statsWindow).toBe("allTime");
     });
   });

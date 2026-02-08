@@ -68,10 +68,55 @@ export function isSppInitialized(projectPath: string): boolean {
 }
 
 /**
+ * Migrate old config format (mode: number) to new format (modeType + goalType)
+ * Returns the migrated JSON object, or null if no migration needed
+ */
+function migrateOldConfig(json: Record<string, unknown>): Record<string, unknown> | null {
+  // Detect old format: has `mode` as a number but no `modeType` field
+  if (typeof json.mode === "number" && !("modeType" in json)) {
+    const oldMode = json.mode as number;
+    const migrated = { ...json };
+
+    // Remove old field
+    delete migrated.mode;
+
+    // All old modes map to weeklyGoal + percentage
+    migrated.modeType = "weeklyGoal";
+    migrated.goalType = "percentage";
+
+    switch (oldMode) {
+      case 1: // Lazy monkey (0% human) → 10% minimum
+        migrated.targetPercentage = 10;
+        break;
+      case 2: // Curious monkey (10% human)
+        migrated.targetPercentage = 10;
+        break;
+      case 3: // Clever monkey (25% human)
+        migrated.targetPercentage = 25;
+        break;
+      case 4: // Wise monkey (50% human)
+        migrated.targetPercentage = 50;
+        break;
+      case 5: // Crazy monkey (100% human)
+        migrated.targetPercentage = 100;
+        break;
+      default:
+        migrated.targetPercentage = 25;
+        break;
+    }
+
+    return migrated;
+  }
+
+  return null;
+}
+
+/**
  * Load and validate the config file
  * Returns default config if file doesn't exist
  * Throws if config is invalid
  * Auto-unpauses if pausedUntil time has passed
+ * Auto-migrates old config format
  */
 export function loadConfig(projectPath: string): Config {
   const configPath = getConfigPath(projectPath);
@@ -83,6 +128,16 @@ export function loadConfig(projectPath: string): Config {
   try {
     const raw = fs.readFileSync(configPath, "utf-8");
     const json = JSON.parse(raw);
+
+    // Try migration
+    const migrated = migrateOldConfig(json);
+    if (migrated) {
+      // Write migrated config back to disk
+      const config = ConfigSchema.parse(migrated);
+      saveConfig(projectPath, config);
+      return config;
+    }
+
     const config = ConfigSchema.parse(json);
 
     // Auto-unpause if pausedUntil time has passed
