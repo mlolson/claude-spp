@@ -7,13 +7,7 @@ export const ModeTypeSchema = z.enum(["weeklyGoal", "pairProgramming", "learning
 export type ModeType = z.infer<typeof ModeTypeSchema>;
 
 /**
- * Goal types for weekly goal mode
- */
-export const GoalTypeSchema = z.enum(["commits", "percentage"]);
-export type GoalType = z.infer<typeof GoalTypeSchema>;
-
-/**
- * Allowed percentage targets for weekly goal percentage mode
+ * Allowed percentage targets for weekly goal mode
  */
 export const PercentageOptionSchema = z.union([
   z.literal(10), z.literal(25), z.literal(50), z.literal(100)
@@ -94,8 +88,6 @@ export const ConfigSchema = z.object({
   modeType: ModeTypeSchema.default("weeklyGoal"),
 
   // Weekly goal settings
-  goalType: GoalTypeSchema.default("commits"),
-  weeklyCommitGoal: z.number().int().min(1).default(5),
   targetPercentage: PercentageOptionSchema.default(25),
   trackingMode: TrackingModeSchema.default("commits"),
   statsWindow: StatsWindowSchema.default("oneWeek"),
@@ -124,8 +116,6 @@ export type Config = z.infer<typeof ConfigSchema>;
 export const DEFAULT_CONFIG: Config = {
   enabled: true,
   modeType: "weeklyGoal",
-  goalType: "commits",
-  weeklyCommitGoal: 5,
   targetPercentage: 25,
   trackingMode: "commits",
   statsWindow: "oneWeek",
@@ -145,7 +135,7 @@ export const MODE_TYPE_LABELS: Record<ModeType, string> = {
  * Descriptions for mode types
  */
 export const MODE_TYPE_DESCRIPTIONS: Record<ModeType, string> = {
-  weeklyGoal: "Set a weekly human coding target (commits/week or % of code)",
+  weeklyGoal: "Set a weekly human coding target (% of code)",
   pairProgramming: "Claude and human trade off driving/navigating",
   learningProject: "Coming soon - placeholder for future learning features",
 };
@@ -163,9 +153,6 @@ export function getModeTypeName(modeType: ModeType): string {
 export function getModeTypeDescription(config: Config): string {
   switch (config.modeType) {
     case "weeklyGoal":
-      if (config.goalType === "commits") {
-        return `Weekly Goal (${config.weeklyCommitGoal} commits/week)`;
-      }
       return `Weekly Goal (${config.targetPercentage}% human, ${config.trackingMode})`;
     case "pairProgramming":
       return "Pair Programming";
@@ -175,11 +162,11 @@ export function getModeTypeDescription(config: Config): string {
 }
 
 /**
- * Get the target human ratio for percentage-based goal type
- * Returns the ratio (0-1) for percentage mode, or 0 for other modes
+ * Get the target human ratio for weekly goal mode
+ * Returns the ratio (0-1) for weeklyGoal mode, or 0 for other modes
  */
 export function getTargetRatio(config: Config): number {
-  if (config.modeType === "weeklyGoal" && config.goalType === "percentage") {
+  if (config.modeType === "weeklyGoal") {
     return config.targetPercentage / 100;
   }
   return 0;

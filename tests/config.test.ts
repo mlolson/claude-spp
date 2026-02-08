@@ -43,7 +43,7 @@ describe("Configuration", () => {
       fs.mkdirSync(stpDir, { recursive: true });
       fs.writeFileSync(
         path.join(stpDir, "config.json"),
-        JSON.stringify({ enabled: false, modeType: "weeklyGoal", goalType: "commits" })
+        JSON.stringify({ enabled: false, modeType: "weeklyGoal" })
       );
 
       const config = loadConfig(TEST_DIR);
@@ -91,8 +91,6 @@ describe("Configuration", () => {
   describe("Mode types", () => {
     it("has correct default config values", () => {
       expect(DEFAULT_CONFIG.modeType).toBe("weeklyGoal");
-      expect(DEFAULT_CONFIG.goalType).toBe("commits");
-      expect(DEFAULT_CONFIG.weeklyCommitGoal).toBe(5);
       expect(DEFAULT_CONFIG.targetPercentage).toBe(25);
     });
 
@@ -102,13 +100,8 @@ describe("Configuration", () => {
       expect(getModeTypeName("learningProject")).toBe("Learning Project");
     });
 
-    it("getModeTypeDescription for weekly goal commits", () => {
-      const config: Config = { ...DEFAULT_CONFIG, modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5 };
-      expect(getModeTypeDescription(config)).toBe("Weekly Goal (5 commits/week)");
-    });
-
-    it("getModeTypeDescription for weekly goal percentage", () => {
-      const config: Config = { ...DEFAULT_CONFIG, modeType: "weeklyGoal", goalType: "percentage", targetPercentage: 25, trackingMode: "commits" };
+    it("getModeTypeDescription for weekly goal", () => {
+      const config: Config = { ...DEFAULT_CONFIG, modeType: "weeklyGoal", targetPercentage: 25, trackingMode: "commits" };
       expect(getModeTypeDescription(config)).toBe("Weekly Goal (25% human, commits)");
     });
 
@@ -122,20 +115,19 @@ describe("Configuration", () => {
       expect(getModeTypeDescription(config)).toBe("Learning Project (coming soon)");
     });
 
-    it("getTargetRatio for percentage mode", () => {
-      const config: Config = { ...DEFAULT_CONFIG, modeType: "weeklyGoal", goalType: "percentage", targetPercentage: 50 };
+    it("getTargetRatio for weekly goal mode", () => {
+      const config: Config = { ...DEFAULT_CONFIG, modeType: "weeklyGoal", targetPercentage: 50 };
       expect(getTargetRatio(config)).toBe(0.5);
     });
 
-    it("getTargetRatio returns 0 for non-percentage modes", () => {
-      expect(getTargetRatio({ ...DEFAULT_CONFIG, modeType: "weeklyGoal", goalType: "commits" })).toBe(0);
+    it("getTargetRatio returns 0 for non-weeklyGoal modes", () => {
       expect(getTargetRatio({ ...DEFAULT_CONFIG, modeType: "pairProgramming" })).toBe(0);
       expect(getTargetRatio({ ...DEFAULT_CONFIG, modeType: "learningProject" })).toBe(0);
     });
   });
 
   describe("Config migration", () => {
-    it("migrates old mode 3 (Clever monkey 25%) to weeklyGoal percentage 25%", () => {
+    it("migrates old mode 3 (Clever monkey 25%) to weeklyGoal 25%", () => {
       const stpDir = getSppDir(TEST_DIR);
       fs.mkdirSync(stpDir, { recursive: true });
       fs.writeFileSync(
@@ -145,13 +137,12 @@ describe("Configuration", () => {
 
       const config = loadConfig(TEST_DIR);
       expect(config.modeType).toBe("weeklyGoal");
-      expect(config.goalType).toBe("percentage");
       expect(config.targetPercentage).toBe(25);
       // Old mode field should be gone
       expect((config as Record<string, unknown>).mode).toBeUndefined();
     });
 
-    it("migrates old mode 4 (Wise monkey 50%) to weeklyGoal percentage 50%", () => {
+    it("migrates old mode 4 (Wise monkey 50%) to weeklyGoal 50%", () => {
       const stpDir = getSppDir(TEST_DIR);
       fs.mkdirSync(stpDir, { recursive: true });
       fs.writeFileSync(
@@ -161,11 +152,10 @@ describe("Configuration", () => {
 
       const config = loadConfig(TEST_DIR);
       expect(config.modeType).toBe("weeklyGoal");
-      expect(config.goalType).toBe("percentage");
       expect(config.targetPercentage).toBe(50);
     });
 
-    it("migrates old mode 1 (Lazy monkey 0%) to weeklyGoal percentage 10%", () => {
+    it("migrates old mode 1 (Lazy monkey 0%) to weeklyGoal 10%", () => {
       const stpDir = getSppDir(TEST_DIR);
       fs.mkdirSync(stpDir, { recursive: true });
       fs.writeFileSync(
@@ -175,11 +165,10 @@ describe("Configuration", () => {
 
       const config = loadConfig(TEST_DIR);
       expect(config.modeType).toBe("weeklyGoal");
-      expect(config.goalType).toBe("percentage");
       expect(config.targetPercentage).toBe(10);
     });
 
-    it("migrates old mode 5 (Crazy monkey 100%) to weeklyGoal percentage 100%", () => {
+    it("migrates old mode 5 (Crazy monkey 100%) to weeklyGoal 100%", () => {
       const stpDir = getSppDir(TEST_DIR);
       fs.mkdirSync(stpDir, { recursive: true });
       fs.writeFileSync(
@@ -189,7 +178,6 @@ describe("Configuration", () => {
 
       const config = loadConfig(TEST_DIR);
       expect(config.modeType).toBe("weeklyGoal");
-      expect(config.goalType).toBe("percentage");
       expect(config.targetPercentage).toBe(100);
     });
 

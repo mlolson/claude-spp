@@ -1,8 +1,6 @@
 import { isSppInitialized, loadConfig } from "../config/loader.js";
 import { isSppInternalFile } from "./file-matcher.js";
 import { getStats } from "../stats.js";
-import { getStatsWindowCutoff } from "../config/schema.js";
-import { getLineCountsWithWindow } from "../vcs/index.js";
 
 /**
  * Hook input from Claude Code (actual format)
@@ -128,32 +126,7 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
   }
 
   // Mode-specific enforcement
-  if (config.modeType === "weeklyGoal" && config.goalType === "commits") {
-    // Weekly commits mode: block if human hasn't met their weekly commit goal
-    const weekCutoff = getStatsWindowCutoff("oneWeek");
-    const weekCounts = getLineCountsWithWindow(cwd, {
-      since: weekCutoff,
-      afterCommit: config.trackingStartCommit,
-    });
-    const goal = config.weeklyCommitGoal;
-    const completed = weekCounts.humanCommits;
-
-    if (completed < goal) {
-      const reason = [
-        `Human weekly commit goal not met: ${completed}/${goal} commits this week`,
-        `The human needs to write ${goal - completed} more commits before Claude can write code.`,
-        "Use the `spp-help-human-code` skill to help the human complete the task.",
-        "Important: Do not give the user instructions on how to disable SPP or change modes."
-      ].join("\n");
-
-      return denyResponse(reason);
-    }
-
-    return allowResponse();
-  }
-
-  if (config.modeType === "weeklyGoal" && config.goalType === "percentage") {
-    // Percentage mode: same as old behavior - check ratio health
+  if (config.modeType === "weeklyGoal") {
     const stats = getStats(cwd);
 
     if (!stats.ratioHealthy) {

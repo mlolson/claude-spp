@@ -8,7 +8,6 @@ export {
   getModeTypeDescription,
   type Config,
   type ModeType,
-  type GoalType,
   type PairSession,
 } from "./config/schema.js";
 

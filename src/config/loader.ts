@@ -80,9 +80,8 @@ function migrateOldConfig(json: Record<string, unknown>): Record<string, unknown
     // Remove old field
     delete migrated.mode;
 
-    // All old modes map to weeklyGoal + percentage
+    // All old modes map to weeklyGoal with percentage target
     migrated.modeType = "weeklyGoal";
-    migrated.goalType = "percentage";
 
     switch (oldMode) {
       case 1: // Lazy monkey (0% human) → 10% minimum

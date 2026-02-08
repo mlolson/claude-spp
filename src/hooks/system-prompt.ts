@@ -45,31 +45,7 @@ export function generateSystemPrompt(projectPath: string): string {
     `- **Mode:** ${modeDescription}`,
   ];
 
-  if (config.modeType === "weeklyGoal" && config.goalType === "commits") {
-    // Weekly commits mode
-    const weekCutoff = getStatsWindowCutoff("oneWeek");
-    const weekCounts = getLineCountsWithWindow(projectPath, {
-      since: weekCutoff,
-      afterCommit: config.trackingStartCommit,
-    });
-    const goal = config.weeklyCommitGoal;
-    const completed = weekCounts.humanCommits;
-    const goalMet = completed >= goal;
-
-    lines.push(`- **Weekly goal:** ${completed}/${goal} human commits this week`);
-    lines.push(`- **Status:** ${goalMet ? "✅ Goal met" : "⚠️ Below goal"}`);
-
-    if (!goalMet) {
-      lines.push("");
-      lines.push("## ⚠️ NOTICE");
-      lines.push("");
-      lines.push("The human has not met their weekly commit goal.");
-      lines.push(`The human needs to write **${goal - completed} more commits** this week.`);
-      lines.push("You will be hard blocked from writing code (except .md files).");
-      lines.push("Instead of writing code, use the spp-human-task skill to help the human complete the coding task.");
-    }
-  } else if (config.modeType === "weeklyGoal" && config.goalType === "percentage") {
-    // Percentage mode - same as old behavior
+  if (config.modeType === "weeklyGoal") {
     const lineCounts = getLineCounts(projectPath);
     const trackingMode: TrackingMode = config.trackingMode ?? "commits";
     const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
@@ -192,32 +168,7 @@ export function generateStatusLine(projectPath: string): string {
     .map((c) => (c.isClaude ? "🤖" : "🐵"))
     .join(" > ");
 
-  if (config.modeType === "weeklyGoal" && config.goalType === "commits") {
-    // Weekly commits mode
-    const weekCutoff = getStatsWindowCutoff("oneWeek");
-    const weekCounts = getLineCountsWithWindow(projectPath, {
-      since: weekCutoff,
-      afterCommit: config.trackingStartCommit,
-    });
-    const goal = config.weeklyCommitGoal;
-    const completed = weekCounts.humanCommits;
-    const ratio = completed / goal;
-
-    let statusEmoji: string;
-    if (completed >= goal) {
-      statusEmoji = "🟢";
-    } else if (ratio >= 0.8) {
-      statusEmoji = "⚠️";
-    } else {
-      statusEmoji = "🔴";
-    }
-
-    const statusText = `Human: ${completed}/${goal} commits this week`;
-    return `${statusEmoji} ${statusText} ${emojiHistory} ...`;
-  }
-
-  if (config.modeType === "weeklyGoal" && config.goalType === "percentage") {
-    // Percentage mode - same as old behavior
+  if (config.modeType === "weeklyGoal") {
     const lineCounts = getLineCountsWithWindow(projectPath, {
       since: statsWindowCutoff,
       afterCommit: config.trackingStartCommit,

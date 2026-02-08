@@ -8,7 +8,6 @@ import {
   DEFAULT_CONFIG,
   type Config,
   type ModeType,
-  type GoalType,
   type StatsWindow,
   type TrackingMode,
   type VcsType,
@@ -170,44 +169,6 @@ async function promptForModeType(): Promise<ModeType> {
 }
 
 /**
- * Prompt user to select a goal type for weekly goal mode
- */
-async function promptForGoalType(): Promise<GoalType> {
-  console.log("\nGoal type:\n");
-  console.log("  1. Commits per week (default) - Human must write N commits per week");
-  console.log("  2. Percentage - Human must write N% of code");
-  console.log("");
-
-  while (true) {
-    const userResponse = await promptUser("Select a goal type [1-2, or press Enter for Commits per week]: ");
-    if (userResponse === "" || userResponse === "1") {
-      return "commits";
-    }
-    if (userResponse === "2") {
-      return "percentage";
-    }
-    console.log(`Invalid choice: ${userResponse}. Must be 1 or 2.`);
-  }
-}
-
-/**
- * Prompt user for weekly commit goal
- */
-async function promptForWeeklyCommitGoal(): Promise<number> {
-  while (true) {
-    const userResponse = await promptUser("How many commits per week? [default: 5]: ");
-    if (userResponse === "") {
-      return 5;
-    }
-    const num = parseInt(userResponse, 10);
-    if (num >= 1) {
-      return num;
-    }
-    console.log(`Invalid value: ${userResponse}. Must be a positive integer.`);
-  }
-}
-
-/**
  * Prompt user for target percentage
  */
 async function promptForTargetPercentage(): Promise<10 | 25 | 50 | 100> {
@@ -310,8 +271,6 @@ export async function initializeSpp(
   projectPath: string,
   options?: {
     modeType?: ModeType;
-    goalType?: GoalType;
-    weeklyCommitGoal?: number;
     targetPercentage?: 10 | 25 | 50 | 100;
     trackingMode?: TrackingMode;
     statsWindow?: StatsWindow;
@@ -361,16 +320,8 @@ export async function initializeSpp(
   };
 
   if (selectedModeType === "weeklyGoal") {
-    const selectedGoalType = options?.goalType ?? await promptForGoalType();
-    config.goalType = selectedGoalType;
-
-    if (selectedGoalType === "commits") {
-      config.weeklyCommitGoal = options?.weeklyCommitGoal ?? await promptForWeeklyCommitGoal();
-    } else {
-      // Percentage mode
-      config.targetPercentage = options?.targetPercentage ?? await promptForTargetPercentage();
-      config.trackingMode = options?.trackingMode ?? await promptForTrackingMode();
-    }
+    config.targetPercentage = options?.targetPercentage ?? await promptForTargetPercentage();
+    config.trackingMode = options?.trackingMode ?? await promptForTrackingMode();
   } else if (selectedModeType === "pairProgramming") {
     // No additional config at init
   } else if (selectedModeType === "learningProject") {
@@ -414,8 +365,6 @@ export async function ensureInitialized(
   projectPath: string,
   options?: {
     modeType?: ModeType;
-    goalType?: GoalType;
-    weeklyCommitGoal?: number;
     targetPercentage?: 10 | 25 | 50 | 100;
     trackingMode?: TrackingMode;
     statsWindow?: StatsWindow;

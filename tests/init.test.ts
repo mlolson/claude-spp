@@ -42,33 +42,30 @@ describe("Initialization", () => {
 
   describe("initializeSpp", () => {
     it("creates .claude-spp directory", async () => {
-      await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, vcsType: "git" });
+      await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", targetPercentage: 25, trackingMode: "commits", vcsType: "git" });
       expect(fs.existsSync(getSppDir(TEST_DIR))).toBe(true);
     });
 
     it("creates config.json", async () => {
-      await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, vcsType: "git" });
+      await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", targetPercentage: 25, trackingMode: "commits", vcsType: "git" });
       const configPath = path.join(getSppDir(TEST_DIR), "config.json");
       expect(fs.existsSync(configPath)).toBe(true);
     });
 
-    it("uses weekly goal commits mode by default", async () => {
-      const config = await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, vcsType: "git" });
+    it("uses weekly goal mode with percentage target", async () => {
+      const config = await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", targetPercentage: 25, trackingMode: "commits", vcsType: "git" });
       expect(config.modeType).toBe("weeklyGoal");
-      expect(config.goalType).toBe("commits");
-      expect(config.weeklyCommitGoal).toBe(5);
+      expect(config.targetPercentage).toBe(25);
     });
 
-    it("supports weekly goal percentage mode", async () => {
+    it("supports custom percentage target", async () => {
       const config = await initializeSpp(TEST_DIR, {
         modeType: "weeklyGoal",
-        goalType: "percentage",
         targetPercentage: 50,
         trackingMode: "commits",
         vcsType: "git",
       });
       expect(config.modeType).toBe("weeklyGoal");
-      expect(config.goalType).toBe("percentage");
       expect(config.targetPercentage).toBe(50);
     });
 
@@ -83,8 +80,8 @@ describe("Initialization", () => {
     it("uses specified statsWindow", async () => {
       const config = await initializeSpp(TEST_DIR, {
         modeType: "weeklyGoal",
-        goalType: "commits",
-        weeklyCommitGoal: 5,
+        targetPercentage: 25,
+        trackingMode: "commits",
         statsWindow: "oneDay",
         vcsType: "git",
       });
@@ -103,14 +100,14 @@ describe("Initialization", () => {
     });
 
     it("returns true after full initialization", async () => {
-      await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, vcsType: "git" });
+      await initializeSpp(TEST_DIR, { modeType: "weeklyGoal", targetPercentage: 25, trackingMode: "commits", vcsType: "git" });
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
     });
   });
 
   describe("ensureInitialized", () => {
     it("initializes if not already done", async () => {
-      const config = await ensureInitialized(TEST_DIR, { modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, vcsType: "git" });
+      const config = await ensureInitialized(TEST_DIR, { modeType: "weeklyGoal", targetPercentage: 25, trackingMode: "commits", vcsType: "git" });
 
       expect(isFullyInitialized(TEST_DIR)).toBe(true);
       expect(config.enabled).toBe(true);
@@ -119,7 +116,6 @@ describe("Initialization", () => {
     it("returns existing config if already initialized", async () => {
       await initializeSpp(TEST_DIR, {
         modeType: "weeklyGoal",
-        goalType: "percentage",
         targetPercentage: 50,
         trackingMode: "commits",
         statsWindow: "allTime",
@@ -129,7 +125,6 @@ describe("Initialization", () => {
       const config = await ensureInitialized(TEST_DIR);
 
       expect(config.modeType).toBe("weeklyGoal");
-      expect(config.goalType).toBe("percentage");
       expect(config.targetPercentage).toBe(50);
       expect(config.statsWindow).toBe("allTime");
     });

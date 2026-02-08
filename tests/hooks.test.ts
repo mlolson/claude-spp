@@ -130,7 +130,7 @@ describe("preToolUseHook", () => {
   }
 
   it("should allow non-write tools", () => {
-    writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, enabled: true });
+    writeConfig({ modeType: "weeklyGoal", targetPercentage: 25, enabled: true });
     const result = preToolUseHook({
       tool_name: "Read",
       tool_input: { file_path: "src/test.ts" },
@@ -154,7 +154,7 @@ describe("preToolUseHook", () => {
   });
 
   it("should allow writes to .claude-spp directory", () => {
-    writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, enabled: true });
+    writeConfig({ modeType: "weeklyGoal", targetPercentage: 25, enabled: true });
     const result = preToolUseHook({
       tool_name: "Write",
       tool_input: { file_path: path.join(tempDir, ".claude-spp", "config.json"), content: "{}" },
@@ -165,7 +165,7 @@ describe("preToolUseHook", () => {
 
   describe("drive mode", () => {
     it("should block writes in drive mode", () => {
-      writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, enabled: true, driveMode: true });
+      writeConfig({ modeType: "weeklyGoal", targetPercentage: 25, enabled: true, driveMode: true });
       const result = preToolUseHook({
         tool_name: "Write",
         tool_input: { file_path: "src/test.ts", content: "test" },
@@ -176,45 +176,10 @@ describe("preToolUseHook", () => {
     });
   });
 
-  describe("weekly goal commits enforcement", () => {
-    it("should block writes when weekly commit goal not met", () => {
-      initGitRepo();
-      writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, enabled: true });
-
-      // No human commits = goal not met
-      const result = preToolUseHook({
-        tool_name: "Write",
-        tool_input: { file_path: "src/test.ts", content: "test" },
-        cwd: tempDir,
-      });
-      expect(result.hookSpecificOutput.permissionDecision).toBe("deny");
-      expect(result.hookSpecificOutput.permissionDecisionReason).toContain("weekly commit goal not met");
-    });
-
-    it("should allow writes when weekly commit goal is met", () => {
-      initGitRepo();
-      writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 3, enabled: true });
-
-      // Create 3 human commits
-      const { execSync } = require("child_process");
-      for (let i = 0; i < 3; i++) {
-        fs.writeFileSync(path.join(tempDir, `human${i}.txt`), `human code ${i}`);
-        execSync(`git add . && git commit -m "human commit ${i}"`, { cwd: tempDir, stdio: "ignore" });
-      }
-
-      const result = preToolUseHook({
-        tool_name: "Write",
-        tool_input: { file_path: "src/test.ts", content: "test" },
-        cwd: tempDir,
-      });
-      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
-    });
-  });
-
   describe("weekly goal percentage enforcement", () => {
     it("should block writes when ratio is below target", () => {
       initGitRepo();
-      writeConfig({ modeType: "weeklyGoal", goalType: "percentage", targetPercentage: 50, trackingMode: "commits", enabled: true });
+      writeConfig({ modeType: "weeklyGoal", targetPercentage: 50, trackingMode: "commits", enabled: true });
 
       // Create many Claude commits, few human commits
       const { execSync } = require("child_process");
@@ -236,7 +201,7 @@ describe("preToolUseHook", () => {
 
     it("should allow writes when ratio is healthy", () => {
       initGitRepo();
-      writeConfig({ modeType: "weeklyGoal", goalType: "percentage", targetPercentage: 50, trackingMode: "commits", enabled: true });
+      writeConfig({ modeType: "weeklyGoal", targetPercentage: 50, trackingMode: "commits", enabled: true });
 
       // Create healthy ratio: more human commits than Claude
       const { execSync } = require("child_process");
@@ -336,7 +301,7 @@ describe("preToolUseHook", () => {
   describe("common bypasses", () => {
     it("should always allow .claude-spp writes even with unhealthy ratio", () => {
       initGitRepo();
-      writeConfig({ modeType: "weeklyGoal", goalType: "percentage", targetPercentage: 50, trackingMode: "commits", enabled: true });
+      writeConfig({ modeType: "weeklyGoal", targetPercentage: 50, trackingMode: "commits", enabled: true });
 
       const { execSync } = require("child_process");
       for (let i = 0; i < 10; i++) {
@@ -353,7 +318,7 @@ describe("preToolUseHook", () => {
     });
 
     it("should always allow markdown files", () => {
-      writeConfig({ modeType: "weeklyGoal", goalType: "commits", weeklyCommitGoal: 5, enabled: true });
+      writeConfig({ modeType: "weeklyGoal", targetPercentage: 25, enabled: true });
       initGitRepo();
 
       const result = preToolUseHook({

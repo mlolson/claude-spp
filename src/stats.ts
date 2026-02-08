@@ -6,7 +6,6 @@ import {
   STATS_WINDOW_LABELS,
   TRACKING_MODE_LABELS,
   type ModeType,
-  type GoalType,
   type StatsWindow,
   type TrackingMode,
   type PairSession,
@@ -36,15 +35,11 @@ export interface StatsResult {
   initialized: boolean;
   enabled?: boolean;
   modeType?: ModeType;
-  goalType?: GoalType;
   targetRatio?: number;
   currentRatio?: number;
   ratioHealthy?: boolean;
   statsWindow?: StatsWindow;
   trackingMode?: TrackingMode;
-  weeklyCommitGoal?: number;
-  weeklyCommitsCompleted?: number;
-  weeklyCommitGoalMet?: boolean;
   pairSession?: PairSession;
   lines?: {
     humanLines: number;
@@ -71,7 +66,6 @@ export function getStats(projectPath: string): StatsResult {
   const statsWindow = config.statsWindow ?? "oneWeek";
   const trackingMode = config.trackingMode ?? "commits";
   const modeType = config.modeType;
-  const goalType = config.goalType;
 
   // Get counts for ratio calculation
   const statsWindowCutoff = getStatsWindowCutoff(statsWindow);
@@ -84,35 +78,21 @@ export function getStats(projectPath: string): StatsResult {
     initialized: true,
     enabled: config.enabled,
     modeType,
-    goalType,
     statsWindow,
     trackingMode,
     lines: lineCounts,
   };
 
   if (modeType === "weeklyGoal") {
-    if (goalType === "commits") {
-      // Count human commits in last 7 days
-      const weekCutoff = getStatsWindowCutoff("oneWeek");
-      const weekCounts = getLineCountsWithWindow(projectPath, {
-        since: weekCutoff,
-        afterCommit: config.trackingStartCommit,
-      });
-      result.weeklyCommitGoal = config.weeklyCommitGoal;
-      result.weeklyCommitsCompleted = weekCounts.humanCommits;
-      result.weeklyCommitGoalMet = weekCounts.humanCommits >= config.weeklyCommitGoal;
-    } else {
-      // Percentage-based
-      const targetRatio = getTargetRatio(config);
-      const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
-      const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
-      const currentRatio = calculateRatio(humanValue, claudeValue);
-      const ratioHealthy = isRatioHealthy(humanValue, claudeValue, targetRatio);
+    const targetRatio = getTargetRatio(config);
+    const humanValue = trackingMode === "commits" ? lineCounts.humanCommits : lineCounts.humanLines;
+    const claudeValue = trackingMode === "commits" ? lineCounts.claudeCommits : lineCounts.claudeLines;
+    const currentRatio = calculateRatio(humanValue, claudeValue);
+    const ratioHealthy = isRatioHealthy(humanValue, claudeValue, targetRatio);
 
-      result.targetRatio = targetRatio;
-      result.currentRatio = currentRatio;
-      result.ratioHealthy = ratioHealthy;
-    }
+    result.targetRatio = targetRatio;
+    result.currentRatio = currentRatio;
+    result.ratioHealthy = ratioHealthy;
   } else if (modeType === "pairProgramming") {
     result.pairSession = config.pairSession;
   }
@@ -130,20 +110,11 @@ export function formatStats(stats: StatsResult): string {
   }
 
   const modeType = stats.modeType ?? "weeklyGoal";
-  const goalType = stats.goalType ?? "commits";
 
   // Build status line based on mode type
   let statusLine: string;
 
-  if (modeType === "weeklyGoal" && goalType === "commits") {
-    const goal = stats.weeklyCommitGoal ?? 5;
-    const completed = stats.weeklyCommitsCompleted ?? 0;
-    if (completed >= goal) {
-      statusLine = `✅ 🐒 Weekly goal met! ${completed}/${goal} commits this week. Keep up the great work!`;
-    } else {
-      statusLine = `⚠️ 🙉 Weekly goal: ${completed}/${goal} commits this week. Write ${goal - completed} more to meet your goal!`;
-    }
-  } else if (modeType === "weeklyGoal" && goalType === "percentage") {
+  if (modeType === "weeklyGoal") {
     const trackingMode = stats.trackingMode ?? "commits";
     const target = stats.targetRatio ?? 0;
     const ratio = stats.currentRatio ?? 1;

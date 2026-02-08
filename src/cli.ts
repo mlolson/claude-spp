@@ -93,31 +93,17 @@ program
     config.modeType = selectedModeType;
 
     if (selectedModeType === "weeklyGoal") {
-      // Prompt for goal type sub-config
-      console.log("\nGoal type:\n");
-      console.log("  1. Commits per week (default)");
-      console.log("  2. Percentage");
+      // Prompt for percentage target
+      console.log("\nTarget percentage:\n");
+      console.log("  1. 10%");
+      console.log("  2. 25% (default)");
+      console.log("  3. 50%");
+      console.log("  4. 100%");
       console.log("");
-      const goalChoice = await promptUser("Select a goal type [1-2, or press Enter for Commits per week]: ");
-      if (goalChoice === "2") {
-        config.goalType = "percentage";
-        // Prompt for percentage
-        console.log("\nTarget percentage:\n");
-        console.log("  1. 10%");
-        console.log("  2. 25% (default)");
-        console.log("  3. 50%");
-        console.log("  4. 100%");
-        console.log("");
-        const pctChoice = await promptUser("Select [1-4, or press Enter for 25%]: ");
-        const percentages: (10 | 25 | 50 | 100)[] = [10, 25, 50, 100];
-        const pctNum = parseInt(pctChoice, 10);
-        config.targetPercentage = (pctNum >= 1 && pctNum <= 4) ? percentages[pctNum - 1] : 25;
-      } else {
-        config.goalType = "commits";
-        const goalStr = await promptUser("How many commits per week? [default: 5]: ");
-        const goalNum = parseInt(goalStr, 10);
-        config.weeklyCommitGoal = goalNum >= 1 ? goalNum : 5;
-      }
+      const pctChoice = await promptUser("Select [1-4, or press Enter for 25%]: ");
+      const percentages: (10 | 25 | 50 | 100)[] = [10, 25, 50, 100];
+      const pctNum = parseInt(pctChoice, 10);
+      config.targetPercentage = (pctNum >= 1 && pctNum <= 4) ? percentages[pctNum - 1] : 25;
     } else if (selectedModeType === "learningProject") {
       console.log("\n📚 Learning Project mode is coming soon! Using Weekly Goal as fallback.\n");
       config.modeType = "weeklyGoal";
@@ -165,15 +151,10 @@ program
     console.log("\nCurrent settings:\n");
     console.log(`  1. Mode type:        ${getModeTypeDescription(config)}`);
     if (config.modeType === "weeklyGoal") {
-      console.log(`  2. Goal type:        ${config.goalType === "commits" ? "Commits per week" : "Percentage"}`);
-      if (config.goalType === "commits") {
-        console.log(`  3. Weekly goal:      ${config.weeklyCommitGoal} commits/week`);
-      } else {
-        console.log(`  3. Target:           ${config.targetPercentage}% human`);
-        console.log(`  4. Tracking mode:    ${config.trackingMode}`);
-      }
+      console.log(`  2. Target:           ${config.targetPercentage}% human`);
+      console.log(`  3. Tracking mode:    ${config.trackingMode}`);
     }
-    console.log(`  5. Stats window:     ${config.statsWindow}`);
+    console.log(`  4. Stats window:     ${config.statsWindow}`);
     console.log("");
 
     const choice = await promptUser("Enter setting number to change (or press Enter to exit): ");
@@ -202,18 +183,6 @@ program
       }
       case 2: {
         if (config.modeType === "weeklyGoal") {
-          const goalChoice = await promptUser("Goal type - 1. Commits per week, 2. Percentage: ");
-          if (goalChoice === "1") config.goalType = "commits";
-          else if (goalChoice === "2") config.goalType = "percentage";
-        }
-        break;
-      }
-      case 3: {
-        if (config.modeType === "weeklyGoal" && config.goalType === "commits") {
-          const goalStr = await promptUser("Weekly commit goal: ");
-          const goalNum = parseInt(goalStr, 10);
-          if (goalNum >= 1) config.weeklyCommitGoal = goalNum;
-        } else if (config.modeType === "weeklyGoal" && config.goalType === "percentage") {
           const pctChoice = await promptUser("Percentage (10, 25, 50, 100): ");
           const pct = parseInt(pctChoice, 10);
           if (pct === 10 || pct === 25 || pct === 50 || pct === 100) {
@@ -222,15 +191,15 @@ program
         }
         break;
       }
-      case 4: {
-        if (config.modeType === "weeklyGoal" && config.goalType === "percentage") {
+      case 3: {
+        if (config.modeType === "weeklyGoal") {
           const tmChoice = await promptUser("Tracking mode - 1. Commits, 2. Lines: ");
           if (tmChoice === "1") config.trackingMode = "commits";
           else if (tmChoice === "2") config.trackingMode = "lines";
         }
         break;
       }
-      case 5: {
+      case 4: {
         const swChoice = await promptUser("Stats window - 1. Last 24 hours, 2. Last 7 days, 3. All time: ");
         if (swChoice === "1") config.statsWindow = "oneDay";
         else if (swChoice === "2") config.statsWindow = "oneWeek";
