@@ -49,15 +49,30 @@ When your human coding ratio drops below your target, Claude is **blocked** from
 
 ### Modes
 
-| Mode | Human / AI | Description |
-|------|------------|-------------|
-| Lazy monkey | 0% / 100% | Claude does everything |
-| Curious monkey | 10% / 90% | Light human involvement |
-| Clever monkey | 25% / 75% | Default - balanced assistance |
-| Wise monkey | 50% / 50% | Equal partnership |
-| Crazy monkey | 100% / 0% | You write everything, Claude advises |
+SPP has three mode types:
 
-Change modes anytime with `spp mode <1-5>`.
+| # | Mode | Description |
+|---|------|-------------|
+| 1 | **Weekly Goal** | Set a weekly human coding target (% of code). Default. |
+| 2 | **Pair Programming** | Claude and human trade off driving/navigating in sessions. |
+| 3 | **Learning Project** | Coming soon. |
+
+Change modes anytime with `spp mode <1-3>`.
+
+#### Weekly Goal
+
+The default mode. You set a target percentage of code you want to write yourself (10%, 25%, 50%, or 100%). SPP tracks commits (or lines of code) over a rolling window and blocks Claude from writing code when your ratio drops below the target.
+
+#### Pair Programming
+
+Structured driver/navigator sessions. You start a session with a task description, then take turns driving (writing code) and navigating (reviewing, guiding). When the human is driving, SPP watches file changes and records a transcript. When Claude is driving, it writes code normally.
+
+```bash
+spp pair start "implement user auth"   # Start a session (human drives first)
+spp pair rotate                        # Switch driver/navigator roles
+spp pair end                           # End the session
+spp pair                               # Show session status
+```
 
 ## Features
 
@@ -114,12 +129,18 @@ spp reset
 |---------|-------------|
 | `spp init` | Initialize SPP in the current project |
 | `spp stats` | Show current ratio and statistics |
-| `spp mode [n]` | Show or change mode (1-5) |
-| `spp modes` | List all available modes |
+| `spp mode [n]` | Show or change mode type (1-3) |
+| `spp modes` | List all available mode types |
+| `spp settings` | View and modify SPP settings |
 | `spp drive` | Toggle drive mode |
 | `spp pause` | Pause enforcement for 24 hours |
 | `spp resume` | Resume enforcement |
 | `spp reset` | Reset tracking to current commit |
+| `spp pair start <task>` | Start a pair programming session |
+| `spp pair rotate` | Rotate driver/navigator roles |
+| `spp pair end` | End the current pair session |
+| `spp pair` | Show pair session status |
+| `spp transcript` | Show transcript of current driving turn |
 
 ## Configuration
 
@@ -127,9 +148,10 @@ Config is stored in `.claude-spp/config.json`:
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `mode` | `3` | Coding mode (1-5) |
-| `statsWindow` | `"oneWeek"` | Time window: `"oneDay"`, `"oneWeek"`, `"allTime"` |
+| `modeType` | `"weeklyGoal"` | Mode type: `"weeklyGoal"`, `"pairProgramming"`, `"learningProject"` |
+| `targetPercentage` | `25` | Human coding target for weekly goal mode: `10`, `25`, `50`, `100` |
 | `trackingMode` | `"commits"` | What to count: `"commits"` or `"lines"` |
+| `statsWindow` | `"oneWeek"` | Time window: `"oneDay"`, `"oneWeek"`, `"allTime"` |
 | `driveMode` | `false` | Block Claude regardless of ratio |
 | `enabled` | `true` | Whether enforcement is active |
 
@@ -138,7 +160,8 @@ Example:
 ```json
 {
   "enabled": true,
-  "mode": 3,
+  "modeType": "weeklyGoal",
+  "targetPercentage": 25,
   "statsWindow": "oneWeek",
   "trackingMode": "commits",
   "vcsType": "git"
