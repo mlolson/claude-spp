@@ -77,6 +77,7 @@ See your current ratio at a glance in Claude Code's status line:
 ```
 🟢 Claude can write 9 more commits 🤖 > 🐵 > 🤖 > 🐵 > 🐵 ...
 🔴 Human needs to write 2 more commits 🤖 > 🤖 > 🤖 > 🐵 ...
+🚙 Drive mode enabled. Claude cannot write code.                                                                                          
 ```
 
 Enable by adding to `~/.claude/settings.json`:
