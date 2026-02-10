@@ -222,7 +222,7 @@ program
   .description("Show SPP status and statistics")
   .action((opts) => {
     const stats = getStats(process.cwd());
-    if (opts) {
+    if (opts.json) {
       console.log(JSON.stringify(stats, null, 2));
     } else {
       console.log(formatStats(stats));

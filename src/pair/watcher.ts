@@ -162,6 +162,69 @@ function handleFileEvent(
   }
 }
 
+// --- .gitignore parsing ---
+
+/**
+ * Convert a single .gitignore pattern to chokidar-compatible glob pattern(s).
+ */
+export function gitignorePatternToGlobs(pattern: string): string[] {
+  const hasLeadingSlash = pattern.startsWith("/");
+  const hasTrailingSlash = pattern.endsWith("/");
+
+  // Remove leading slash (means "relative to repo root")
+  if (hasLeadingSlash) pattern = pattern.slice(1);
+  // Remove trailing slash
+  if (hasTrailingSlash) pattern = pattern.slice(0, -1);
+
+  // A pattern with a slash (after stripping leading/trailing) is anchored
+  // to the repo root in .gitignore semantics
+  const isAnchored = hasLeadingSlash || pattern.includes("/");
+
+  if (isAnchored) {
+    if (hasTrailingSlash) {
+      return [`${pattern}/**`];
+    }
+    return [pattern, `${pattern}/**`];
+  }
+
+  // Unanchored: can match anywhere in the tree
+  if (hasTrailingSlash) {
+    return [`**/${pattern}/**`];
+  }
+  return [`**/${pattern}`, `**/${pattern}/**`];
+}
+
+/**
+ * Parse a .gitignore file and return chokidar-compatible glob patterns.
+ * Handles common .gitignore syntax: comments, blanks, directory patterns,
+ * anchored patterns, and wildcard patterns.
+ * Does not handle negation patterns (!pattern).
+ */
+export function loadGitignorePatterns(projectPath: string): string[] {
+  const gitignorePath = path.join(projectPath, ".gitignore");
+  let content: string;
+  try {
+    content = fs.readFileSync(gitignorePath, "utf-8");
+  } catch {
+    return [];
+  }
+
+  const patterns: string[] = [];
+  for (const rawLine of content.split("\n")) {
+    const line = rawLine.trim();
+
+    // Skip empty lines and comments
+    if (!line || line.startsWith("#")) continue;
+
+    // Skip negation patterns
+    if (line.startsWith("!")) continue;
+
+    patterns.push(...gitignorePatternToGlobs(line));
+  }
+
+  return patterns;
+}
+
 // --- Main entry point ---
 
 /**
@@ -175,10 +238,13 @@ export function runWatcher(projectPath: string): void {
     fs.mkdirSync(sppDir, { recursive: true });
   }
 
+  const gitignorePatterns = loadGitignorePatterns(projectPath);
+  const allIgnored = [...IGNORED_PATTERNS, ...gitignorePatterns];
+
   let isReady = false;
 
   const watcher = watch(projectPath, {
-    ignored: IGNORED_PATTERNS,
+    ignored: allIgnored,
     persistent: true,
     ignoreInitial: false, // We want add events for initial scan to cache content
   });

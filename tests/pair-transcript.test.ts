@@ -12,7 +12,7 @@ import {
   formatTime,
   listTranscripts,
 } from "../src/pair/transcript.js";
-import { computeDiff, isBinaryFile } from "../src/pair/watcher.js";
+import { computeDiff, isBinaryFile, loadGitignorePatterns, gitignorePatternToGlobs } from "../src/pair/watcher.js";
 import { userPromptHook, stopHook } from "../src/pair/hooks.js";
 
 describe("transcript operations", () => {
@@ -341,5 +341,88 @@ describe("conversation hooks", () => {
       });
       expect(getTranscript(tempDir)).toBe("");
     });
+  });
+});
+
+describe("gitignore pattern conversion", () => {
+  it("converts unanchored file pattern", () => {
+    expect(gitignorePatternToGlobs("*.log")).toEqual(["**/*.log", "**/*.log/**"]);
+  });
+
+  it("converts unanchored directory pattern (trailing slash)", () => {
+    expect(gitignorePatternToGlobs("coverage/")).toEqual(["**/coverage/**"]);
+  });
+
+  it("converts unanchored bare name", () => {
+    expect(gitignorePatternToGlobs(".env")).toEqual(["**/.env", "**/.env/**"]);
+  });
+
+  it("converts anchored pattern (leading slash)", () => {
+    expect(gitignorePatternToGlobs("/build")).toEqual(["build", "build/**"]);
+  });
+
+  it("converts anchored directory pattern (leading + trailing slash)", () => {
+    expect(gitignorePatternToGlobs("/build/")).toEqual(["build/**"]);
+  });
+
+  it("converts pattern with middle slash (implicitly anchored)", () => {
+    expect(gitignorePatternToGlobs("src/generated")).toEqual([
+      "src/generated",
+      "src/generated/**",
+    ]);
+  });
+
+  it("converts pattern with middle and trailing slash", () => {
+    expect(gitignorePatternToGlobs("src/generated/")).toEqual(["src/generated/**"]);
+  });
+
+  it("converts wildcard directory pattern", () => {
+    expect(gitignorePatternToGlobs("*.pyc")).toEqual(["**/*.pyc", "**/*.pyc/**"]);
+  });
+});
+
+describe("loadGitignorePatterns", () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "spp-test-gitignore-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it("returns empty array when no .gitignore exists", () => {
+    expect(loadGitignorePatterns(tempDir)).toEqual([]);
+  });
+
+  it("parses typical .gitignore file", () => {
+    fs.writeFileSync(
+      path.join(tempDir, ".gitignore"),
+      "# dependencies\nnode_modules\n\n# build output\ndist/\n\n# env files\n.env\n",
+    );
+    const patterns = loadGitignorePatterns(tempDir);
+    expect(patterns).toContain("**/node_modules");
+    expect(patterns).toContain("**/node_modules/**");
+    expect(patterns).toContain("**/dist/**");
+    expect(patterns).toContain("**/.env");
+  });
+
+  it("skips comments and empty lines", () => {
+    fs.writeFileSync(
+      path.join(tempDir, ".gitignore"),
+      "# this is a comment\n\n   \n*.log\n",
+    );
+    const patterns = loadGitignorePatterns(tempDir);
+    expect(patterns).toEqual(["**/*.log", "**/*.log/**"]);
+  });
+
+  it("skips negation patterns", () => {
+    fs.writeFileSync(
+      path.join(tempDir, ".gitignore"),
+      "*.log\n!important.log\n",
+    );
+    const patterns = loadGitignorePatterns(tempDir);
+    expect(patterns).toEqual(["**/*.log", "**/*.log/**"]);
   });
 });
