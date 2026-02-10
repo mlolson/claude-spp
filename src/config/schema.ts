@@ -23,6 +23,8 @@ export const PairSessionSchema = z.object({
   humanTurns: z.number().default(0),
   claudeTurns: z.number().default(0),
   startedAt: z.string().optional(),
+  watcherPid: z.number().optional(),
+  turnStartedAt: z.string().optional(),
 });
 export type PairSession = z.infer<typeof PairSessionSchema>;
 

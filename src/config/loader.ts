@@ -5,6 +5,7 @@ import { ConfigSchema, DEFAULT_CONFIG, type Config } from "./schema.js";
 
 const SPP_DIR = ".claude-spp";
 const CONFIG_FILE = "config.json";
+const SPP_CONFIG_DIR = ".claude-spp-configs";
 
 /**
  * Get the fallback config directory path for a project
@@ -12,7 +13,7 @@ const CONFIG_FILE = "config.json";
  */
 function getFallbackSppDir(projectPath: string): string {
   const projectDirname = path.basename(path.resolve(projectPath));
-  return path.join(os.homedir(), ".claude-spp-configs", projectDirname, SPP_DIR);
+  return path.join(os.homedir(), SPP_CONFIG_DIR, projectDirname, SPP_DIR);
 }
 
 /**
@@ -35,22 +36,6 @@ export function getSppDir(projectPath: string): string {
 
   // Neither exists, return local (default for init)
   return localDir;
-}
-
-/**
- * Get the local .claude-spp directory path (always in project root)
- * Used when we explicitly want the local path, e.g., for creating new configs
- */
-export function getLocalSppDir(projectPath: string): string {
-  return path.join(projectPath, SPP_DIR);
-}
-
-/**
- * Get the fallback .claude-spp directory path (always in home dir)
- * Used when we explicitly want the fallback path
- */
-export function getExternalSppDir(projectPath: string): string {
-  return getFallbackSppDir(projectPath);
 }
 
 /**
@@ -180,14 +165,3 @@ export function saveConfig(projectPath: string, config: Config): void {
   );
 }
 
-/**
- * Initialize SPP in a project with default config
- */
-export function initializeConfig(projectPath: string): Config {
-  const config: Config = {
-    ...DEFAULT_CONFIG,
-  };
-
-  saveConfig(projectPath, config);
-  return config;
-}

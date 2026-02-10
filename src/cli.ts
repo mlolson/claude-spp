@@ -15,6 +15,10 @@ import {
   type Config,
 } from "./config/schema.js";
 import { getStats, formatStats } from "./stats.js";
+import { spawnWatcher, killWatcher, isWatcherRunning } from "./pair/lifecycle.js";
+import { getTranscript, clearTranscript, archiveTranscript, listTranscripts } from "./pair/transcript.js";
+import { runWatcher } from "./pair/watcher.js";
+import { runUserPromptHook, runStopHook } from "./pair/hooks.js";
 
 const program = new Command();
 
@@ -321,19 +325,25 @@ pair
       process.exit(1);
     }
 
+    const now = new Date().toISOString();
     config.pairSession = {
       active: true,
       currentDriver: "human",
       task,
       humanTurns: 0,
       claudeTurns: 0,
-      startedAt: new Date().toISOString(),
+      startedAt: now,
+      turnStartedAt: now,
     };
     saveConfig(process.cwd(), config);
+
+    clearTranscript(process.cwd());
+    const pid = spawnWatcher(process.cwd());
 
     console.log(`🤝 Pair programming session started!`);
     console.log(`   Task: ${task}`);
     console.log(`   Driver: Human (you're up!)`);
+    console.log(`   File watcher started (PID: ${pid})`);
     console.log(`   Run 'spp pair rotate' to switch drivers.`);
   });
 
@@ -356,14 +366,28 @@ pair
     const oldDriver = config.pairSession.currentDriver;
     const newDriver = oldDriver === "human" ? "claude" : "human";
 
+    // Kill watcher and archive transcript from human's turn
+    killWatcher(process.cwd());
     if (oldDriver === "human") {
       config.pairSession.humanTurns++;
+      const archived = archiveTranscript(process.cwd());
+      if (archived) {
+        console.log(`   Turn transcript archived.`);
+      }
     } else {
       config.pairSession.claudeTurns++;
     }
 
     config.pairSession.currentDriver = newDriver;
+    config.pairSession.turnStartedAt = new Date().toISOString();
     saveConfig(process.cwd(), config);
+
+    // Spawn watcher if human is now driving
+    if (newDriver === "human") {
+      clearTranscript(process.cwd());
+      const pid = spawnWatcher(process.cwd());
+      console.log(`   File watcher started (PID: ${pid})`);
+    }
 
     const driverLabel = newDriver === "human" ? "Human" : "Claude";
     console.log(`🔄 Driver rotated! ${driverLabel} is now driving.`);
@@ -383,6 +407,13 @@ pair
     if (!config.pairSession?.active) {
       console.error("❌ No active pair session.");
       process.exit(1);
+    }
+
+    // Kill watcher and archive transcript
+    killWatcher(process.cwd());
+    const archived = archiveTranscript(process.cwd());
+    if (archived) {
+      console.log(`   Final transcript archived.`);
     }
 
     // Increment final turn
@@ -441,7 +472,63 @@ pair.action(() => {
   console.log(`   Navigator: ${navigator}`);
   console.log(`   Human turns: ${session.humanTurns}`);
   console.log(`   Claude turns: ${session.claudeTurns}`);
+  if (session.currentDriver === "human") {
+    const watcherAlive = isWatcherRunning(process.cwd());
+    console.log(`   Watcher: ${watcherAlive ? "running" : "not running"}`);
+  }
 });
+
+// Transcript command
+program
+  .command("transcript")
+  .description("Show current transcript or list archived transcripts")
+  .action(() => {
+    if (!isFullyInitialized(process.cwd())) {
+      console.error("SPP not initialized. Run: spp init");
+      process.exit(1);
+    }
+
+    const config = loadConfig(process.cwd());
+    const archives = listTranscripts(process.cwd());
+
+    // Active session: show live transcript, then mention archives
+    if (config.pairSession?.active) {
+      const transcript = getTranscript(process.cwd());
+      if (transcript) {
+        console.log(transcript);
+      } else {
+        console.log("No changes recorded yet for this turn.");
+      }
+      if (archives.length > 0) {
+        console.log(`\n${archives.length} archived transcript(s) in transcripts/`);
+      }
+      return;
+    }
+
+    // No active session: list archived transcripts
+    if (archives.length === 0) {
+      console.log("No archived transcripts found.");
+      return;
+    }
+
+    console.log("Archived transcripts:\n");
+    for (const entry of archives) {
+      const dateStr = entry.date.toLocaleString();
+      console.log(`  ${entry.filename}  (${dateStr})`);
+      console.log(`    ${entry.path}`);
+    }
+    console.log(`\n${archives.length} transcript(s) total.`);
+  });
+
+// Internal commands
+
+program
+  .command("watcher:start")
+  .argument("<projectPath>", "project path to watch")
+  .description("Start file watcher (internal, called as background process)")
+  .action((projectPath: string) => {
+    runWatcher(projectPath);
+  });
 
 // Hook commands (called by Claude Code)
 
@@ -464,6 +551,20 @@ program
   .description("Output status line for Claude Code (internal)")
   .action(() => {
     console.log(generateStatusLine(process.cwd()));
+  });
+
+program
+  .command("hook:user-prompt")
+  .description("UserPromptSubmit hook — record human question to transcript (internal)")
+  .action(async () => {
+    await runUserPromptHook();
+  });
+
+program
+  .command("hook:stop")
+  .description("Stop hook — record Claude response to transcript (internal)")
+  .action(async () => {
+    await runStopHook();
   });
 
 program.parseAsync();

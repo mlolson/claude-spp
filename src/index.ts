@@ -34,3 +34,7 @@ export { getStats, formatStats, type StatsResult } from "./stats.js";
 
 // Hooks
 export { generateSystemPrompt, generateStatusLine } from "./hooks/system-prompt.js";
+
+// Pair programming
+export { getTranscript, clearTranscript, archiveTranscript } from "./pair/transcript.js";
+export { spawnWatcher, killWatcher, isWatcherRunning } from "./pair/lifecycle.js";

@@ -130,6 +130,59 @@ export function installGitHook(projectPath: string): void {
 }
 
 /**
+ * Install Claude Code hooks by writing to .claude/settings.json
+ * Registers PreToolUse, SystemPrompt, StatusLine, UserPromptSubmit, and Stop hooks.
+ * Merges with any existing settings (preserving user-defined keys).
+ */
+export function installClaudeHooks(projectPath: string): void {
+  const claudeDir = path.join(projectPath, ".claude");
+  const settingsPath = path.join(claudeDir, "settings.json");
+
+  // Load existing settings if present
+  let settings: Record<string, unknown> = {};
+  if (fs.existsSync(settingsPath)) {
+    try {
+      settings = JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
+    } catch {
+      // If settings file is corrupt, start fresh
+      settings = {};
+    }
+  }
+
+  // Define the SPP hooks
+  const sppHooks: Record<string, Array<{ hooks: Array<{ type: string; command: string }> }>> = {
+    PreToolUse: [{
+      hooks: [{ type: "command", command: "spp hook:pre-tool-use" }],
+    }],
+    UserPromptSubmit: [{
+      hooks: [{ type: "command", command: "spp hook:user-prompt" }],
+    }],
+    Stop: [{
+      hooks: [{ type: "command", command: "spp hook:stop" }],
+    }],
+  };
+
+  // Merge hooks into settings (overwrite SPP hooks, preserve others)
+  const existingHooks = (settings.hooks ?? {}) as Record<string, unknown[]>;
+  for (const [event, hookEntries] of Object.entries(sppHooks)) {
+    existingHooks[event] = hookEntries;
+  }
+  settings.hooks = existingHooks;
+
+  // Set system prompt and status line
+  settings.systemPrompt = { type: "command", command: "spp hook:system-prompt" };
+  settings.statusLine = { type: "command", command: "spp hook:status-line" };
+
+  // Ensure .claude directory exists
+  if (!fs.existsSync(claudeDir)) {
+    fs.mkdirSync(claudeDir, { recursive: true });
+  }
+
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + "\n", "utf-8");
+  console.log("Installed Claude Code hooks in .claude/settings.json");
+}
+
+/**
  * Install VCS hook based on detected VCS type
  * Note: Only Git hooks are supported currently
  */
@@ -347,6 +400,9 @@ export async function initializeSpp(
 
   // Install VCS post-commit hook
   installVcsHook(projectPath, selectedVcsType);
+
+  // Install Claude Code hooks (.claude/settings.json)
+  installClaudeHooks(projectPath);
 
   return config;
 }
