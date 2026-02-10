@@ -2,7 +2,7 @@
 
 **Keep your coding skills sharp while using AI.**
 
-SPP is a Claude Code plugin that ensures you write a minimum percentage of the code yourself. You choose the balance - from 10% human / 90% AI up to 100% human coding.
+SPP is a Claude Code plugin that helps you learn how code, or to keep your skills sharp. It is useful for learning new languages, ramping up on code bases, or learning CS and engineering concepts.
 
 ## Why?
 
@@ -12,8 +12,11 @@ Over-reliance on AI coding tools leads to skill atrophy. [A study from Anthropic
 
 SPP lets you use AI as a collaborator rather than a crutch. It works two ways:
 
-1. **Ratio enforcement** — When Claude has written too much code, SPP blocks Claude from writing more until you catch up. Instead of writing code for you, Claude gives guidance, code pointers, and reviews your work.
-2. **Drive mode** — Toggle `spp drive` to write code yourself while Claude coaches. SPP records every file save and conversation exchange in a transcript. When you're done, run `/coach` to get a detailed review of your session.
+1. **Drive mode** — Toggle `spp drive` to write code yourself while Claude coaches. In drive mode, Claude can't write code.
+
+2. **Coaching skill** - While in drive mode, SPP writes every file save and conversation exchange to a transcript file. When you're done, run `/coach` to get coaching and feedback on your session.
+
+3. **Human coding goal** — Set a goal for how much code you want to write per week. When you are under the goal, SPP blocks Claude from writing more until you catch up. Claude can stil give guidance, code pointers, and reviews your work.
 
 ## Quick Start
 
@@ -35,7 +38,7 @@ claude
 
 ### Tracking
 
-SPP tracks your commits. Commits with `Co-Authored-By: Claude` in the message count as Claude commits; commits without it count as human commits.
+SPP reads your commit history. Commits with `Co-Authored-By: Claude` in the message count as Claude commits; commits without it count as human commits.
 
 - Tracking starts from when you run `spp init` (previous commits are ignored)
 - By default, looks at the last 7 days of commits
@@ -95,7 +98,7 @@ Drive mode is the core hands-on coding experience. Toggle it on, write code, get
 spp drive              # Toggle on — you code, Claude guides
 # ... write code, ask questions, Claude can't touch files ...
 spp drive              # Toggle off — transcript archived
-/coach                 # Get coaching on your session
+/spp:coach                 # Get coaching on your session
 ```
 
 When drive mode is on:
