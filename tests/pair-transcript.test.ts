@@ -219,25 +219,17 @@ describe("conversation hooks", () => {
     );
   }
 
-  function writePairConfig(): void {
+  function writeDriveConfig(): void {
     writeConfig({
-      modeType: "pairProgramming",
+      modeType: "weeklyGoal",
       enabled: true,
-      pairSession: {
-        active: true,
-        currentDriver: "human",
-        task: "test task",
-        humanTurns: 0,
-        claudeTurns: 0,
-        startedAt: new Date().toISOString(),
-        turnStartedAt: new Date().toISOString(),
-      },
+      driveMode: true,
     });
   }
 
   describe("userPromptHook", () => {
-    it("appends user message when human is driving", () => {
-      writePairConfig();
+    it("appends user message when drive mode is active", () => {
+      writeDriveConfig();
       userPromptHook({
         cwd: tempDir,
         prompt: "How do I fix the auth bug?",
@@ -247,27 +239,8 @@ describe("conversation hooks", () => {
       expect(transcript).toContain("How do I fix the auth bug?");
     });
 
-    it("skips when no active pair session", () => {
-      writeConfig({ modeType: "pairProgramming", enabled: true });
-      userPromptHook({
-        cwd: tempDir,
-        prompt: "Hello",
-      });
-      expect(getTranscript(tempDir)).toBe("");
-    });
-
-    it("skips when Claude is driving", () => {
-      writeConfig({
-        modeType: "pairProgramming",
-        enabled: true,
-        pairSession: {
-          active: true,
-          currentDriver: "claude",
-          task: "test",
-          humanTurns: 0,
-          claudeTurns: 0,
-        },
-      });
+    it("skips when drive mode is off", () => {
+      writeConfig({ modeType: "weeklyGoal", enabled: true, driveMode: false });
       userPromptHook({
         cwd: tempDir,
         prompt: "Hello",
@@ -276,7 +249,7 @@ describe("conversation hooks", () => {
     });
 
     it("skips empty prompts", () => {
-      writePairConfig();
+      writeDriveConfig();
       userPromptHook({
         cwd: tempDir,
         prompt: "   ",
@@ -286,8 +259,8 @@ describe("conversation hooks", () => {
   });
 
   describe("stopHook", () => {
-    it("appends Claude response from transcript JSONL", () => {
-      writePairConfig();
+    it("appends Claude response from transcript JSONL when drive mode is active", () => {
+      writeDriveConfig();
       // Create a mock Claude Code transcript JSONL
       const transcriptPath = path.join(tempDir, "conversation.jsonl");
       const lines = [
@@ -306,7 +279,7 @@ describe("conversation hooks", () => {
     });
 
     it("handles array content blocks in assistant message", () => {
-      writePairConfig();
+      writeDriveConfig();
       const transcriptPath = path.join(tempDir, "conversation.jsonl");
       const lines = [
         JSON.stringify({
@@ -328,7 +301,7 @@ describe("conversation hooks", () => {
     });
 
     it("truncates long responses", () => {
-      writePairConfig();
+      writeDriveConfig();
       const transcriptPath = path.join(tempDir, "conversation.jsonl");
       const longMessage = "x".repeat(3000);
       const lines = [
@@ -346,24 +319,18 @@ describe("conversation hooks", () => {
     });
 
     it("skips when no transcript_path provided", () => {
-      writePairConfig();
+      writeDriveConfig();
       stopHook({
         cwd: tempDir,
       });
       expect(getTranscript(tempDir)).toBe("");
     });
 
-    it("skips when not in human driving turn", () => {
+    it("skips when drive mode is off", () => {
       writeConfig({
-        modeType: "pairProgramming",
+        modeType: "weeklyGoal",
         enabled: true,
-        pairSession: {
-          active: true,
-          currentDriver: "claude",
-          task: "test",
-          humanTurns: 0,
-          claudeTurns: 0,
-        },
+        driveMode: false,
       });
       const transcriptPath = path.join(tempDir, "conversation.jsonl");
       fs.writeFileSync(transcriptPath, JSON.stringify({ role: "assistant", content: "hello" }));

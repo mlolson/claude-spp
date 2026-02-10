@@ -23,8 +23,6 @@ export const PairSessionSchema = z.object({
   humanTurns: z.number().default(0),
   claudeTurns: z.number().default(0),
   startedAt: z.string().optional(),
-  watcherPid: z.number().optional(),
-  turnStartedAt: z.string().optional(),
 });
 export type PairSession = z.infer<typeof PairSessionSchema>;
 
@@ -108,6 +106,9 @@ export const ConfigSchema = z.object({
 
   // Drive mode - blocks Claude from writing code without affecting ratio targets
   driveMode: z.boolean().default(false),
+
+  // PID of the file watcher process (used by drive mode)
+  watcherPid: z.number().optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

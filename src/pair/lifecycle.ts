@@ -29,10 +29,8 @@ export function spawnWatcher(projectPath: string): number {
 
   // Store PID in config
   const config = loadConfig(projectPath);
-  if (config.pairSession) {
-    config.pairSession.watcherPid = pid;
-    saveConfig(projectPath, config);
-  }
+  config.watcherPid = pid;
+  saveConfig(projectPath, config);
 
   return pid;
 }
@@ -43,7 +41,7 @@ export function spawnWatcher(projectPath: string): number {
  */
 export function killWatcher(projectPath: string): void {
   const config = loadConfig(projectPath);
-  const pid = config.pairSession?.watcherPid;
+  const pid = config.watcherPid;
   if (!pid) return;
 
   try {
@@ -53,10 +51,8 @@ export function killWatcher(projectPath: string): void {
   }
 
   // Clear PID from config
-  if (config.pairSession) {
-    config.pairSession.watcherPid = undefined;
-    saveConfig(projectPath, config);
-  }
+  config.watcherPid = undefined;
+  saveConfig(projectPath, config);
 }
 
 /**
@@ -64,7 +60,7 @@ export function killWatcher(projectPath: string): void {
  */
 export function isWatcherRunning(projectPath: string): boolean {
   const config = loadConfig(projectPath);
-  const pid = config.pairSession?.watcherPid;
+  const pid = config.watcherPid;
   if (!pid) return false;
 
   try {

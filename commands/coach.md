@@ -1,5 +1,5 @@
 ---
-description: Review your latest pair programming session and get coaching
+description: Review your latest drive mode session and get coaching
 ---
 
 # SPP Coach
@@ -25,4 +25,4 @@ Provide specific, constructive coaching:
 
 Be encouraging — frame feedback as opportunities for growth.
 
-Suggest what to tackle next when they drive again.
+Suggest what to tackle next when they use drive mode again.

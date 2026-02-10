@@ -30,13 +30,12 @@ interface StopHookInput extends HookInputBase {
 }
 
 /**
- * Check if we should record to transcript (pair session active, human driving)
+ * Check if we should record to transcript (drive mode active)
  */
 function shouldRecord(cwd: string): boolean {
   if (!isSppInitialized(cwd)) return false;
   const config = loadConfig(cwd);
-  const session = config.pairSession;
-  return !!(session?.active && session.currentDriver === "human");
+  return config.driveMode === true;
 }
 
 /**

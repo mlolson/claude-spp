@@ -15,7 +15,7 @@ import {
   type Config,
 } from "./config/schema.js";
 import { getStats, formatStats } from "./stats.js";
-import { spawnWatcher, killWatcher, isWatcherRunning } from "./pair/lifecycle.js";
+import { spawnWatcher, killWatcher } from "./pair/lifecycle.js";
 import { getTranscript, clearTranscript, archiveTranscript, listTranscripts } from "./pair/transcript.js";
 import { runWatcher } from "./pair/watcher.js";
 import { runUserPromptHook, runStopHook } from "./pair/hooks.js";
@@ -218,10 +218,15 @@ program
 
 program
   .command("stats")
+  .option("--json", "Output as json")
   .description("Show SPP status and statistics")
-  .action(() => {
+  .action((opts) => {
     const stats = getStats(process.cwd());
-    console.log(formatStats(stats));
+    if (opts) {
+      console.log(JSON.stringify(stats, null, 2));
+    } else {
+      console.log(formatStats(stats));
+    }
   });
 
 program
@@ -295,11 +300,19 @@ program
     config.driveMode = !config.driveMode;
     saveConfig(process.cwd(), config);
     if (config.driveMode) {
+      clearTranscript(process.cwd());
+      const pid = spawnWatcher(process.cwd());
       console.log("🚙 Drive mode enabled. Claude cannot write code.");
       console.log("   You're in the driver's seat - Claude will assist but not code.");
+      console.log(`   File watcher started (PID: ${pid})`);
       console.log("   Run 'spp drive' again to toggle off.");
     } else {
+      killWatcher(process.cwd());
+      const archived = archiveTranscript(process.cwd());
       console.log("🚙 Drive mode disabled. Normal SPP enforcement resumed.");
+      if (archived) {
+        console.log("   Transcript archived. Run /coach to review your session.");
+      }
     }
   });
 
@@ -333,17 +346,12 @@ pair
       humanTurns: 0,
       claudeTurns: 0,
       startedAt: now,
-      turnStartedAt: now,
     };
     saveConfig(process.cwd(), config);
-
-    clearTranscript(process.cwd());
-    const pid = spawnWatcher(process.cwd());
 
     console.log(`🤝 Pair programming session started!`);
     console.log(`   Task: ${task}`);
     console.log(`   Driver: Human (you're up!)`);
-    console.log(`   File watcher started (PID: ${pid})`);
     console.log(`   Run 'spp pair rotate' to switch drivers.`);
   });
 
@@ -366,28 +374,14 @@ pair
     const oldDriver = config.pairSession.currentDriver;
     const newDriver = oldDriver === "human" ? "claude" : "human";
 
-    // Kill watcher and archive transcript from human's turn
-    killWatcher(process.cwd());
     if (oldDriver === "human") {
       config.pairSession.humanTurns++;
-      const archived = archiveTranscript(process.cwd());
-      if (archived) {
-        console.log(`   Turn transcript archived.`);
-      }
     } else {
       config.pairSession.claudeTurns++;
     }
 
     config.pairSession.currentDriver = newDriver;
-    config.pairSession.turnStartedAt = new Date().toISOString();
     saveConfig(process.cwd(), config);
-
-    // Spawn watcher if human is now driving
-    if (newDriver === "human") {
-      clearTranscript(process.cwd());
-      const pid = spawnWatcher(process.cwd());
-      console.log(`   File watcher started (PID: ${pid})`);
-    }
 
     const driverLabel = newDriver === "human" ? "Human" : "Claude";
     console.log(`🔄 Driver rotated! ${driverLabel} is now driving.`);
@@ -407,13 +401,6 @@ pair
     if (!config.pairSession?.active) {
       console.error("❌ No active pair session.");
       process.exit(1);
-    }
-
-    // Kill watcher and archive transcript
-    killWatcher(process.cwd());
-    const archived = archiveTranscript(process.cwd());
-    if (archived) {
-      console.log(`   Final transcript archived.`);
     }
 
     // Increment final turn
@@ -472,10 +459,6 @@ pair.action(() => {
   console.log(`   Navigator: ${navigator}`);
   console.log(`   Human turns: ${session.humanTurns}`);
   console.log(`   Claude turns: ${session.claudeTurns}`);
-  if (session.currentDriver === "human") {
-    const watcherAlive = isWatcherRunning(process.cwd());
-    console.log(`   Watcher: ${watcherAlive ? "running" : "not running"}`);
-  }
 });
 
 // Transcript command
@@ -491,8 +474,8 @@ program
     const config = loadConfig(process.cwd());
     const archives = listTranscripts(process.cwd());
 
-    // Active session: show live transcript, then mention archives
-    if (config.pairSession?.active) {
+    // Active drive mode or pair session: show live transcript, then mention archives
+    if (config.driveMode || config.pairSession?.active) {
       const transcript = getTranscript(process.cwd());
       if (transcript) {
         console.log(transcript);

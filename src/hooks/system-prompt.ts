@@ -107,6 +107,16 @@ export function generateSystemPrompt(projectPath: string): string {
     lines.push(`- **Status:** Coming soon`);
   }
 
+  if (config.driveMode) {
+    lines.push("");
+    lines.push("## 🐵 Human is driving (drive mode)");
+    lines.push("");
+    lines.push("Drive mode is active. The human is writing code.");
+    lines.push("You will be hard blocked from writing code (except .md files).");
+    lines.push("Use the spp-human-task skill to help the human complete the coding task.");
+    lines.push("Toggle off with `spp drive`.");
+  }
+
   lines.push("");
   lines.push("A note on SPP tracking:");
   lines.push("SPP tracks commits in VCS history (git or mercurial), within a window and/or after a starting commit.");
