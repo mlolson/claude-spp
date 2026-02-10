@@ -67,13 +67,13 @@ describe("Configuration", () => {
     });
 
     it("writes valid JSON", () => {
-      saveConfig(TEST_DIR, { ...DEFAULT_CONFIG, modeType: "pairProgramming" });
+      saveConfig(TEST_DIR, { ...DEFAULT_CONFIG, modeType: "learningProject" });
       const content = fs.readFileSync(
         path.join(getSppDir(TEST_DIR), "config.json"),
         "utf-8"
       );
       const parsed = JSON.parse(content);
-      expect(parsed.modeType).toBe("pairProgramming");
+      expect(parsed.modeType).toBe("learningProject");
     });
   });
 
@@ -96,18 +96,12 @@ describe("Configuration", () => {
 
     it("getModeTypeName returns correct names", () => {
       expect(getModeTypeName("weeklyGoal")).toBe("Weekly Goal");
-      expect(getModeTypeName("pairProgramming")).toBe("Pair Programming");
       expect(getModeTypeName("learningProject")).toBe("Learning Project");
     });
 
     it("getModeTypeDescription for weekly goal", () => {
       const config: Config = { ...DEFAULT_CONFIG, modeType: "weeklyGoal", targetPercentage: 25, trackingMode: "commits" };
       expect(getModeTypeDescription(config)).toBe("Weekly Goal (25% human, commits)");
-    });
-
-    it("getModeTypeDescription for pair programming", () => {
-      const config: Config = { ...DEFAULT_CONFIG, modeType: "pairProgramming" };
-      expect(getModeTypeDescription(config)).toBe("Pair Programming");
     });
 
     it("getModeTypeDescription for learning project", () => {
@@ -121,7 +115,6 @@ describe("Configuration", () => {
     });
 
     it("getTargetRatio returns 0 for non-weeklyGoal modes", () => {
-      expect(getTargetRatio({ ...DEFAULT_CONFIG, modeType: "pairProgramming" })).toBe(0);
       expect(getTargetRatio({ ...DEFAULT_CONFIG, modeType: "learningProject" })).toBe(0);
     });
   });
@@ -203,11 +196,24 @@ describe("Configuration", () => {
       fs.mkdirSync(stpDir, { recursive: true });
       fs.writeFileSync(
         path.join(stpDir, "config.json"),
+        JSON.stringify({ enabled: true, modeType: "learningProject" })
+      );
+
+      const config = loadConfig(TEST_DIR);
+      expect(config.modeType).toBe("learningProject");
+    });
+
+    it("migrates pairProgramming to weeklyGoal", () => {
+      const stpDir = getSppDir(TEST_DIR);
+      fs.mkdirSync(stpDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(stpDir, "config.json"),
         JSON.stringify({ enabled: true, modeType: "pairProgramming" })
       );
 
       const config = loadConfig(TEST_DIR);
-      expect(config.modeType).toBe("pairProgramming");
+      expect(config.modeType).toBe("weeklyGoal");
+      expect(config.targetPercentage).toBe(25);
     });
   });
 

@@ -143,24 +143,6 @@ export function preToolUseHook(input: PreToolUseHookInput): PreToolUseHookOutput
     return allowResponse();
   }
 
-  if (config.modeType === "pairProgramming") {
-    // Pair programming: block when human is driving, allow when Claude is driving
-    const session = config.pairSession;
-    if (session?.active && session.currentDriver === "human") {
-      const reason = [
-        "The human is currently driving in pair programming mode.",
-        "Claude is the navigator - provide guidance but do not write code.",
-        "Use the `spp-help-human-code` skill to help the human complete the task.",
-        "Run `spp pair rotate` to switch the driver."
-      ].join("\n");
-
-      return denyResponse(reason);
-    }
-
-    // No active session or Claude is driving - allow
-    return allowResponse();
-  }
-
   // learningProject: allow all (NOOP)
   return allowResponse();
 }

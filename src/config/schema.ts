@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * Mode types for SPP
  */
-export const ModeTypeSchema = z.enum(["weeklyGoal", "pairProgramming", "learningProject"]);
+export const ModeTypeSchema = z.enum(["weeklyGoal", "learningProject"]);
 export type ModeType = z.infer<typeof ModeTypeSchema>;
 
 /**
@@ -12,19 +12,6 @@ export type ModeType = z.infer<typeof ModeTypeSchema>;
 export const PercentageOptionSchema = z.union([
   z.literal(10), z.literal(25), z.literal(50), z.literal(100)
 ]);
-
-/**
- * Pair programming session state
- */
-export const PairSessionSchema = z.object({
-  active: z.boolean(),
-  currentDriver: z.enum(["human", "claude"]),
-  task: z.string().optional(),
-  humanTurns: z.number().default(0),
-  claudeTurns: z.number().default(0),
-  startedAt: z.string().optional(),
-});
-export type PairSession = z.infer<typeof PairSessionSchema>;
 
 /**
  * Stats window options for filtering commit history
@@ -92,9 +79,6 @@ export const ConfigSchema = z.object({
   trackingMode: TrackingModeSchema.default("commits"),
   statsWindow: StatsWindowSchema.default("oneWeek"),
 
-  // Pair programming session
-  pairSession: PairSessionSchema.optional(),
-
   // ISO timestamp when SPP pause expires (set by pause command)
   pausedUntil: z.string().optional(),
 
@@ -130,7 +114,6 @@ export const DEFAULT_CONFIG: Config = {
  */
 export const MODE_TYPE_LABELS: Record<ModeType, string> = {
   weeklyGoal: "Weekly Goal",
-  pairProgramming: "Pair Programming",
   learningProject: "Learning Project",
 };
 
@@ -139,7 +122,6 @@ export const MODE_TYPE_LABELS: Record<ModeType, string> = {
  */
 export const MODE_TYPE_DESCRIPTIONS: Record<ModeType, string> = {
   weeklyGoal: "Set a weekly human coding target (% of code)",
-  pairProgramming: "Claude and human trade off driving/navigating",
   learningProject: "Coming soon - placeholder for future learning features",
 };
 
@@ -157,8 +139,6 @@ export function getModeTypeDescription(config: Config): string {
   switch (config.modeType) {
     case "weeklyGoal":
       return `Weekly Goal (${config.targetPercentage}% human, ${config.trackingMode})`;
-    case "pairProgramming":
-      return "Pair Programming";
     case "learningProject":
       return "Learning Project (coming soon)";
   }

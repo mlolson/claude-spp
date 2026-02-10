@@ -3,7 +3,7 @@ import { loadConfig, saveConfig } from "../config/loader.js";
 
 /**
  * Spawn the file watcher as a detached background process.
- * Stores the PID in config.pairSession.watcherPid.
+ * Stores the PID in config.watcherPid.
  * Returns the child process PID.
  */
 export function spawnWatcher(projectPath: string): number {

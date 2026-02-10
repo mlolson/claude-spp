@@ -53,7 +53,7 @@ program
 
 program
   .command("mode")
-  .argument("[value]", "mode type number (1-3) or name")
+  .argument("[value]", "mode type number (1-2) or name")
   .description("Show or change the current mode type")
   .action(async (value: string | undefined) => {
     if (!isFullyInitialized(process.cwd())) {
@@ -316,151 +316,6 @@ program
     }
   });
 
-// Pair programming commands
-const pair = program
-  .command("pair")
-  .description("Pair programming session management");
-
-pair
-  .command("start")
-  .argument("<task>", "description of the task to work on")
-  .description("Start a pair programming session")
-  .action((task: string) => {
-    if (!isFullyInitialized(process.cwd())) {
-      console.error("❌ SPP not initialized. Run: spp init");
-      process.exit(1);
-    }
-
-    const config = loadConfig(process.cwd());
-
-    if (config.modeType !== "pairProgramming") {
-      console.error("❌ Not in Pair Programming mode. Run: spp mode 2");
-      process.exit(1);
-    }
-
-    const now = new Date().toISOString();
-    config.pairSession = {
-      active: true,
-      currentDriver: "human",
-      task,
-      humanTurns: 0,
-      claudeTurns: 0,
-      startedAt: now,
-    };
-    saveConfig(process.cwd(), config);
-
-    console.log(`🤝 Pair programming session started!`);
-    console.log(`   Task: ${task}`);
-    console.log(`   Driver: Human (you're up!)`);
-    console.log(`   Run 'spp pair rotate' to switch drivers.`);
-  });
-
-pair
-  .command("rotate")
-  .description("Rotate driver/navigator roles")
-  .action(() => {
-    if (!isFullyInitialized(process.cwd())) {
-      console.error("❌ SPP not initialized. Run: spp init");
-      process.exit(1);
-    }
-
-    const config = loadConfig(process.cwd());
-
-    if (!config.pairSession?.active) {
-      console.error("❌ No active pair session. Run: spp pair start <task>");
-      process.exit(1);
-    }
-
-    const oldDriver = config.pairSession.currentDriver;
-    const newDriver = oldDriver === "human" ? "claude" : "human";
-
-    if (oldDriver === "human") {
-      config.pairSession.humanTurns++;
-    } else {
-      config.pairSession.claudeTurns++;
-    }
-
-    config.pairSession.currentDriver = newDriver;
-    saveConfig(process.cwd(), config);
-
-    const driverLabel = newDriver === "human" ? "Human" : "Claude";
-    console.log(`🔄 Driver rotated! ${driverLabel} is now driving.`);
-  });
-
-pair
-  .command("end")
-  .description("End the current pair programming session")
-  .action(() => {
-    if (!isFullyInitialized(process.cwd())) {
-      console.error("❌ SPP not initialized. Run: spp init");
-      process.exit(1);
-    }
-
-    const config = loadConfig(process.cwd());
-
-    if (!config.pairSession?.active) {
-      console.error("❌ No active pair session.");
-      process.exit(1);
-    }
-
-    // Increment final turn
-    if (config.pairSession.currentDriver === "human") {
-      config.pairSession.humanTurns++;
-    } else {
-      config.pairSession.claudeTurns++;
-    }
-
-    const summary = {
-      task: config.pairSession.task,
-      humanTurns: config.pairSession.humanTurns,
-      claudeTurns: config.pairSession.claudeTurns,
-      startedAt: config.pairSession.startedAt,
-    };
-
-    config.pairSession = undefined;
-    saveConfig(process.cwd(), config);
-
-    console.log(`🏁 Pair programming session ended!`);
-    console.log(`   Task: ${summary.task}`);
-    console.log(`   Human turns: ${summary.humanTurns}`);
-    console.log(`   Claude turns: ${summary.claudeTurns}`);
-    if (summary.startedAt) {
-      const duration = Date.now() - new Date(summary.startedAt).getTime();
-      const minutes = Math.round(duration / 60000);
-      console.log(`   Duration: ${minutes} minutes`);
-    }
-  });
-
-// Default pair command (no subcommand) - show status
-pair.action(() => {
-  if (!isFullyInitialized(process.cwd())) {
-    console.error("❌ SPP not initialized. Run: spp init");
-    process.exit(1);
-  }
-
-  const config = loadConfig(process.cwd());
-
-  if (config.modeType !== "pairProgramming") {
-    console.log("Not in Pair Programming mode. Run: spp mode 2");
-    return;
-  }
-
-  const session = config.pairSession;
-  if (!session?.active) {
-    console.log("No active pair session. Run: spp pair start <task>");
-    return;
-  }
-
-  const driver = session.currentDriver === "human" ? "Human" : "Claude";
-  const navigator = session.currentDriver === "human" ? "Claude" : "Human";
-  console.log(`🤝 Pair Programming Session`);
-  console.log(`   Task: ${session.task}`);
-  console.log(`   Driver: ${driver}`);
-  console.log(`   Navigator: ${navigator}`);
-  console.log(`   Human turns: ${session.humanTurns}`);
-  console.log(`   Claude turns: ${session.claudeTurns}`);
-});
-
 // Transcript command
 program
   .command("transcript")
@@ -474,8 +329,8 @@ program
     const config = loadConfig(process.cwd());
     const archives = listTranscripts(process.cwd());
 
-    // Active drive mode or pair session: show live transcript, then mention archives
-    if (config.driveMode || config.pairSession?.active) {
+    // Active drive mode: show live transcript, then mention archives
+    if (config.driveMode) {
       const transcript = getTranscript(process.cwd());
       if (transcript) {
         console.log(transcript);

@@ -122,6 +122,19 @@ export function loadConfig(projectPath: string): Config {
       return config;
     }
 
+    // Migrate pairProgramming mode to weeklyGoal
+    if (json.modeType === "pairProgramming") {
+      json.modeType = "weeklyGoal";
+      json.targetPercentage = json.targetPercentage ?? 25;
+      delete json.pairSession;
+      const config = ConfigSchema.parse(json);
+      saveConfig(projectPath, config);
+      return config;
+    }
+
+    // Strip stale pairSession field if present
+    delete json.pairSession;
+
     const config = ConfigSchema.parse(json);
 
     // Auto-unpause if pausedUntil time has passed

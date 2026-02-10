@@ -69,14 +69,6 @@ describe("Initialization", () => {
       expect(config.targetPercentage).toBe(50);
     });
 
-    it("supports pair programming mode", async () => {
-      const config = await initializeSpp(TEST_DIR, {
-        modeType: "pairProgramming",
-        vcsType: "git",
-      });
-      expect(config.modeType).toBe("pairProgramming");
-    });
-
     it("uses specified statsWindow", async () => {
       const config = await initializeSpp(TEST_DIR, {
         modeType: "weeklyGoal",

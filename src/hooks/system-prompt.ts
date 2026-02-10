@@ -70,38 +70,6 @@ export function generateSystemPrompt(projectPath: string): string {
       lines.push("You will be hard blocked from writing code (except .md files).");
       lines.push("Instead of writing code, use the spp-human-task skill to help the human complete the coding task.");
     }
-  } else if (config.modeType === "pairProgramming") {
-    const session = config.pairSession;
-    if (session?.active) {
-      const driver = session.currentDriver === "human" ? "Human" : "Claude";
-      const navigator = session.currentDriver === "human" ? "Claude" : "Human";
-      lines.push(`- **Current driver:** ${driver}`);
-      lines.push(`- **Current navigator:** ${navigator}`);
-      if (session.task) {
-        lines.push(`- **Task:** ${session.task}`);
-      }
-      lines.push(`- **Turns:** Human: ${session.humanTurns}, Claude: ${session.claudeTurns}`);
-
-      if (session.currentDriver === "human") {
-        lines.push("");
-        lines.push("## 🐵 Human is driving");
-        lines.push("");
-        lines.push("The human is currently driving. You are the navigator.");
-        lines.push("You will be hard blocked from writing code (except .md files).");
-        lines.push("Provide guidance, suggestions, and code reviews but do not write code directly.");
-        lines.push("Use the spp-human-task skill to help the human complete the coding task.");
-      } else {
-        lines.push("");
-        lines.push("## 🤖 Claude is driving");
-        lines.push("");
-        lines.push("You are currently driving. The human is navigating.");
-        lines.push("Write code as directed by the human navigator.");
-      }
-    } else {
-      lines.push(`- **Session:** No active pair session`);
-      lines.push("");
-      lines.push("Run `spp pair start <task>` to begin a pair programming session.");
-    }
   } else {
     // learningProject
     lines.push(`- **Status:** Coming soon`);
@@ -202,16 +170,6 @@ export function generateStatusLine(projectPath: string): string {
       : `Human needs to write ${Math.abs(claudeRemaining)} more ${unit}`;
 
     return `${statusEmoji} ${statusText} ${emojiHistory} ...`;
-  }
-
-  if (config.modeType === "pairProgramming") {
-    const session = config.pairSession;
-    if (session?.active) {
-      const driverEmoji = session.currentDriver === "human" ? "🐵" : "🤖";
-      const driverLabel = session.currentDriver === "human" ? "Human" : "Claude";
-      return `${driverEmoji} ${driverLabel} is driving ${emojiHistory} ...`;
-    }
-    return `🤝 Pair Programming (no active session) ${emojiHistory} ...`;
   }
 
   // learningProject

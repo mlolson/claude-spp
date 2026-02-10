@@ -223,65 +223,6 @@ describe("preToolUseHook", () => {
     });
   });
 
-  describe("pair programming enforcement", () => {
-    it("should block writes when human is driving", () => {
-      writeConfig({
-        modeType: "pairProgramming",
-        enabled: true,
-        pairSession: {
-          active: true,
-          currentDriver: "human",
-          task: "test task",
-          humanTurns: 0,
-          claudeTurns: 0,
-        },
-      });
-
-      const result = preToolUseHook({
-        tool_name: "Write",
-        tool_input: { file_path: "src/test.ts", content: "test" },
-        cwd: tempDir,
-      });
-      expect(result.hookSpecificOutput.permissionDecision).toBe("deny");
-      expect(result.hookSpecificOutput.permissionDecisionReason).toContain("human is currently driving");
-    });
-
-    it("should allow writes when Claude is driving", () => {
-      writeConfig({
-        modeType: "pairProgramming",
-        enabled: true,
-        pairSession: {
-          active: true,
-          currentDriver: "claude",
-          task: "test task",
-          humanTurns: 0,
-          claudeTurns: 0,
-        },
-      });
-
-      const result = preToolUseHook({
-        tool_name: "Write",
-        tool_input: { file_path: "src/test.ts", content: "test" },
-        cwd: tempDir,
-      });
-      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
-    });
-
-    it("should allow writes when no active pair session", () => {
-      writeConfig({
-        modeType: "pairProgramming",
-        enabled: true,
-      });
-
-      const result = preToolUseHook({
-        tool_name: "Write",
-        tool_input: { file_path: "src/test.ts", content: "test" },
-        cwd: tempDir,
-      });
-      expect(result.hookSpecificOutput.permissionDecision).toBe("allow");
-    });
-  });
-
   describe("learning project enforcement", () => {
     it("should always allow writes in learning project mode", () => {
       writeConfig({

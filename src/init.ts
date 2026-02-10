@@ -375,8 +375,6 @@ export async function initializeSpp(
   if (selectedModeType === "weeklyGoal") {
     config.targetPercentage = options?.targetPercentage ?? await promptForTargetPercentage();
     config.trackingMode = options?.trackingMode ?? await promptForTrackingMode();
-  } else if (selectedModeType === "pairProgramming") {
-    // No additional config at init
   } else if (selectedModeType === "learningProject") {
     console.log("\n📚 Learning Project mode is coming soon! Using Weekly Goal as fallback.\n");
     config.modeType = "weeklyGoal";

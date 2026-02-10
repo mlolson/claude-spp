@@ -8,7 +8,6 @@ import {
   type ModeType,
   type StatsWindow,
   type TrackingMode,
-  type PairSession,
 } from "./config/schema.js";
 import { getLineCountsWithWindow, getCommitInfo } from "./vcs/index.js";
 
@@ -40,7 +39,6 @@ export interface StatsResult {
   ratioHealthy?: boolean;
   statsWindow?: StatsWindow;
   trackingMode?: TrackingMode;
-  pairSession?: PairSession;
   lines?: {
     humanLines: number;
     claudeLines: number;
@@ -93,8 +91,6 @@ export function getStats(projectPath: string): StatsResult {
     result.targetRatio = targetRatio;
     result.currentRatio = currentRatio;
     result.ratioHealthy = ratioHealthy;
-  } else if (modeType === "pairProgramming") {
-    result.pairSession = config.pairSession;
   }
   // learningProject: minimal stats
 
@@ -138,17 +134,6 @@ export function formatStats(stats: StatsResult): string {
         const needed = Math.ceil((target * total - humanValue) / (1 - target));
         statusLine = `⚠️ 🙉  Human coding below target. Current: ${(ratio * 100).toFixed(0)}% Target: ${(target * 100).toFixed(0)}%. Write ${needed} more ${unit} to catch up. You can do it!`;
       }
-    }
-  } else if (modeType === "pairProgramming") {
-    const session = stats.pairSession;
-    if (session?.active) {
-      const driver = session.currentDriver === "human" ? "Human" : "Claude";
-      statusLine = `🤝 Pair Programming: ${driver} is driving. Human turns: ${session.humanTurns}, Claude turns: ${session.claudeTurns}`;
-      if (session.task) {
-        statusLine += `\n   Task: ${session.task}`;
-      }
-    } else {
-      statusLine = `🤝 Pair Programming mode. No active session. Run \`spp pair start <task>\` to begin.`;
     }
   } else {
     // learningProject
