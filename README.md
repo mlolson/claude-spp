@@ -10,7 +10,10 @@ Over-reliance on AI coding tools leads to skill atrophy. [A study from Anthropic
 
 > AI use impairs conceptual understanding, code reading, and debugging abilities... Participants who fully delegated coding tasks showed some productivity improvements, but at the cost of learning.
 
-SPP lets you use AI as a collaborator rather than a crutch. When you've let Claude write too much code, SPP blocks Claude from writing more until you catch up. Instead of writing code for you, Claude switches to a coaching mode - giving you guidance, code pointers, and reviewing your work.
+SPP lets you use AI as a collaborator rather than a crutch. It works two ways:
+
+1. **Ratio enforcement** — When Claude has written too much code, SPP blocks Claude from writing more until you catch up. Instead of writing code for you, Claude gives guidance, code pointers, and reviews your work.
+2. **Drive mode** — Toggle `spp drive` to write code yourself while Claude coaches. SPP records every file save and conversation exchange in a transcript. When you're done, run `/coach` to get a detailed review of your session.
 
 ## Quick Start
 
@@ -65,7 +68,7 @@ The default mode. You set a target percentage of code you want to write yourself
 
 #### Pair Programming
 
-Structured driver/navigator sessions. You start a session with a task description, then take turns driving (writing code) and navigating (reviewing, guiding). When the human is driving, SPP watches file changes and records a transcript. When Claude is driving, it writes code normally.
+Structured driver/navigator sessions. You start a session with a task description, then take turns driving (writing code) and navigating (reviewing, guiding). When the human is driving, Claude is blocked from writing code. When Claude is driving, it writes code normally. Use `spp drive` alongside pair sessions for file watching and transcript recording during your turns.
 
 ```bash
 spp pair start "implement user auth"   # Start a session (human drives first)
@@ -96,15 +99,28 @@ Enable by adding to `~/.claude/settings.json`:
 }
 ```
 
-### Drive Mode
+### Drive Mode + Coaching
 
-Want to write code yourself without changing your mode? Toggle drive mode:
+Drive mode is the core hands-on coding experience. Toggle it on, write code, get coached afterward:
 
 ```bash
-spp drive
+spp drive              # Toggle on — you code, Claude guides
+# ... write code, ask questions, Claude can't touch files ...
+spp drive              # Toggle off — transcript archived
+/coach                 # Get coaching on your session
 ```
 
-Claude is blocked from writing code but remains available for guidance, code review, and questions. Toggle off when done.
+When drive mode is on:
+- Claude is **blocked** from writing code (except `.md` files)
+- A **file watcher** records every save as a diff in a transcript
+- **Conversation hooks** capture your questions and Claude's answers
+- Claude remains available for guidance, code review, and questions
+
+When you toggle off, the transcript is archived. Run `/coach` to get a review of your session — what went well, where you struggled, and what to try next.
+
+```bash
+spp transcript         # View live transcript (during) or list archives (after)
+```
 
 ### Pause / Resume
 
@@ -132,7 +148,9 @@ spp reset
 | `spp mode [n]` | Show or change mode type (1-3) |
 | `spp modes` | List all available mode types |
 | `spp settings` | View and modify SPP settings |
-| `spp drive` | Toggle drive mode |
+| `spp drive` | Toggle drive mode (watcher + transcript) |
+| `spp transcript` | Show live transcript or list archives |
+| `/coach` | Get coaching on your latest drive session |
 | `spp pause` | Pause enforcement for 24 hours |
 | `spp resume` | Resume enforcement |
 | `spp reset` | Reset tracking to current commit |
@@ -140,7 +158,6 @@ spp reset
 | `spp pair rotate` | Rotate driver/navigator roles |
 | `spp pair end` | End the current pair session |
 | `spp pair` | Show pair session status |
-| `spp transcript` | Show transcript of current driving turn |
 
 ## Configuration
 
