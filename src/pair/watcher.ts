@@ -92,6 +92,7 @@ export function computeDiff(oldContent: string, newContent: string): string {
 
 function cacheFileContent(absPath: string, projectPath: string): void {
   const relPath = path.relative(projectPath, absPath);
+  if (relPath.startsWith(".claude-spp")) return;
   try {
     const stat = fs.statSync(absPath);
     if (stat.size > MAX_FILE_SIZE_BYTES) return;
@@ -139,6 +140,9 @@ function handleFileEvent(
   projectPath: string,
 ): void {
   const relPath = path.relative(projectPath, absPath);
+
+  // Guard against recursive transcript recording
+  if (relPath.startsWith(".claude-spp")) return;
   const state = fileStates.get(relPath);
 
   // Clear existing debounce timer
