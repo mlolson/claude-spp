@@ -1,6 +1,6 @@
 # Simian Programmer Plugin (SPP) for Claude Code
 
-**Keep your coding skills sharp while using AI.**
+**Pair programming with AI.**
 
 SPP is a Claude Code plugin that helps you learn how code, or to keep your skills sharp. It is useful for learning new languages, ramping up on code bases, or learning CS and engineering concepts.
 
